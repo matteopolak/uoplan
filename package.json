@@ -1,0 +1,26 @@
+{
+  "name": "uschedule",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "scrape": "node scripts/scraper.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.27.0",
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "@types/tough-cookie": "^4.0.5",
+    "cheerio": "^1.2.0",
+    "zod": "^4.3.6"
+  },
+  "type": "module",
+  "dependencies": {
+    "got": "^14.4.5",
+    "p-limit": "^7.3.0",
+    "tough-cookie": "^4.1.4"
+  }
+}
