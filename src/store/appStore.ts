@@ -92,7 +92,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   completedRequirementsList: [],
   selectedPerRequirement: {},
   selectedOptionsPerRequirement: {},
-  coursesThisSemester: 4,
+  coursesThisSemester: 5,
   generatedSchedules: [],
   selectedScheduleIndex: 0,
   generationError: null,
@@ -212,6 +212,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const {
       cache,
       remainingRequirements,
+      requirementTreeWithStatus,
       selectedPerRequirement,
       selectedOptionsPerRequirement,
       coursesThisSemester,
@@ -238,17 +239,57 @@ export const useAppStore = create<AppStore>((set, get) => ({
       return;
     }
 
-    // Enforce that all or/options groups with a requirementId have exactly one selected option
+    // Enforce that all active or/options groups with a requirementId have exactly one selected option.
+    // A group is "active" if it lies on the branch of options chosen in its ancestor option groups.
     const missingOptionGroups: string[] = [];
-    for (const req of remainingRequirements) {
-      if (
-        (req.type === 'or_group' || req.type === 'options_group') &&
-        req.requirementId &&
-        selectedOptionsPerRequirement[req.requirementId] == null
-      ) {
-        missingOptionGroups.push(req.title ?? req.type);
+
+    function walkNodes(
+      nodes: RequirementWithStatus[],
+      parentRequirementId: string | undefined,
+      parentSelectedIndex: number | undefined,
+      parentChildIndex: number | undefined
+    ): void {
+      for (let idx = 0; idx < nodes.length; idx++) {
+        const node = nodes[idx];
+        // Determine if this node is on an active branch from its parent
+        const parentActive =
+          parentRequirementId == null ||
+          parentSelectedIndex == null ||
+          parentSelectedIndex === parentChildIndex;
+        const active = parentActive;
+        if (!active) {
+          continue;
+        }
+
+        if (
+          (node.type === 'or_group' || node.type === 'options_group') &&
+          node.requirementId &&
+          !node.complete
+        ) {
+          const sel = selectedOptionsPerRequirement[node.requirementId];
+          if (sel == null) {
+            missingOptionGroups.push(node.title ?? node.type);
+          }
+        }
+
+        if (node.options && node.options.length > 0) {
+          const currentReqId = node.requirementId;
+          const currentSelectedIndex =
+            currentReqId != null ? selectedOptionsPerRequirement[currentReqId] : undefined;
+          for (let childIdx = 0; childIdx < node.options.length; childIdx++) {
+            walkNodes(
+              [node.options[childIdx]],
+              currentReqId ?? parentRequirementId,
+              currentReqId != null ? currentSelectedIndex : parentSelectedIndex,
+              childIdx
+            );
+          }
+        }
       }
     }
+
+    walkNodes(requirementTreeWithStatus, undefined, undefined, undefined);
+
     if (missingOptionGroups.length > 0) {
       set({
         generationError:

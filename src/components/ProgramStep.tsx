@@ -127,15 +127,28 @@ export function ProgramStep({ programs, value, onChange }: ProgramStepProps) {
         aria-label="Upload transcript PDF"
       />
       <Button
-        size="md"
+        size="sm"
         color="violet"
         variant="filled"
-        radius="sm"
+        radius={0}
         onClick={() => fileInputRef.current?.click()}
         disabled={transcriptLoading}
         leftSection={transcriptLoading ? <Loader size="sm" /> : undefined}
+        style={{ border: '2px solid black' }}
       >
-        {transcriptLoading ? 'Parsing…' : 'Choose PDF'}
+        {transcriptLoading ? 'Parsing…' : 'Choose transcript'}
+      </Button>
+      <Button
+        component="a"
+        href="https://www.uocampus.uottawa.ca/psp/csprpr9www/EMPLOYEE/SA/c/SA_LEARNER_SERVICES.SSS_TSRQST_UNOFF.GBL?languageCd=ENG"
+        target="_blank"
+        rel="noreferrer"
+        size="sm"
+        color="violet"
+        variant="light"
+        radius={0}
+      >
+        Request transcript on uoZone
       </Button>
       {transcriptError && (
         <Alert color="red" variant="light" title="Upload failed">

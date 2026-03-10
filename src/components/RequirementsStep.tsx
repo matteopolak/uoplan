@@ -37,6 +37,7 @@ interface RequirementNodeProps {
   onSelect: (requirementId: string, courses: string[]) => void;
   selectedOptionsPerRequirement: Record<string, number>;
   onSelectOption: (requirementId: string, optionIndex: number) => void;
+  activeBranch: boolean;
   depth?: number;
 }
 
@@ -48,6 +49,7 @@ function RequirementNode({
   onSelect,
   selectedOptionsPerRequirement,
   onSelectOption,
+  activeBranch,
   depth = 0,
 }: RequirementNodeProps) {
   const hasOptions = node.options && node.options.length > 0;
@@ -154,7 +156,8 @@ function RequirementNode({
   if (isOrGroup && hasOptions) {
     const selectedOptionIndex =
       node.requirementId != null ? selectedOptionsPerRequirement[node.requirementId] : undefined;
-    const showError = node.requirementId != null && selectedOptionIndex == null && !node.complete;
+    const showError =
+      activeBranch && node.requirementId != null && selectedOptionIndex == null && !node.complete;
 
     const useGenericLabel =
       rawTitle === '' || rawTitle.toLowerCase() === 'or';
@@ -215,6 +218,11 @@ function RequirementNode({
               const isSatisfiedOption =
                 node.satisfiedOptionIndex === idx && opt.complete;
               const isSelected = selectedOptionIndex === idx;
+              const childActiveBranch =
+                activeBranch &&
+                (!node.requirementId ||
+                  selectedOptionIndex == null ||
+                  selectedOptionIndex === idx);
               return (
                 <Box key={idx}>
                   <Group gap="xs" align="center" wrap="nowrap">
@@ -245,6 +253,7 @@ function RequirementNode({
                         onSelect={onSelect}
                         selectedOptionsPerRequirement={selectedOptionsPerRequirement}
                         onSelectOption={onSelectOption}
+                        activeBranch={childActiveBranch}
                         depth={depth + 1}
                       />
                     </Box>
@@ -261,6 +270,7 @@ function RequirementNode({
                           onSelect={onSelect}
                           selectedOptionsPerRequirement={selectedOptionsPerRequirement}
                           onSelectOption={onSelectOption}
+                          activeBranch={childActiveBranch}
                           depth={depth + 1}
                         />
                       ))}
@@ -279,7 +289,8 @@ function RequirementNode({
   if (isOptionsGroup && hasOptions) {
     const selectedOptionIndex =
       node.requirementId != null ? selectedOptionsPerRequirement[node.requirementId] : undefined;
-    const showError = node.requirementId != null && selectedOptionIndex == null && !node.complete;
+    const showError =
+      activeBranch && node.requirementId != null && selectedOptionIndex == null && !node.complete;
 
     return (
       <Paper
@@ -334,6 +345,11 @@ function RequirementNode({
               const isSelected =
                 node.requirementId != null &&
                 selectedOptionsPerRequirement[node.requirementId] === idx;
+              const childActiveBranch =
+                activeBranch &&
+                (!node.requirementId ||
+                  selectedOptionIndex == null ||
+                  selectedOptionIndex === idx);
               return (
                 <Box key={idx}>
                   <Group gap="xs" align="center">
@@ -358,6 +374,7 @@ function RequirementNode({
                       onSelect={onSelect}
                       selectedOptionsPerRequirement={selectedOptionsPerRequirement}
                       onSelectOption={onSelectOption}
+                      activeBranch={childActiveBranch}
                       depth={depth + 1}
                     />
                   </Box>
@@ -422,6 +439,7 @@ function RequirementNode({
                 onSelect={onSelect}
                 selectedOptionsPerRequirement={selectedOptionsPerRequirement}
                 onSelectOption={onSelectOption}
+                activeBranch={activeBranch}
                 depth={depth + 1}
               />
             ))}
@@ -499,6 +517,7 @@ function RequirementNode({
                   onSelect={onSelect}
                   selectedOptionsPerRequirement={selectedOptionsPerRequirement}
                   onSelectOption={onSelectOption}
+                  activeBranch={activeBranch}
                   depth={depth + 1}
                 />
               ))}
@@ -557,6 +576,7 @@ export function RequirementsStep({
               onSelect={onSelect}
               selectedOptionsPerRequirement={selectedOptionsPerRequirement}
               onSelectOption={onSelectOption}
+              activeBranch
             />
           ))
         ) : (
