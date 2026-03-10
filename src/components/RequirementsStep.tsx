@@ -1,5 +1,5 @@
 import { useState, MouseEvent } from 'react';
-import { Stack, MultiSelect, Text, Paper, Badge, Group, Box, Collapse } from '@mantine/core';
+import { Stack, MultiSelect, Text, Paper, Badge, Group, Box, Collapse, Radio } from '@mantine/core';
 import { IconChevronDown } from '@tabler/icons-react';
 import { createCourseOptions, renderCourseOption } from './CourseSelect';
 import type { DataCache } from '../lib/dataCache';
@@ -17,6 +17,8 @@ interface RequirementsStepProps {
   completedCourses: string[];
   selectedPerRequirement: Record<string, string[]>;
   onSelect: (requirementId: string, courses: string[]) => void;
+  selectedOptionsPerRequirement: Record<string, number>;
+  onSelectOption: (requirementId: string, optionIndex: number) => void;
 }
 
 function getSelectedCredits(cache: DataCache | null, courseCodes: string[]): number {
@@ -33,6 +35,8 @@ interface RequirementNodeProps {
   completedCourses: Set<string>;
   selectedPerRequirement: Record<string, string[]>;
   onSelect: (requirementId: string, courses: string[]) => void;
+  selectedOptionsPerRequirement: Record<string, number>;
+  onSelectOption: (requirementId: string, optionIndex: number) => void;
   depth?: number;
 }
 
@@ -42,6 +46,8 @@ function RequirementNode({
   completedCourses,
   selectedPerRequirement,
   onSelect,
+  selectedOptionsPerRequirement,
+  onSelectOption,
   depth = 0,
 }: RequirementNodeProps) {
   const hasOptions = node.options && node.options.length > 0;
@@ -146,6 +152,10 @@ function RequirementNode({
   }
 
   if (isOrGroup && hasOptions) {
+    const selectedOptionIndex =
+      node.requirementId != null ? selectedOptionsPerRequirement[node.requirementId] : undefined;
+    const showError = node.requirementId != null && selectedOptionIndex == null && !node.complete;
+
     const useGenericLabel =
       rawTitle === '' || rawTitle.toLowerCase() === 'or';
     const groupLabel = useGenericLabel
@@ -188,6 +198,11 @@ function RequirementNode({
             </Badge>
           )}
         </Group>
+        {showError && (
+          <Text size="xs" c="red" mt={4}>
+            Select exactly one option in this group.
+          </Text>
+        )}
         {node.complete && node.satisfiedOptionIndex != null && (
           <Text size="xs" c="dimmed" mb="xs">
             Satisfied by: {node.satisfiedBy.join(', ')}
@@ -196,13 +211,21 @@ function RequirementNode({
         <Collapse in={opened}>
           <Stack gap="xs">
             {node.options!.map((opt, idx) => {
-              const optTitle =
-                opt.title ?? opt.code ?? `Option ${idx + 1}`;
+              const optTitle = opt.title ?? opt.code ?? `Option ${idx + 1}`;
               const isSatisfiedOption =
                 node.satisfiedOptionIndex === idx && opt.complete;
+              const isSelected = selectedOptionIndex === idx;
               return (
                 <Box key={idx}>
                   <Group gap="xs" align="center" wrap="nowrap">
+                    {node.requirementId != null && !node.complete && (
+                      <Radio
+                        checked={isSelected}
+                        onChange={() => onSelectOption(node.requirementId!, idx)}
+                        name={node.requirementId}
+                        value={String(idx)}
+                      />
+                    )}
                     <Text size="sm" fw={500}>
                       {optTitle}
                     </Text>
@@ -220,6 +243,8 @@ function RequirementNode({
                         completedCourses={completedCourses}
                         selectedPerRequirement={selectedPerRequirement}
                         onSelect={onSelect}
+                        selectedOptionsPerRequirement={selectedOptionsPerRequirement}
+                        onSelectOption={onSelectOption}
                         depth={depth + 1}
                       />
                     </Box>
@@ -234,6 +259,8 @@ function RequirementNode({
                           completedCourses={completedCourses}
                           selectedPerRequirement={selectedPerRequirement}
                           onSelect={onSelect}
+                          selectedOptionsPerRequirement={selectedOptionsPerRequirement}
+                          onSelectOption={onSelectOption}
                           depth={depth + 1}
                         />
                       ))}
@@ -250,6 +277,10 @@ function RequirementNode({
   }
 
   if (isOptionsGroup && hasOptions) {
+    const selectedOptionIndex =
+      node.requirementId != null ? selectedOptionsPerRequirement[node.requirementId] : undefined;
+    const showError = node.requirementId != null && selectedOptionIndex == null && !node.complete;
+
     return (
       <Paper
         key={title}
@@ -287,6 +318,11 @@ function RequirementNode({
             </Badge>
           )}
         </Group>
+        {showError && (
+          <Text size="xs" c="red" mt={4}>
+            Select exactly one option in this group.
+          </Text>
+        )}
         {node.complete && node.satisfiedOptionIndex != null && (
           <Text size="xs" c="dimmed" mb="xs">
             Satisfied by option: {node.satisfiedBy.join(', ')}
@@ -294,18 +330,40 @@ function RequirementNode({
         )}
         <Collapse in={opened}>
           <Stack gap="md">
-            {node.options!.map((opt, idx) => (
-              <Box key={idx}>
-                <RequirementNode
-                  node={opt}
-                  cache={cache}
-                  completedCourses={completedCourses}
-                  selectedPerRequirement={selectedPerRequirement}
-                  onSelect={onSelect}
-                  depth={depth + 1}
-                />
-              </Box>
-            ))}
+            {node.options!.map((opt, idx) => {
+              const isSelected =
+                node.requirementId != null &&
+                selectedOptionsPerRequirement[node.requirementId] === idx;
+              return (
+                <Box key={idx}>
+                  <Group gap="xs" align="center">
+                    {node.requirementId != null && !node.complete && (
+                      <Radio
+                        checked={isSelected}
+                        onChange={() => onSelectOption(node.requirementId!, idx)}
+                        name={node.requirementId}
+                        value={String(idx)}
+                      />
+                    )}
+                    <Text size="sm" fw={500}>
+                      {opt.title ?? opt.code ?? `Option ${idx + 1}`}
+                    </Text>
+                  </Group>
+                  <Box mt="xs" pl="sm">
+                    <RequirementNode
+                      node={opt}
+                      cache={cache}
+                      completedCourses={completedCourses}
+                      selectedPerRequirement={selectedPerRequirement}
+                      onSelect={onSelect}
+                      selectedOptionsPerRequirement={selectedOptionsPerRequirement}
+                      onSelectOption={onSelectOption}
+                      depth={depth + 1}
+                    />
+                  </Box>
+                </Box>
+              );
+            })}
           </Stack>
         </Collapse>
       </Paper>
@@ -362,6 +420,8 @@ function RequirementNode({
                 completedCourses={completedCourses}
                 selectedPerRequirement={selectedPerRequirement}
                 onSelect={onSelect}
+                selectedOptionsPerRequirement={selectedOptionsPerRequirement}
+                onSelectOption={onSelectOption}
                 depth={depth + 1}
               />
             ))}
@@ -437,6 +497,8 @@ function RequirementNode({
                   completedCourses={completedCourses}
                   selectedPerRequirement={selectedPerRequirement}
                   onSelect={onSelect}
+                  selectedOptionsPerRequirement={selectedOptionsPerRequirement}
+                  onSelectOption={onSelectOption}
                   depth={depth + 1}
                 />
               ))}
@@ -456,6 +518,8 @@ export function RequirementsStep({
   completedCourses,
   selectedPerRequirement,
   onSelect,
+  selectedOptionsPerRequirement,
+  onSelectOption,
 }: RequirementsStepProps) {
   const [completedOpen, setCompletedOpen] = useState(false);
   const completedSet = new Set(completedCourses);
@@ -491,6 +555,8 @@ export function RequirementsStep({
               completedCourses={completedSet}
               selectedPerRequirement={selectedPerRequirement}
               onSelect={onSelect}
+              selectedOptionsPerRequirement={selectedOptionsPerRequirement}
+              onSelectOption={onSelectOption}
             />
           ))
         ) : (

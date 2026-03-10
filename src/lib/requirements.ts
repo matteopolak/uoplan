@@ -441,6 +441,7 @@ function runRequirementPass(
             node: { ...toStatusBase(req), complete: true, satisfiedBy: [], options: [] },
           };
         }
+        const requirementId = opts.dryRun ? undefined : nextId();
         const optNodes: RequirementWithStatus[] = [];
         let optResult: ProcessResult = { satisfied: false, creditsUsed: 0, coursesUsed: [] };
         let satisfiedOptIdx = -1;
@@ -466,6 +467,7 @@ function runRequirementPass(
             complete: optResult.satisfied,
             satisfiedBy: optResult.coursesUsed,
             satisfiedOptionIndex: satisfiedOptIdx >= 0 ? satisfiedOptIdx : undefined,
+            requirementId,
             options: optNodes,
           },
         };

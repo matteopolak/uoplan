@@ -183,3 +183,132 @@ export function generateSchedules(
 
   return schedules;
 }
+
+export function generateSchedulesWithPinned(
+  pinnedCourseCodes: string[],
+  optionalCourseCodes: string[],
+  targetCount: number,
+  cache: DataCache
+): GeneratedSchedule[] {
+  if (pinnedCourseCodes.length > targetCount) {
+    return [];
+  }
+
+  const pinned: { code: string; combos: SectionCombo[] }[] = [];
+  for (const code of pinnedCourseCodes) {
+    const schedule = cache.getSchedule(code);
+    if (!schedule) return [];
+    const combos = getValidSectionCombos(schedule);
+    if (combos.length === 0) return [];
+    pinned.push({ code: schedule.courseCode, combos });
+  }
+
+  const optional: { code: string; combos: SectionCombo[] }[] = [];
+  for (const code of optionalCourseCodes) {
+    if (pinnedCourseCodes.includes(code)) continue;
+    const schedule = cache.getSchedule(code);
+    if (!schedule) continue;
+    const combos = getValidSectionCombos(schedule);
+    if (combos.length > 0) {
+      optional.push({ code: schedule.courseCode, combos });
+    }
+  }
+
+  const schedules: GeneratedSchedule[] = [];
+
+  function findOptionalForPinned(
+    optionalItems: { code: string; combos: SectionCombo[] }[],
+    chosenPinned: { code: string; combo: SectionCombo }[],
+    startIdx: number
+  ): void {
+    const remainingSlots = targetCount - chosenPinned.length;
+    if (remainingSlots <= 0) {
+      const enrollments: CourseEnrollment[] = chosenPinned.map(({ code, combo }) => {
+        const s = cache.getSchedule(code)!;
+        return getEnrollmentsForCourse(s, combo);
+      });
+      schedules.push({ enrollments });
+      return;
+    }
+
+    function dfsOptional(
+      items: { code: string; combos: SectionCombo[] }[],
+      selected: { code: string; combo: SectionCombo }[],
+      idx: number
+    ): boolean {
+      if (selected.length === remainingSlots || idx === items.length) {
+        const all = [...chosenPinned, ...selected];
+        const enrollments: CourseEnrollment[] = all.map(({ code, combo }) => {
+          const s = cache.getSchedule(code)!;
+          return getEnrollmentsForCourse(s, combo);
+        });
+        schedules.push({ enrollments });
+        return schedules.length >= MAX_SCHEDULES;
+      }
+
+      const { code, combos } = items[idx];
+      const schedule = cache.getSchedule(code)!;
+
+      for (const combo of combos) {
+        const candidate = getEnrollmentsForCourse(schedule, combo);
+        const conflictsPinned = chosenPinned.some(({ code: c, combo: co }) => {
+          const existing = getEnrollmentsForCourse(cache.getSchedule(c)!, co);
+          return enrollmentsOverlap(existing, candidate);
+        });
+        if (conflictsPinned) continue;
+
+        const conflictsOpt = selected.some(({ code: c, combo: co }) => {
+          const existing = getEnrollmentsForCourse(cache.getSchedule(c)!, co);
+          return enrollmentsOverlap(existing, candidate);
+        });
+        if (conflictsOpt) continue;
+
+        selected.push({ code, combo });
+        if (dfsOptional(items, selected, idx + 1)) return true;
+        selected.pop();
+      }
+
+      if (dfsOptional(items, selected, idx + 1)) return true;
+      return false;
+    }
+
+    dfsOptional(optionalItems.slice(startIdx), [], 0);
+  }
+
+  function dfsPinned(
+    items: { code: string; combos: SectionCombo[] }[],
+    selected: { code: string; combo: SectionCombo }[],
+    idx: number
+  ): boolean {
+    if (idx === items.length) {
+      findOptionalForPinned(optional, selected, 0);
+      return schedules.length >= MAX_SCHEDULES;
+    }
+
+    const { code, combos } = items[idx];
+    const schedule = cache.getSchedule(code)!;
+
+    for (const combo of combos) {
+      const candidate = getEnrollmentsForCourse(schedule, combo);
+      const conflicts = selected.some(({ code: c, combo: co }) => {
+        const existing = getEnrollmentsForCourse(cache.getSchedule(c)!, co);
+        return enrollmentsOverlap(existing, candidate);
+      });
+      if (conflicts) continue;
+
+      selected.push({ code, combo });
+      if (dfsPinned(items, selected, idx + 1)) return true;
+      selected.pop();
+    }
+
+    return false;
+  }
+
+  if (pinned.length === 0) {
+    return generateSchedules(optionalCourseCodes, targetCount, cache);
+  }
+
+  dfsPinned(pinned, [], 0);
+
+  return schedules;
+}

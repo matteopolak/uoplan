@@ -30,6 +30,7 @@ function getAutoSelectedForRequirements(
 }
 import {
   generateSchedules as genSchedules,
+  generateSchedulesWithPinned,
   getValidSectionCombos,
   getEnrollmentsForCourse,
   enrollmentsOverlap,
@@ -50,9 +51,11 @@ export interface AppState {
   requirementTreeWithStatus: RequirementWithStatus[];
   completedRequirementsList: CompletedRequirementItem[];
   selectedPerRequirement: Record<string, string[]>;
+  selectedOptionsPerRequirement: Record<string, number>;
   coursesThisSemester: number;
   generatedSchedules: GeneratedSchedule[];
   selectedScheduleIndex: number;
+  generationError: string | null;
 }
 
 export interface AppActions {
@@ -62,6 +65,7 @@ export interface AppActions {
   addCompletedCourse: (code: string) => void;
   removeCompletedCourse: (code: string) => void;
   setSelectedForRequirement: (requirementId: string, courses: string[]) => void;
+  setSelectedOptionForRequirement: (requirementId: string, optionIndex: number) => void;
   setCoursesThisSemester: (n: number) => void;
   generateSchedules: () => void;
   setSelectedScheduleIndex: (idx: number) => void;
@@ -87,9 +91,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
   requirementTreeWithStatus: [],
   completedRequirementsList: [],
   selectedPerRequirement: {},
+  selectedOptionsPerRequirement: {},
   coursesThisSemester: 4,
   generatedSchedules: [],
   selectedScheduleIndex: 0,
+  generationError: null,
 
   loadData: async () => {
     set({ loading: true, error: null });
@@ -141,6 +147,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         requirementTreeWithStatus: tree,
         completedRequirementsList: completedList,
         selectedPerRequirement: autoSelected,
+        selectedOptionsPerRequirement: {},
       });
     } else {
       set({
@@ -148,13 +155,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
         requirementTreeWithStatus: [],
         completedRequirementsList: [],
         selectedPerRequirement: {},
+        selectedOptionsPerRequirement: {},
       });
     }
   },
 
   setCompletedCourses: (courses) => {
     set({ completedCourses: courses });
-    const { program, cache, selectedPerRequirement } = get();
+    const { program, cache, selectedPerRequirement, selectedOptionsPerRequirement } = get();
     if (program && cache) {
       const { remaining, tree, completedList } = computeRequirementsState(
         program,
@@ -167,6 +175,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         requirementTreeWithStatus: tree,
         completedRequirementsList: completedList,
         selectedPerRequirement: autoSelected,
+        selectedOptionsPerRequirement,
       });
     }
   },
@@ -188,10 +197,27 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }));
   },
 
+  setSelectedOptionForRequirement: (requirementId, optionIndex) => {
+    set((s) => ({
+      selectedOptionsPerRequirement: {
+        ...s.selectedOptionsPerRequirement,
+        [requirementId]: optionIndex,
+      },
+    }));
+  },
+
   setCoursesThisSemester: (n) => set({ coursesThisSemester: n }),
 
   generateSchedules: () => {
-    const { cache, remainingRequirements, selectedPerRequirement, coursesThisSemester } = get();
+    const {
+      cache,
+      remainingRequirements,
+      selectedPerRequirement,
+      selectedOptionsPerRequirement,
+      coursesThisSemester,
+      program,
+      completedCourses,
+    } = get();
     if (!cache) return;
 
     function isHonoursProject(code: string): boolean {
@@ -202,35 +228,117 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     const allSelected = Object.values(selectedPerRequirement).flat();
     const unique = [...new Set(allSelected)];
+    const pinned = unique.filter((code) => !isHonoursProject(code));
 
-    let coursePool = unique;
-    if (unique.length < coursesThisSemester) {
-      const extra = remainingRequirements.flatMap((r) => r.candidateCourses);
-      for (const code of extra) {
-        if (coursePool.length >= coursesThisSemester) break;
-        if (!coursePool.includes(code) && cache.getSchedule(code)) {
-          coursePool = [...coursePool, code];
+    if (pinned.length > coursesThisSemester) {
+      set({
+        generationError:
+          'You selected more mandatory courses than your target per semester. Increase the target or deselect some courses.',
+      });
+      return;
+    }
+
+    // Enforce that all or/options groups with a requirementId have exactly one selected option
+    const missingOptionGroups: string[] = [];
+    for (const req of remainingRequirements) {
+      if (
+        (req.type === 'or_group' || req.type === 'options_group') &&
+        req.requirementId &&
+        selectedOptionsPerRequirement[req.requirementId] == null
+      ) {
+        missingOptionGroups.push(req.title ?? req.type);
+      }
+    }
+    if (missingOptionGroups.length > 0) {
+      set({
+        generationError:
+          'Please choose exactly one option in each “or” block before generating schedules.',
+      });
+      return;
+    }
+
+    function helpsRequirements(code: string): boolean {
+      if (!program) return false;
+      const base = completedCourses;
+      const before = computeRequirementsState(program, base, cache).remaining;
+      const beforeCredits = before.reduce(
+        (sum, r) => sum + (r.creditsNeeded ?? 0),
+        0
+      );
+      const after = computeRequirementsState(program, [...base, code], cache).remaining;
+      const afterCredits = after.reduce(
+        (sum, r) => sum + (r.creditsNeeded ?? 0),
+        0
+      );
+      return afterCredits < beforeCredits;
+    }
+
+    const remainingById = new Map<string, RemainingRequirement>();
+    for (const r of remainingRequirements) {
+      remainingById.set(r.requirementId, r);
+    }
+
+    const optionalPool: string[] = [];
+    const remainingNeeded = coursesThisSemester - pinned.length;
+    if (remainingNeeded > 0) {
+      for (const req of remainingRequirements) {
+        const selectedOpt = selectedOptionsPerRequirement[req.requirementId];
+        const candidates = req.candidateCourses;
+        for (const code of candidates) {
+          if (
+            optionalPool.length >= remainingNeeded * 4
+            || pinned.includes(code)
+            || optionalPool.includes(code)
+            || isHonoursProject(code)
+            || !cache.getSchedule(code)
+          ) {
+            continue;
+          }
+          if (!helpsRequirements(code)) continue;
+          optionalPool.push(code);
+        }
+      }
+
+      if (optionalPool.length < remainingNeeded) {
+        for (const course of cache.getAllCourses()) {
+          const code = course.code;
+          if (
+            optionalPool.length >= remainingNeeded * 6
+            || pinned.includes(code)
+            || optionalPool.includes(code)
+            || isHonoursProject(code)
+            || !cache.getSchedule(code)
+          ) {
+            continue;
+          }
+          if (!helpsRequirements(code)) continue;
+          optionalPool.push(code);
         }
       }
     }
 
-    const filteredCoursePool = coursePool.filter((code) => !isHonoursProject(code));
+    const filteredOptionalPool = optionalPool.filter((code) => !isHonoursProject(code));
 
     // Debugging: inspect schedule generation inputs
     // eslint-disable-next-line no-console
     console.log('generateSchedules input', {
       selectedPerRequirement,
       uniqueSelected: unique,
-      coursePool,
-      filteredCoursePool,
+      pinned,
+      optionalPool,
+      filteredOptionalPool,
       coursesThisSemester,
     });
 
-    const schedules = genSchedules(filteredCoursePool, coursesThisSemester, cache);
+    const schedules =
+      pinned.length === 0
+        ? genSchedules(filteredOptionalPool, coursesThisSemester, cache)
+        : generateSchedulesWithPinned(pinned, filteredOptionalPool, coursesThisSemester, cache);
 
     set({
       generatedSchedules: schedules,
       selectedScheduleIndex: 0,
+      generationError: schedules.length === 0 ? 'No non-overlapping schedules could be generated with your selections.' : null,
     });
   },
 

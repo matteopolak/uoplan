@@ -111,10 +111,12 @@ export function ProgramStep({ programs, value, onChange }: ProgramStepProps) {
         nothingFoundMessage="No program found"
         size="md"
       />
-      <Text size="sm" c="dimmed">
-        Upload your unofficial transcript (PDF) to auto-fill completed courses. Your program is also
-        in the transcript, so you can do this first.
-      </Text>
+      <Alert color="violet" variant="light" radius="sm">
+        <Text size="sm" c="dimmed">
+          Upload your unofficial transcript (PDF) to auto-fill completed courses and detect your
+          program. The PDF is parsed entirely in your browser (client-side) and does not use AI.
+        </Text>
+      </Alert>
       <input
         ref={fileInputRef}
         type="file"
@@ -125,7 +127,10 @@ export function ProgramStep({ programs, value, onChange }: ProgramStepProps) {
         aria-label="Upload transcript PDF"
       />
       <Button
-        variant="light"
+        size="md"
+        color="violet"
+        variant="filled"
+        radius="sm"
         onClick={() => fileInputRef.current?.click()}
         disabled={transcriptLoading}
         leftSection={transcriptLoading ? <Loader size="sm" /> : undefined}

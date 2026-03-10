@@ -28,6 +28,7 @@ function App() {
     requirementTreeWithStatus,
     completedRequirementsList,
     selectedPerRequirement,
+    selectedOptionsPerRequirement,
     coursesThisSemester,
     generatedSchedules,
     selectedScheduleIndex,
@@ -35,9 +36,11 @@ function App() {
     setCompletedCourses,
     setSelectedForRequirement,
     setCoursesThisSemester,
+    setSelectedOptionForRequirement,
     generateSchedules,
     setSelectedScheduleIndex,
     swapCourseInSchedule,
+    generationError,
   } = useAppStore();
 
   const [active, setActive] = useState(0);
@@ -370,6 +373,8 @@ function App() {
                   completedCourses={completedCourses}
                   selectedPerRequirement={selectedPerRequirement}
                   onSelect={setSelectedForRequirement}
+                  selectedOptionsPerRequirement={selectedOptionsPerRequirement}
+                  onSelectOption={setSelectedOptionForRequirement}
                 />
               </Stack>
             )}
@@ -381,6 +386,7 @@ function App() {
                   selectedCount={uniqueSelected}
                   onGenerate={handleGenerate}
                   generating={generating}
+                  error={generationError}
                 />
               </Stack>
             )}
