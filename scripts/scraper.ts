@@ -169,8 +169,10 @@ const CatalogueSchema = z.object({
 });
 export type Catalogue = z.infer<typeof CatalogueSchema>;
 
+const USE_CACHE_ONLY = process.argv.includes('use-cache');
+
 async function fetchHtml(url: string, retries = 3): Promise<string> {
-  const cacheDir = '.cache';
+  const cacheDir = '.cache/catalogue';
   await fs.mkdir(cacheDir, { recursive: true });
 
   const filename = encodeURIComponent(url.replace(/^https?:\/\//, '')) + '.html';
@@ -180,7 +182,10 @@ async function fetchHtml(url: string, retries = 3): Promise<string> {
     const cached = await fs.readFile(filePath, 'utf-8');
     return cached;
   } catch {
-    // not cached, go ahead and fetch
+    // not cached
+    if (USE_CACHE_ONLY) {
+      throw new Error(`Cache miss for ${url} with use-cache enabled (expected ${filePath})`);
+    }
   }
 
   for (let i = 0; i < retries; i++) {
@@ -553,7 +558,7 @@ async function main() {
     })),
   });
 
-  await fs.writeFile('../public/data/catalogue.json', JSON.stringify(catalogue, null, 2));
+  await fs.writeFile('public/data/catalogue.json', JSON.stringify(catalogue, null, 2));
   console.log(`Successfully saved ${allCourses.length} courses and ${allPrograms.length} programs to public/data/catalogue.json`);
 }
 

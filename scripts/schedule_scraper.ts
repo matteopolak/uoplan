@@ -9,6 +9,7 @@ const BASE_URL =
   'https://uocampus.public.uottawa.ca/psc/csprpr9pub/EMPLOYEE/SA/c/UO_SR_AA_MODS.UO_PUB_CLSSRCH.GBL';
 const HTML_CACHE_DIR = '.cache/course-search-html';
 const MAX_CONCURRENCY = 20;
+const USE_CACHE_ONLY = process.argv.includes('use-cache');
 
 // Default to the currently selected term on the search page (2026 Winter Term as of 2026-03-09)
 const DEFAULT_TERM_ID: string = process.env.UOTTAWA_TERM_ID || '2261';
@@ -152,6 +153,10 @@ async function loadCatalogue(): Promise<ParsedCourseCode[]> {
 }
 
 async function createClient(): Promise<ClientInfo> {
+  if (USE_CACHE_ONLY) {
+    return { client: null!, icsid: null!, dataLang: null!, icStateNum: null! };
+  }
+
   const jar = new CookieJar();
   const client: Got = got.extend({
     cookieJar: jar,
@@ -399,6 +404,43 @@ async function fetchScheduleForCourse(
   const cacheFilename = `${safeSubject}-${safeCatalog}-${DEFAULT_TERM_ID}.html`;
   const cachePath = path.join(HTML_CACHE_DIR, cacheFilename);
 
+  if (USE_CACHE_ONLY) {
+    try {
+      const cachedHtml = await fs.readFile(cachePath, 'utf-8');
+
+      // Mirror the "no results" detection we do for live responses.
+      const bannerText = cheerio
+        .load(cachedHtml)('span.PSERRORTEXT, div.PSERRORTEXT, span.SSSMSGALERTTEXT')
+        .text()
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+      if (bannerText.includes('no classes') || bannerText.includes('no results')) {
+        return null;
+      }
+
+      const scheduleFromCache = parseScheduleHtml(cachedHtml, {
+        subject: course.subject,
+        catalogNbr: course.catalogNbr,
+      });
+      if (scheduleFromCache) {
+        return scheduleFromCache;
+      }
+      
+      console.error(
+        `Cached HTML for ${course.subject} ${course.catalogNbr} exists at ${cachePath} but could not be parsed.`,
+      );
+      process.exit(1);
+      return null;
+    } catch (err) {
+      console.error(
+        `Cache miss for ${course.subject} ${course.catalogNbr} with use-cache enabled (expected ${cachePath}):`,
+        (err as any)?.message ?? err,
+      );
+      return null;
+    }
+  }
+
   for (let attempt = 1; attempt <= 10; attempt++) {
     // Refresh page-level state (ICSID / ICStateNum) from a fresh criteria page load.
     // This keeps us in sync with PeopleSoft even if previous interactions changed state.
@@ -511,7 +553,7 @@ async function fetchScheduleForCourse(
 }
 
 async function main(): Promise<void> {
-  console.log('Loading catalogue.json...');
+  console.log('Loading catalogue.json`..`.');
   const allCourses = await loadCatalogue();
   console.log(`Found ${allCourses.length} unique course codes.`);
 

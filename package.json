@@ -34,10 +34,12 @@
     "@mantine/core": "^8.3.16",
     "@mantine/hooks": "^8.3.16",
     "@tabler/icons-react": "^3.40.0",
+    "date-fns": "^4.1.0",
     "got": "^14.4.5",
     "p-limit": "^7.3.0",
     "pdfjs-dist": "^4.8.69",
     "react": "^19.2.4",
+    "react-big-calendar": "^1.19.4",
     "react-dom": "^19.2.4",
     "tough-cookie": "^4.1.4",
     "zustand": "^5.0.11"
