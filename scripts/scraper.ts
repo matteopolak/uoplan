@@ -853,8 +853,49 @@ async function main() {
     })),
   });
 
-  await fs.writeFile('public/data/catalogue.json', JSON.stringify(catalogue, null, 2));
-  console.log(`Successfully saved ${allCourses.length} courses and ${allPrograms.length} programs to public/data/catalogue.json`);
+  const dataDir = path.join(process.cwd(), 'public', 'data');
+  await fs.mkdir(dataDir, { recursive: true });
+
+  let existingCourseCodes: string[] = [];
+  let existingProgramUrls: string[] = [];
+  const indicesPath = path.join(dataDir, 'indices.json');
+  try {
+    const raw = await fs.readFile(indicesPath, 'utf-8');
+    const indices = JSON.parse(raw) as { courses?: string[]; programs?: string[] };
+    existingCourseCodes = Array.isArray(indices.courses) ? indices.courses : [];
+    existingProgramUrls = Array.isArray(indices.programs) ? indices.programs : [];
+  } catch {
+    // No existing indices file
+  }
+
+  const existingCourseSet = new Set(existingCourseCodes);
+  const newCourseCodes = allCourses
+    .map(c => c.code)
+    .filter(code => !existingCourseSet.has(code));
+  newCourseCodes.sort((a, b) => a.localeCompare(b));
+  const mergedCourseCodes = [...existingCourseCodes, ...newCourseCodes];
+
+  const existingProgramSet = new Set(existingProgramUrls);
+  const newProgramUrls = allPrograms
+    .map(p => p.url)
+    .filter(url => !existingProgramSet.has(url));
+  newProgramUrls.sort((a, b) => a.localeCompare(b));
+  const mergedProgramUrls = [...existingProgramUrls, ...newProgramUrls];
+
+  const indices = { courses: mergedCourseCodes, programs: mergedProgramUrls };
+  await fs.writeFile(indicesPath, JSON.stringify(indices, null, 2), 'utf-8');
+
+  await fs.writeFile(
+    path.join(dataDir, 'catalogue.json'),
+    JSON.stringify(catalogue, null, 2),
+    'utf-8'
+  );
+  console.log(
+    `Successfully saved ${allCourses.length} courses and ${allPrograms.length} programs to public/data/catalogue.json`
+  );
+  console.log(
+    `Indices: ${mergedCourseCodes.length} courses, ${mergedProgramUrls.length} programs (append-only)`
+  );
 }
 
 main().catch(e => {

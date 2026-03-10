@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Box, Stack, Title, Alert, Loader, Text, Paper, Group, Button, Select, TextInput } from '@mantine/core';
+import { useEffect, useRef, useState } from 'react';
+import { Box, Stack, Title, Alert, Loader, Text, Paper, Group, Button, Select, TextInput, Modal, Textarea } from '@mantine/core';
 import { AnimatePresence, motion } from 'framer-motion';
-import { IconCheck } from '@tabler/icons-react';
+import { IconCheck, IconShare } from '@tabler/icons-react';
 import { useAppStore } from './store/appStore';
 import { ProgramStep } from './components/ProgramStep';
 import { CompletedCoursesStep } from './components/CompletedCoursesStep';
@@ -20,7 +20,10 @@ const STEPS = [
 function App() {
   const {
     loadData,
+    getShareUrl,
+    getEncodedStateBase64,
     catalogue,
+    indices,
     cache,
     loading,
     error,
@@ -59,10 +62,30 @@ function App() {
   const [showCalendar, setShowCalendar] = useState(false);
   const [timetableStartDate, setTimetableStartDate] = useState<string>('');
   const [timetableEndDate, setTimetableEndDate] = useState<string>('');
+  const [shareCopied, setShareCopied] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const persistTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (!indices) return;
+    const save = () => {
+      const base64 = getEncodedStateBase64();
+      if (base64) localStorage.setItem('uschedule-state', base64);
+    };
+    const scheduleSave = () => {
+      if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
+      persistTimeoutRef.current = setTimeout(save, 400);
+    };
+    const unsub = useAppStore.subscribe(scheduleSave);
+    return () => {
+      unsub();
+      if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
+    };
+  }, [indices, getEncodedStateBase64]);
 
   const programs = catalogue?.programs ?? [];
 
@@ -311,6 +334,19 @@ function App() {
           >
             Back to setup
           </Button>
+          {indices && (
+            <Button
+              variant="subtle"
+              color="gray"
+              size="sm"
+              radius={0}
+              leftSection={<IconShare size={14} />}
+              onClick={() => setShareModalOpen(true)}
+              style={{ border: 'none', alignSelf: 'flex-start' }}
+            >
+              Share
+            </Button>
+          )}
           <Select
             label="Schedule"
             data={scheduleOptions}
@@ -371,6 +407,44 @@ function App() {
               Showing {eventCount} meeting block{eventCount === 1 ? '' : 's'} this week
             </Text>
           </Stack>
+          <Modal
+            opened={shareModalOpen}
+            onClose={() => setShareModalOpen(false)}
+            title="Share timetable state"
+            size="md"
+          >
+            <Stack gap="md">
+              <Text size="sm" c="dimmed">
+                Share this URL to let others load your program, completed courses, and selections. The code is the state embedded in the URL.
+              </Text>
+              <TextInput
+                label="URL"
+                value={getShareUrl() ?? ''}
+                readOnly
+                size="sm"
+              />
+              <Textarea
+                label="State code"
+                value={getEncodedStateBase64() ?? ''}
+                readOnly
+                minRows={3}
+                size="sm"
+              />
+              <Button
+                variant="filled"
+                onClick={() => {
+                  const url = getShareUrl();
+                  if (url && navigator.clipboard?.writeText) {
+                    navigator.clipboard.writeText(url);
+                    setShareCopied(true);
+                    setTimeout(() => setShareCopied(false), 2000);
+                  }
+                }}
+              >
+                {shareCopied ? 'Copied to clipboard' : 'Copy shareable link'}
+              </Button>
+            </Stack>
+          </Modal>
         </Box>
         <Box
           style={{
@@ -459,6 +533,24 @@ function App() {
                     STEP {active + 1} OF {STEPS.length} –{' '}
                     {STEPS[active].description.toUpperCase()}
                   </Text>
+                  {indices && (
+                    <Button
+                      variant="subtle"
+                      color="gray"
+                      size="xs"
+                      leftSection={<IconShare size={14} />}
+                      onClick={() => {
+                        const url = getShareUrl();
+                        if (url && navigator.clipboard?.writeText) {
+                          navigator.clipboard.writeText(url);
+                          setShareCopied(true);
+                          setTimeout(() => setShareCopied(false), 2000);
+                        }
+                      }}
+                    >
+                      {shareCopied ? 'Link copied' : 'Share'}
+                    </Button>
+                  )}
                 </Group>
 
                 {active === 0 && (
