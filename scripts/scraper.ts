@@ -6,14 +6,37 @@ import path from 'path';
 
 const BASE_URL = 'https://catalogue.uottawa.ca';
 
+type CoursePrereqNode = {
+  type: 'course' | 'or_group' | 'and_group' | 'non_course';
+  code?: string;
+  text?: string;
+  credits?: number;
+  disciplines?: string[];
+  children?: CoursePrereqNode[];
+};
+
+const CoursePrereqNodeSchema: z.ZodType<CoursePrereqNode> = z.lazy(() =>
+  z.object({
+    type: z.enum(['course', 'or_group', 'and_group', 'non_course']),
+    code: z.string().optional(),
+    text: z.string().optional(),
+    credits: z.number().optional(),
+    disciplines: z.array(z.string()).optional(),
+    children: z.array(CoursePrereqNodeSchema).optional(),
+  }),
+);
+
 const CourseSchema = z.object({
   code: z.string(),
   title: z.string(),
   credits: z.number(),
   description: z.string(),
   component: z.string().optional(),
+  prereqText: z.string().optional(),
+  prerequisites: CoursePrereqNodeSchema.optional(),
 });
 export type Course = z.infer<typeof CourseSchema>;
+export type CoursePrereqNodeType = CoursePrereqNode;
 
 const RequirementTypeSchema = z.enum([
   'course',
@@ -85,6 +108,260 @@ function extractCourseCodes(text: string): string[] {
     codes.push(`${m[1]} ${m[2]}`.replace(/\s+/, ' '));
   }
   return Array.from(new Set(codes));
+}
+
+function extractPrereqSentence(raw: string): string | undefined {
+  const normalized = raw.replace(/\s+/g, ' ').trim();
+  if (!normalized) return undefined;
+
+  const labelRegex = /(Prerequisite|Prerequisites|Prerequiste|Préalable|Préalables)\s*[:：]\s*/i;
+  if (!labelRegex.test(normalized)) return undefined;
+
+  const afterLabel = normalized.replace(/^.*?(Prerequisite|Prerequisites|Prerequiste|Préalable|Préalables)\s*[:：]\s*/i, '');
+  const trimmed = afterLabel.trim();
+  if (!trimmed) return undefined;
+
+  const dotIndex = trimmed.indexOf('.');
+  const sentence = (dotIndex === -1 ? trimmed : trimmed.slice(0, dotIndex)).trim();
+  return sentence || undefined;
+}
+
+function parseCreditRequirement(text: string): number | undefined {
+  const match = text.match(/(\d+(?:\.\d+)?)[^0-9]*?(?:units?|crédits?|crédit)\b/i);
+  if (!match) return undefined;
+  const value = parseFloat(match[1]);
+  return Number.isNaN(value) ? undefined : value;
+}
+
+function splitTopLevel(text: string, separators: RegExp): string[] {
+  const parts: string[] = [];
+  let current = '';
+  let depth = 0;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '(') depth++;
+    if (ch === ')') depth = Math.max(0, depth - 1);
+
+    if (depth === 0) {
+      const rest = text.slice(i);
+      const m = rest.match(separators);
+      if (m && m.index === 0) {
+        if (current.trim()) parts.push(current.trim());
+        current = '';
+        i += m[0].length - 1;
+        continue;
+      }
+    }
+
+    current += ch;
+  }
+  if (current.trim()) parts.push(current.trim());
+  return parts;
+}
+
+function parsePrereqClause(clause: string): CoursePrereqNode | undefined {
+  let inner = clause.replace(/\s+/g, ' ').trim();
+  if (!inner) return undefined;
+
+  // Detect multiple top-level parenthesized groups, e.g.
+  // (ADM 1705 ou MAT 1702), (ADM 1770 ou ITI 1520)
+  const groupContents: string[] = [];
+  const groupRanges: Array<{ start: number; end: number }> = [];
+  let depth = 0;
+  let start = -1;
+  for (let i = 0; i < inner.length; i++) {
+    const ch = inner[i];
+    if (ch === '(') {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (ch === ')' && depth > 0) {
+      depth--;
+      if (depth === 0 && start !== -1) {
+        groupContents.push(inner.slice(start + 1, i).trim());
+        groupRanges.push({ start, end: i });
+        start = -1;
+      }
+    }
+  }
+
+  if (groupContents.length > 1) {
+    let outside = '';
+    let lastIndex = 0;
+    for (const range of groupRanges) {
+      outside += inner.slice(lastIndex, range.start);
+      lastIndex = range.end + 1;
+    }
+    outside += inner.slice(lastIndex);
+    if (outside.replace(/[,\s]+/g, '') === '') {
+      const children: CoursePrereqNode[] = [];
+      for (const g of groupContents) {
+        const node = parsePrereqClause(g);
+        if (node) children.push(node);
+      }
+      if (children.length === 0) return undefined;
+      if (children.length === 1) return children[0];
+      return {
+        type: 'and_group',
+        text: inner,
+        children,
+      };
+    }
+  }
+
+  // Handle clauses like "ECO 1502, ECO 1504, (ADM 1740 ou ADM 2740)"
+  // by treating comma-separated top-level segments as an implicit AND.
+  if (inner.includes(',') && inner.includes('(') && inner.includes(')')) {
+    const commaParts = splitTopLevel(inner, /,/);
+    if (commaParts.length > 1) {
+      const children: CoursePrereqNode[] = [];
+      for (const part of commaParts) {
+        const trimmed = part.trim();
+        if (!trimmed) continue;
+        const node = parsePrereqClause(trimmed);
+        if (node) children.push(node);
+      }
+      if (children.length === 0) return undefined;
+      if (children.length === 1) return children[0];
+      return {
+        type: 'and_group',
+        text: inner,
+        children,
+      };
+    }
+  }
+
+  // If the whole clause is wrapped in a single pair of parentheses, strip them.
+  if (inner.startsWith('(') && inner.endsWith(')')) {
+    let depth2 = 0;
+    let wrapsAll = true;
+    for (let i = 0; i < inner.length; i++) {
+      const ch = inner[i];
+      if (ch === '(') {
+        depth2++;
+      } else if (ch === ')') {
+        depth2--;
+        if (depth2 === 0 && i < inner.length - 1) {
+          wrapsAll = false;
+          break;
+        }
+      }
+      if (depth2 < 0) {
+        wrapsAll = false;
+        break;
+      }
+    }
+    if (wrapsAll && depth2 === 0) {
+      inner = inner.slice(1, -1).trim();
+      if (!inner) return undefined;
+    }
+  }
+
+  const orRegex = /\s+(or|ou)\s+/i;
+  const hasOr = orRegex.test(inner);
+
+  if (hasOr) {
+    const orParts = splitTopLevel(inner, orRegex);
+    const children: CoursePrereqNode[] = [];
+    for (const part of orParts) {
+      const partTrim = part.trim().replace(/^[,]+/, '').trim();
+      if (!partTrim) continue;
+      const codes = extractCourseCodes(partTrim);
+      const credits = parseCreditRequirement(partTrim);
+      const disciplines = extractDisciplines(partTrim);
+      if (codes.length === 0) {
+        children.push({
+          type: 'non_course',
+          text: partTrim,
+          credits,
+          disciplines: disciplines.length ? disciplines : undefined,
+        });
+      } else if (codes.length === 1) {
+        children.push({
+          type: 'course',
+          code: codes[0],
+          text: partTrim,
+        });
+      } else {
+        const childNodes: CoursePrereqNode[] = codes.map(code => ({ type: 'course', code }));
+        if (credits !== undefined) {
+          childNodes.push({
+            type: 'non_course',
+            text: partTrim,
+            credits,
+          });
+        }
+        children.push({
+          type: 'and_group',
+          text: partTrim,
+          children: childNodes,
+        });
+      }
+    }
+    if (children.length === 0) return undefined;
+    if (children.length === 1) return children[0];
+    return {
+      type: 'or_group',
+      text: inner,
+      children,
+    };
+  }
+
+  const codes = extractCourseCodes(inner);
+  const credits = parseCreditRequirement(inner);
+  const disciplines = extractDisciplines(inner);
+  if (codes.length === 0) {
+    return {
+      type: 'non_course',
+      text: inner,
+      credits,
+      disciplines: disciplines.length ? disciplines : undefined,
+    };
+  }
+  if (codes.length === 1 && credits === undefined) {
+    return {
+      type: 'course',
+      code: codes[0],
+      text: inner,
+    };
+  }
+
+  const children: CoursePrereqNode[] = codes.map(code => ({ type: 'course', code }));
+  if (credits !== undefined) {
+    children.push({
+      type: 'non_course',
+      text: inner,
+      credits,
+    });
+  }
+  if (children.length === 1) return children[0];
+  return {
+    type: 'and_group',
+    text: inner,
+    children,
+  };
+}
+
+function parseCoursePrerequisites(text: string): CoursePrereqNode | undefined {
+  const body = text.replace(/\s+/g, ' ').trim();
+  if (!body) return undefined;
+
+  const clauseSeparators = /[.;]+/;
+  const clauses = splitTopLevel(body, clauseSeparators);
+  const clauseNodes: CoursePrereqNode[] = [];
+
+  for (const clause of clauses) {
+    if (!clause) continue;
+    const node = parsePrereqClause(clause);
+    if (node) clauseNodes.push(node);
+  }
+
+  if (clauseNodes.length === 0) return undefined;
+  if (clauseNodes.length === 1) return clauseNodes[0];
+
+  return {
+    type: 'and_group',
+    children: clauseNodes,
+  };
 }
 
 function parseElectiveRequirement(text: string, credits?: number): ProgramRequirement {
@@ -239,6 +516,17 @@ async function scrapeCourses(url: string): Promise<Course[]> {
     const descBlock = $(el).find('.courseblockdesc').text().replace(/\s+/g, ' ').trim();
     const extraBlock = $(el).find('.courseblockextra').text().replace(/\s+/g, ' ').trim();
 
+    const prereqHighlight = $(el).find('.courseblockextra.highlight').first();
+    let prereqText: string | undefined;
+    let prerequisites: CoursePrereqNode | undefined;
+    if (prereqHighlight.length > 0) {
+      const rawPrereq = prereqHighlight.text();
+      prereqText = extractPrereqSentence(rawPrereq);
+      if (prereqText) {
+        prerequisites = parseCoursePrerequisites(prereqText);
+      }
+    }
+
     const match = titleBlock.match(/^([A-Z]{3,4}\s*\d{4,5}[A-Z]?)\s+(.*)$/i);
 
     if (!match) {
@@ -267,6 +555,8 @@ async function scrapeCourses(url: string): Promise<Course[]> {
       credits,
       description: descBlock,
       component,
+      prereqText,
+      prerequisites,
     }));
   });
 

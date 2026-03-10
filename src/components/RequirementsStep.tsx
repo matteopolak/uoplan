@@ -4,6 +4,7 @@ import { IconChevronDown } from '@tabler/icons-react';
 import { createCourseOptions, renderCourseOption } from './CourseSelect';
 import type { ComboboxItem } from '@mantine/core';
 import type { DataCache } from '../lib/dataCache';
+import { courseMatchesFilters } from '../lib/courseFilters';
 import type {
   RemainingRequirement,
   RequirementWithStatus,
@@ -20,6 +21,11 @@ interface RequirementsStepProps {
   onSelect: (requirementId: string, courses: string[]) => void;
   selectedOptionsPerRequirement: Record<string, number>;
   onSelectOption: (requirementId: string, optionIndex: number) => void;
+  prereqEligibleCourses: string[];
+  levelBuckets: ('undergrad' | 'grad')[];
+  languageBuckets: ('en' | 'fr' | 'other')[];
+  onChangeLevelBuckets: (buckets: ('undergrad' | 'grad')[]) => void;
+  onChangeLanguageBuckets: (buckets: ('en' | 'fr' | 'other')[]) => void;
 }
 
 function getSelectedCredits(cache: DataCache | null, courseCodes: string[]): number {
@@ -101,6 +107,9 @@ interface RequirementNodeProps {
     value: string;
     disabled?: boolean;
   };
+  prereqEligible: Set<string>;
+  levelBuckets: ('undergrad' | 'grad')[];
+  languageBuckets: ('en' | 'fr' | 'other')[];
 }
 
 function RequirementNode({
@@ -114,6 +123,9 @@ function RequirementNode({
   activeBranch,
   depth = 0,
   radio,
+  prereqEligible,
+  levelBuckets,
+  languageBuckets,
 }: RequirementNodeProps) {
   // If a parent (like an option) is responsible for selection UX, don't remove it,
   // but we still want to reduce *nested* single-child wrappers inside it.
@@ -181,7 +193,10 @@ function RequirementNode({
   const showAsComplete = node.complete && node.satisfiedBy.length > 0;
   const hasRequirementId = node.requirementId != null;
   const available =
-    node.candidateCourses?.filter((c) => !completedCourses.has(c)) ?? [];
+    node.candidateCourses
+      ?.filter((c) => !completedCourses.has(c))
+      .filter((c) => prereqEligible.has(c))
+      .filter((c) => courseMatchesFilters(c, { levels: levelBuckets, languageBuckets })) ?? [];
   const options = createCourseOptions(available, cache);
   const availableSet = new Set(available);
   const selected = (node.requirementId
@@ -349,6 +364,9 @@ function RequirementNode({
                     onSelectOption={onSelectOption}
                     activeBranch={childActiveBranch}
                     depth={depth + 1}
+                    prereqEligible={prereqEligible}
+                    levelBuckets={levelBuckets}
+                    languageBuckets={languageBuckets}
                     radio={
                       node.requirementId != null && !node.complete
                         ? {
@@ -463,6 +481,9 @@ function RequirementNode({
                     onSelectOption={onSelectOption}
                     activeBranch={childActiveBranch}
                     depth={depth + 1}
+                    prereqEligible={prereqEligible}
+                    levelBuckets={levelBuckets}
+                    languageBuckets={languageBuckets}
                     radio={
                       node.requirementId != null && !node.complete
                         ? {
@@ -547,6 +568,9 @@ function RequirementNode({
                 onSelectOption={onSelectOption}
                 activeBranch={activeBranch}
                 depth={depth + 1}
+                prereqEligible={prereqEligible}
+                levelBuckets={levelBuckets}
+                languageBuckets={languageBuckets}
               />
             ))}
           </Stack>
@@ -635,6 +659,9 @@ function RequirementNode({
                   onSelectOption={onSelectOption}
                   activeBranch={activeBranch}
                   depth={depth + 1}
+                  prereqEligible={prereqEligible}
+                  levelBuckets={levelBuckets}
+                  languageBuckets={languageBuckets}
                 />
               ))}
             </Stack>
@@ -655,9 +682,15 @@ export function RequirementsStep({
   onSelect,
   selectedOptionsPerRequirement,
   onSelectOption,
+  prereqEligibleCourses,
+  levelBuckets,
+  languageBuckets,
+  onChangeLevelBuckets,
+  onChangeLanguageBuckets,
 }: RequirementsStepProps) {
   const [completedOpen, setCompletedOpen] = useState(false);
   const completedSet = new Set(completedCourses);
+  const prereqEligible = new Set(prereqEligibleCourses);
   const hasTree = requirementTreeWithStatus.length > 0;
   const incompleteNodes = requirementTreeWithStatus.filter((node) => !node.complete);
   const hasRemaining = incompleteNodes.length > 0;
@@ -674,6 +707,49 @@ export function RequirementsStep({
 
   return (
     <Stack gap="lg">
+      <Paper p="sm" withBorder radius={0}>
+        <Stack gap="xs">
+          <Group justify="space-between" align="center">
+            <Text size="sm" fw={500}>
+              Course filters
+            </Text>
+            <Text size="xs" c="dimmed">
+              Filters apply to suggested and searchable courses for this step.
+            </Text>
+          </Group>
+          <Group gap="md" align="flex-start">
+            <MultiSelect
+              label="Levels"
+              data={[
+                { value: 'undergrad', label: 'Undergraduate (0–4XXX)' },
+                { value: 'grad', label: 'Graduate (5XXX+)' },
+              ]}
+              value={levelBuckets}
+              onChange={(vals) =>
+                onChangeLevelBuckets(vals.filter((v): v is 'undergrad' | 'grad' => v === 'undergrad' || v === 'grad'))
+              }
+              clearable={false}
+            />
+            <MultiSelect
+              label="Languages"
+              data={[
+                { value: 'en', label: 'English' },
+                { value: 'fr', label: 'French' },
+                { value: 'other', label: 'Other' },
+              ]}
+              value={languageBuckets}
+              onChange={(vals) =>
+                onChangeLanguageBuckets(
+                  vals.filter(
+                    (v): v is 'en' | 'fr' | 'other' => v === 'en' || v === 'fr' || v === 'other',
+                  ),
+                )
+              }
+              clearable={false}
+            />
+          </Group>
+        </Stack>
+      </Paper>
       <Text size="sm" c="dimmed">
         For each requirement below, select the courses you want this semester.
         Requirements with only one option are pre-selected. Expand options in
@@ -693,6 +769,9 @@ export function RequirementsStep({
               selectedOptionsPerRequirement={selectedOptionsPerRequirement}
               onSelectOption={onSelectOption}
               activeBranch
+              prereqEligible={prereqEligible}
+              levelBuckets={levelBuckets}
+              languageBuckets={languageBuckets}
             />
           ))
         ) : (

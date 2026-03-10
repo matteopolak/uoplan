@@ -38,6 +38,12 @@ import {
   type GeneratedSchedule,
 } from '../lib/scheduleGenerator';
 import type { DataCache } from '../lib/dataCache';
+import { buildPrereqContext, canTakeCourse } from '../lib/prerequisites';
+import {
+  courseMatchesFilters,
+  type CourseLanguageBucket,
+  type CourseLevelBucket,
+} from '../lib/courseFilters';
 
 const validEnrollmentsByCourseCode = new Map<string, CourseEnrollment[]>();
 
@@ -56,10 +62,86 @@ export interface AppState {
   selectedPerRequirement: Record<string, string[]>;
   selectedOptionsPerRequirement: Record<string, number>;
   coursesThisSemester: number;
+  prereqEligibleCourses: string[];
+  filteredPrereqEligibleCourses: string[];
+  levelBuckets: CourseLevelBucket[];
+  languageBuckets: CourseLanguageBucket[];
   generatedSchedules: GeneratedSchedule[];
   swapPool: string[];
   selectedScheduleIndex: number;
   generationError: string | null;
+}
+
+interface RecomputedState {
+  remainingRequirements: RemainingRequirement[];
+  requirementTreeWithStatus: RequirementWithStatus[];
+  completedRequirementsList: CompletedRequirementItem[];
+  selectedPerRequirement: Record<string, string[]>;
+  selectedOptionsPerRequirement: Record<string, number>;
+  prereqEligibleCourses: string[];
+  filteredPrereqEligibleCourses: string[];
+}
+
+function recomputeStateForProgram(
+  program: Program | null,
+  completedCourses: string[],
+  cache: DataCache | null,
+  existingSelectedPerRequirement: Record<string, string[]>,
+  existingSelectedOptionsPerRequirement: Record<string, number>,
+  levelBuckets: CourseLevelBucket[],
+  languageBuckets: CourseLanguageBucket[],
+): RecomputedState {
+  if (!program || !cache) {
+    return {
+      remainingRequirements: [],
+      requirementTreeWithStatus: [],
+      completedRequirementsList: [],
+      selectedPerRequirement: {},
+      selectedOptionsPerRequirement: {},
+      prereqEligibleCourses: [],
+      filteredPrereqEligibleCourses: [],
+    };
+  }
+
+  const { remaining, tree, completedList } = computeRequirementsState(
+    program,
+    completedCourses,
+    cache
+  );
+
+  const autoSelected = getAutoSelectedForRequirements(remaining, existingSelectedPerRequirement);
+
+  const ctx = buildPrereqContext(completedCourses, cache);
+  const candidateSet = new Set<string>();
+  for (const req of remaining) {
+    for (const code of req.candidateCourses) {
+      candidateSet.add(code);
+    }
+  }
+  for (const course of cache.getAllCourses()) {
+    candidateSet.add(course.code);
+  }
+  const prereqEligibleCourses: string[] = [];
+  for (const code of candidateSet) {
+    if (canTakeCourse(code, cache, ctx)) {
+      prereqEligibleCourses.push(code);
+    }
+  }
+
+  const filters = { levels: levelBuckets, languageBuckets };
+  const filteredPrereqEligibleCourses = prereqEligibleCourses.filter((code) =>
+    courseMatchesFilters(code, filters),
+  );
+
+  return {
+    remainingRequirements: remaining,
+    requirementTreeWithStatus: tree,
+    completedRequirementsList: completedList,
+    selectedPerRequirement: autoSelected,
+    selectedOptionsPerRequirement: existingSelectedOptionsPerRequirement,
+    prereqEligibleCourses,
+    filteredPrereqEligibleCourses,
+  };
 }
 
 export interface AppActions {
@@ -79,6 +161,8 @@ export interface AppActions {
     newCourseCode: string
   ) => void;
   getSwapCandidates: (scheduleIndex: number, enrollmentIndex: number) => string[];
+  setLevelBuckets: (buckets: CourseLevelBucket[]) => void;
+  setLanguageBuckets: (buckets: CourseLanguageBucket[]) => void;
 }
 
 export type AppStore = AppState & AppActions;
@@ -98,6 +182,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   selectedPerRequirement: {},
   selectedOptionsPerRequirement: {},
   coursesThisSemester: 5,
+  prereqEligibleCourses: [],
+  filteredPrereqEligibleCourses: [],
+  levelBuckets: ['undergrad'],
+  languageBuckets: ['en', 'other'],
   generatedSchedules: [],
   swapPool: [],
   selectedScheduleIndex: 0,
@@ -140,50 +228,39 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   setProgram: (program) => {
     set({ program });
-    const { cache, completedCourses } = get();
-    if (program && cache) {
-      const { remaining, tree, completedList } = computeRequirementsState(
-        program,
-        completedCourses,
-        cache
-      );
-      const autoSelected = getAutoSelectedForRequirements(remaining, {});
-      set({
-        remainingRequirements: remaining,
-        requirementTreeWithStatus: tree,
-        completedRequirementsList: completedList,
-        selectedPerRequirement: autoSelected,
-        selectedOptionsPerRequirement: {},
-      });
-    } else {
-      set({
-        remainingRequirements: [],
-        requirementTreeWithStatus: [],
-        completedRequirementsList: [],
-        selectedPerRequirement: {},
-        selectedOptionsPerRequirement: {},
-      });
-    }
+    const { cache, completedCourses, levelBuckets, languageBuckets } = get();
+    const state = recomputeStateForProgram(
+      program,
+      completedCourses,
+      cache,
+      {},
+      {},
+      levelBuckets,
+      languageBuckets,
+    );
+    set(state);
   },
 
   setCompletedCourses: (courses) => {
     set({ completedCourses: courses });
-    const { program, cache, selectedPerRequirement, selectedOptionsPerRequirement } = get();
-    if (program && cache) {
-      const { remaining, tree, completedList } = computeRequirementsState(
-        program,
-        courses,
-        cache
-      );
-      const autoSelected = getAutoSelectedForRequirements(remaining, selectedPerRequirement);
-      set({
-        remainingRequirements: remaining,
-        requirementTreeWithStatus: tree,
-        completedRequirementsList: completedList,
-        selectedPerRequirement: autoSelected,
-        selectedOptionsPerRequirement,
-      });
-    }
+    const {
+      program,
+      cache,
+      selectedPerRequirement,
+      selectedOptionsPerRequirement,
+      levelBuckets,
+      languageBuckets,
+    } = get();
+    const state = recomputeStateForProgram(
+      program,
+      courses,
+      cache,
+      selectedPerRequirement,
+      selectedOptionsPerRequirement,
+      levelBuckets,
+      languageBuckets,
+    );
+    set(state);
   },
 
   addCompletedCourse: (code) => {
@@ -201,6 +278,50 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set((s) => ({
       selectedPerRequirement: { ...s.selectedPerRequirement, [requirementId]: courses },
     }));
+  },
+
+  setLevelBuckets: (buckets) => {
+    set({ levelBuckets: buckets });
+    const {
+      program,
+      cache,
+      completedCourses,
+      selectedPerRequirement,
+      selectedOptionsPerRequirement,
+      languageBuckets,
+    } = get();
+    const state = recomputeStateForProgram(
+      program,
+      completedCourses,
+      cache,
+      selectedPerRequirement,
+      selectedOptionsPerRequirement,
+      buckets,
+      languageBuckets,
+    );
+    set(state);
+  },
+
+  setLanguageBuckets: (buckets) => {
+    set({ languageBuckets: buckets });
+    const {
+      program,
+      cache,
+      completedCourses,
+      selectedPerRequirement,
+      selectedOptionsPerRequirement,
+      levelBuckets,
+    } = get();
+    const state = recomputeStateForProgram(
+      program,
+      completedCourses,
+      cache,
+      selectedPerRequirement,
+      selectedOptionsPerRequirement,
+      levelBuckets,
+      buckets,
+    );
+    set(state);
   },
 
   setSelectedOptionForRequirement: (requirementId, optionIndex) => {
@@ -224,6 +345,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
       coursesThisSemester,
       program,
       completedCourses,
+      prereqEligibleCourses,
+      levelBuckets,
+      languageBuckets,
     } = get();
     if (!cache) return;
     const cacheVal = cache;
@@ -326,6 +450,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
       remainingById.set(r.requirementId, r);
     }
 
+    const prereqEligibleSet = new Set(prereqEligibleCourses);
+    const filters = {
+      levels: levelBuckets,
+      languageBuckets,
+    };
     const optionalPool: string[] = [];
     const remainingNeeded = coursesThisSemester - pinned.length;
     if (remainingNeeded > 0) {
@@ -341,6 +470,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
           ) {
             continue;
           }
+          if (!prereqEligibleSet.has(code)) continue;
+          if (!courseMatchesFilters(code, filters)) continue;
           if (!helpsRequirements(code)) continue;
           optionalPool.push(code);
         }
@@ -358,6 +489,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
           ) {
             continue;
           }
+          if (!prereqEligibleSet.has(code)) continue;
+          if (!courseMatchesFilters(code, filters)) continue;
           if (!helpsRequirements(code)) continue;
           optionalPool.push(code);
         }
@@ -426,7 +559,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       cache,
       generatedSchedules,
       completedCourses,
-      remainingRequirements,
+      prereqEligibleCourses,
+      filteredPrereqEligibleCourses,
     } = get();
     if (!cache || scheduleIndex >= generatedSchedules.length) return [];
 
@@ -448,10 +582,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       return component.startsWith('recherche / research');
     }
 
-    const candidateSet = new Set<string>();
-    for (const req of remainingRequirements) {
-      for (const code of req.candidateCourses) candidateSet.add(code);
-    }
+    const prereqEligibleSet = new Set(prereqEligibleCourses);
+    const candidateSet = new Set<string>(filteredPrereqEligibleCourses);
 
     function getValidEnrollmentsFor(code: string): CourseEnrollment[] {
       const cached = validEnrollmentsByCourseCode.get(code);
@@ -469,6 +601,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     const candidates: string[] = [];
     for (const code of candidateSet) {
+      if (!prereqEligibleSet.has(code)) continue;
       if (code === oldCode) continue;
       if (completedCourses.includes(code)) continue;
       if (alreadyInSchedule.has(code)) continue;

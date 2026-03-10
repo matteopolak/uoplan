@@ -44,6 +44,12 @@ function App() {
     swapCourseInSchedule,
     getSwapCandidates,
     generationError,
+    prereqEligibleCourses,
+    filteredPrereqEligibleCourses,
+    levelBuckets,
+    languageBuckets,
+    setLevelBuckets,
+    setLanguageBuckets,
   } = useAppStore();
 
   const [active, setActive] = useState(0);
@@ -485,6 +491,11 @@ function App() {
                       onSelect={setSelectedForRequirement}
                       selectedOptionsPerRequirement={selectedOptionsPerRequirement}
                       onSelectOption={setSelectedOptionForRequirement}
+                      prereqEligibleCourses={filteredPrereqEligibleCourses}
+                      levelBuckets={levelBuckets}
+                      languageBuckets={languageBuckets}
+                      onChangeLevelBuckets={setLevelBuckets}
+                      onChangeLanguageBuckets={setLanguageBuckets}
                     />
                   </Stack>
                 )}

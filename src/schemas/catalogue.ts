@@ -1,11 +1,35 @@
 import { z } from 'zod';
 
+export type CoursePrereqNode = {
+  type: 'course' | 'or_group' | 'and_group' | 'non_course';
+  code?: string;
+  text?: string;
+  credits?: number;
+  disciplines?: string[];
+  children?: CoursePrereqNode[];
+};
+
+export const CoursePrereqNodeSchema: z.ZodType<CoursePrereqNode> = z.lazy(() =>
+  z.object({
+    type: z.enum(['course', 'or_group', 'and_group', 'non_course']),
+    code: z.string().optional(),
+    text: z.string().optional(),
+    credits: z.number().optional(),
+    disciplines: z.array(z.string()).optional(),
+    children: z.array(CoursePrereqNodeSchema).optional(),
+  }),
+);
+
 export const CourseSchema = z.object({
   code: z.string(),
   title: z.string(),
   credits: z.number(),
   description: z.string(),
   component: z.string().optional(),
+  // Normalized prerequisite sentence from the catalogue page, if any.
+  prereqText: z.string().optional(),
+  // Parsed prerequisite tree, mirroring the scraper's CoursePrereqNode.
+  prerequisites: CoursePrereqNodeSchema.optional(),
 });
 export type Course = z.infer<typeof CourseSchema>;
 
