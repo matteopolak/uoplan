@@ -294,32 +294,9 @@ function runRequirementPass(
         }
         const allCandidates: string[] = [];
         const orChildNodes: RequirementWithStatus[] = [];
-        let satisfiedIdx = -1;
-        let processResult: ProcessResult = { satisfied: false, creditsUsed: 0, coursesUsed: [] };
-
+        // Do not consume from pool: always process options in dryRun so user assigns explicitly.
         for (let i = 0; i < req.options.length; i++) {
           const opt = req.options[i];
-          const codes = extractCourseCodes(opt);
-          const taken = takeFromPool(codes, dryRun);
-          if (taken) {
-            processResult = {
-              satisfied: true,
-              creditsUsed: getCreditsForCourse(cache, taken.norm),
-              coursesUsed: [taken.displayCode],
-            };
-            satisfiedIdx = i;
-            const { node } = process(opt, '', { ...opts, dryRun: true, forceRequirementId: true });
-            orChildNodes.push({ ...node, complete: true, satisfiedBy: [taken.displayCode] });
-            for (let j = i + 1; j < req.options.length; j++) {
-              const { node: n } = process(req.options[j], '', {
-                ...opts,
-                dryRun: true,
-                forceRequirementId: true,
-              });
-              orChildNodes.push(n);
-            }
-            break;
-          }
           const { node } = process(opt, '', { ...opts, dryRun: true, forceRequirementId: true });
           orChildNodes.push(node);
           if (opt.type === 'course' && opt.code) {
@@ -333,19 +310,6 @@ function runRequirementPass(
               )
             );
           }
-        }
-
-        if (processResult.satisfied) {
-          return {
-            result: processResult,
-            node: {
-              ...toStatusBase(req),
-              complete: true,
-              satisfiedBy: processResult.coursesUsed,
-              satisfiedOptionIndex: satisfiedIdx,
-              options: orChildNodes,
-            },
-          };
         }
 
         if (allCandidates.length > 0 && !dryRun) {
@@ -400,34 +364,9 @@ function runRequirementPass(
         );
         const allCandidates = [...new Set([...courseCodes, ...electiveCandidates])];
 
+        // Do not consume from pool: user assigns courses explicitly to group requirements.
         const coursesUsed: string[] = [];
-        let completedCredits = 0;
-        if (!dryRun) {
-          for (const code of allCandidates) {
-            if (completedCredits >= creditsNeeded) break;
-            const norm = normalizeCourseCode(code);
-            if (pool.has(norm)) {
-              pool.delete(norm);
-              const displayCode = cache.getCourse(norm)?.code ?? norm;
-              coursesUsed.push(displayCode);
-              completedCredits += getCreditsForCourse(cache, norm);
-            }
-          }
-        }
-
-        const remainingCredits = creditsNeeded - completedCredits;
-        if (remainingCredits <= 0) {
-          const childNodes = req.options?.map((o) => process(o, '', { dryRun: true }).node) ?? [];
-          return {
-            result: { satisfied: true, creditsUsed: creditsNeeded, coursesUsed },
-            node: {
-              ...toStatusBase(req),
-              complete: true,
-              satisfiedBy: coursesUsed,
-              options: childNodes,
-            },
-          };
-        }
+        const remainingCredits = creditsNeeded;
 
         const requirementId = forceRequirementId || !dryRun ? nextId() : undefined;
         if (!dryRun) {
@@ -443,7 +382,7 @@ function runRequirementPass(
         }
         const childNodes = req.options?.map((o) => process(o, '', { dryRun: true }).node) ?? [];
         return {
-          result: { satisfied: false, creditsUsed: completedCredits, coursesUsed },
+          result: { satisfied: false, creditsUsed: 0, coursesUsed },
           node: {
             ...toStatusBase(req),
             complete: false,
@@ -464,32 +403,20 @@ function runRequirementPass(
             node: { ...toStatusBase(req), complete: true, satisfiedBy: [], options: [] },
           };
         }
+        // Do not consume from pool: process each option in dryRun so user assigns explicitly.
         const requirementId = opts.dryRun ? undefined : nextId();
         const optNodes: RequirementWithStatus[] = [];
-        let optResult: ProcessResult = { satisfied: false, creditsUsed: 0, coursesUsed: [] };
-        let satisfiedOptIdx = -1;
-
         for (let i = 0; i < req.options.length; i++) {
-          const { result: r, node } = process(req.options[i], '', opts);
+          const { node } = process(req.options[i], '', { ...opts, dryRun: true });
           optNodes.push(node);
-          if (r.satisfied) {
-            optResult = r;
-            satisfiedOptIdx = i;
-            for (let j = i + 1; j < req.options.length; j++) {
-              const { node: n } = process(req.options[j], '', { dryRun: true });
-              optNodes.push(n);
-            }
-            break;
-          }
         }
 
         return {
-          result: optResult,
+          result: { satisfied: false, creditsUsed: 0, coursesUsed: [] },
           node: {
             ...toStatusBase(req),
-            complete: optResult.satisfied,
-            satisfiedBy: optResult.coursesUsed,
-            satisfiedOptionIndex: satisfiedOptIdx >= 0 ? satisfiedOptIdx : undefined,
+            complete: false,
+            satisfiedBy: [],
             requirementId,
             options: optNodes,
           },
@@ -512,34 +439,9 @@ function runRequirementPass(
         });
         const unique = [...new Set(allCandidates)];
 
+        // Do not consume from pool: user assigns courses explicitly to pick requirements.
         const coursesUsed: string[] = [];
-        let completedCredits = 0;
-        if (!dryRun) {
-          for (const code of unique) {
-            if (completedCredits >= creditsNeeded) break;
-            const norm = normalizeCourseCode(code);
-            if (pool.has(norm)) {
-              pool.delete(norm);
-              const displayCode = cache.getCourse(norm)?.code ?? norm;
-              coursesUsed.push(displayCode);
-              completedCredits += getCreditsForCourse(cache, norm);
-            }
-          }
-        }
-
-        const remaining = creditsNeeded - completedCredits;
-        if (remaining <= 0) {
-          const childNodes = options.map((o) => process(o, '', { dryRun: true }).node);
-          return {
-            result: { satisfied: true, creditsUsed: creditsNeeded, coursesUsed },
-            node: {
-              ...toStatusBase(req),
-              complete: true,
-              satisfiedBy: coursesUsed,
-              options: childNodes,
-            },
-          };
-        }
+        const remaining = creditsNeeded;
 
         const requirementId = forceRequirementId || !dryRun ? nextId() : undefined;
         if (!dryRun) {
@@ -554,7 +456,7 @@ function runRequirementPass(
         }
         const childNodes = options.map((o) => process(o, '', { dryRun: true }).node);
         return {
-          result: { satisfied: false, creditsUsed: completedCredits, coursesUsed },
+          result: { satisfied: false, creditsUsed: 0, coursesUsed },
           node: {
             ...toStatusBase(req),
             complete: false,
@@ -575,33 +477,9 @@ function runRequirementPass(
         const creditsNeeded = req.credits ?? 3;
         const candidates = resolveElectiveCandidates(cache, req, creditsNeeded);
 
+        // Do not consume from pool: user assigns courses explicitly to elective requirements.
         const coursesUsed: string[] = [];
-        let completedCredits = 0;
-        if (!dryRun) {
-          for (const code of candidates) {
-            if (completedCredits >= creditsNeeded) break;
-            const norm = normalizeCourseCode(code);
-            if (pool.has(norm)) {
-              pool.delete(norm);
-              const displayCode = cache.getCourse(norm)?.code ?? norm;
-              coursesUsed.push(displayCode);
-              completedCredits += getCreditsForCourse(cache, norm);
-            }
-          }
-        }
-
-        const remaining = creditsNeeded - completedCredits;
-        if (remaining <= 0) {
-          return {
-            result: { satisfied: true, creditsUsed: creditsNeeded, coursesUsed },
-            node: {
-              ...toStatusBase(req),
-              complete: true,
-              satisfiedBy: coursesUsed,
-              options: [],
-            },
-          };
-        }
+        const remaining = creditsNeeded;
 
         const requirementId = forceRequirementId || !dryRun ? nextId() : undefined;
         if (!dryRun) {
@@ -615,7 +493,7 @@ function runRequirementPass(
           });
         }
         return {
-          result: { satisfied: false, creditsUsed: completedCredits, coursesUsed },
+          result: { satisfied: false, creditsUsed: 0, coursesUsed },
           node: {
             ...toStatusBase(req),
             complete: false,
