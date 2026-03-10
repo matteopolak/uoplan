@@ -30,6 +30,60 @@ function getSelectedCredits(cache: DataCache | null, courseCodes: string[]): num
   );
 }
 
+function normalizeTitleForCompare(title: string | undefined): string {
+  return (title ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+function getNodeDisplayTitle(node: RequirementWithStatus): string {
+  const rawTitle = (node.title ?? '').trim();
+  const fallback = rawTitle || node.code || `${node.type} requirement`;
+  if (node.type === 'or_group') {
+    const useGenericLabel = rawTitle === '' || rawTitle.toLowerCase() === 'or';
+    return useGenericLabel ? 'One of the following must be completed' : fallback;
+  }
+  return fallback;
+}
+
+/**
+ * UX helper: reduce "dropdown inside dropdown" when a node is just a wrapper
+ * around a single child. This keeps the top label, but uses the child's body.
+ */
+function simplifySingleChildChain(node: RequirementWithStatus): {
+  node: RequirementWithStatus;
+  autoExpanded: boolean;
+} {
+  let current = node;
+  let changed = false;
+
+  // Only inline when the node itself doesn't represent a selectable requirement slot.
+  while (
+    current.requirementId == null &&
+    current.options &&
+    current.options.length === 1 &&
+    current.options[0] &&
+    (current.options[0].options?.length ?? 0) > 0 &&
+    // Inline primarily when titles are duplicated or one side is blank/generic.
+    (() => {
+      const parentT = normalizeTitleForCompare(current.title);
+      const childT = normalizeTitleForCompare(current.options![0].title);
+      const parentGeneric = parentT === '' || parentT === 'or';
+      const childGeneric = childT === '' || childT === 'or';
+      return parentGeneric || childGeneric || parentT === childT;
+    })()
+  ) {
+    const child = current.options[0];
+    current = {
+      ...child,
+      // Preserve the most descriptive title between wrapper and child.
+      title: (current.title ?? '').trim() ? current.title : child.title,
+      code: current.code ?? child.code,
+    };
+    changed = true;
+  }
+
+  return { node: current, autoExpanded: changed };
+}
+
 interface RequirementNodeProps {
   node: RequirementWithStatus;
   cache: DataCache | null;
@@ -40,10 +94,17 @@ interface RequirementNodeProps {
   onSelectOption: (requirementId: string, optionIndex: number) => void;
   activeBranch: boolean;
   depth?: number;
+  radio?: {
+    checked: boolean;
+    onChange: () => void;
+    name: string;
+    value: string;
+    disabled?: boolean;
+  };
 }
 
 function RequirementNode({
-  node,
+  node: rawNode,
   cache,
   completedCourses,
   selectedPerRequirement,
@@ -52,7 +113,40 @@ function RequirementNode({
   onSelectOption,
   activeBranch,
   depth = 0,
+  radio,
 }: RequirementNodeProps) {
+  // If a parent (like an option) is responsible for selection UX, don't remove it,
+  // but we still want to reduce *nested* single-child wrappers inside it.
+  const radioSafeMerge = (() => {
+    if (!radio) return null;
+    if (!rawNode.options || rawNode.options.length !== 1) return null;
+    const onlyChild = rawNode.options[0];
+    if (!onlyChild?.options || onlyChild.options.length === 0) return null;
+
+    const parentTitle = (rawNode.title ?? '').trim();
+    const childTitle = getNodeDisplayTitle(onlyChild);
+    const mergedTitle =
+      parentTitle && childTitle
+        ? `${parentTitle}${parentTitle.endsWith(':') ? ' ' : ': '}${childTitle}`
+        : parentTitle || childTitle || rawNode.code || `${rawNode.type} requirement`;
+
+    // Replace wrapper with child node (keeps inner group logic + errors),
+    // but retain the wrapper's label as a prefix in the title.
+    const merged: RequirementWithStatus = {
+      ...onlyChild,
+      title: mergedTitle,
+      // Treat as complete only if both wrapper+child are complete.
+      complete: rawNode.complete && onlyChild.complete,
+      satisfiedBy: rawNode.satisfiedBy.length ? rawNode.satisfiedBy : onlyChild.satisfiedBy,
+    };
+    return { node: merged, autoExpanded: true };
+  })();
+
+  const { node, autoExpanded } = radioSafeMerge
+    ? radioSafeMerge
+    : radio
+      ? { node: rawNode, autoExpanded: false }
+      : simplifySingleChildChain(rawNode);
   const hasOptions = node.options && node.options.length > 0;
   const rawTitle = (node.title ?? '').trim();
   const title = rawTitle || node.code || `${node.type} requirement`;
@@ -68,7 +162,7 @@ function RequirementNode({
   const hasSatisfiedInfo = node.complete && node.satisfiedBy.length > 0;
   const hasSummary = hasNiceTitle || hasCode || hasCreditsInfo || hasSatisfiedInfo;
 
-  const [opened, setOpened] = useState(() => !hasSummary);
+  const [opened, setOpened] = useState(() => autoExpanded || !hasSummary);
 
   const toggleLocal = (e: MouseEvent) => {
     e.stopPropagation();
@@ -138,7 +232,17 @@ function RequirementNode({
 
   if (showAsComplete && !hasOptions) {
     return (
-      <Box key={title} pl={depth > 0 ? 'md' : 0} mt="xs">
+      <Paper
+        key={title}
+        p="md"
+        withBorder
+        radius={0}
+        mt="sm"
+        style={{
+          paddingLeft: depth * 16 + 12,
+          backgroundColor: 'var(--mantine-color-dark-7)',
+        }}
+      >
         <Group gap="xs" wrap="nowrap" align="center">
           <Text size="sm" c="dimmed" lineClamp={1} style={{ flex: 1 }}>
             {title}
@@ -150,7 +254,7 @@ function RequirementNode({
             Complete
           </Badge>
         </Group>
-      </Box>
+      </Paper>
     );
   }
 
@@ -185,6 +289,16 @@ function RequirementNode({
           style={{ cursor: 'pointer' }}
         >
           <Group gap="xs" align="center">
+            {radio && (
+              <Radio
+                checked={radio.checked}
+                onChange={radio.onChange}
+                name={radio.name}
+                value={radio.value}
+                disabled={radio.disabled}
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
             <IconChevronDown
               size={14}
               style={{
@@ -215,7 +329,6 @@ function RequirementNode({
         <Collapse in={opened}>
           <Stack gap="xs">
             {node.options!.map((opt, idx) => {
-              const optTitle = opt.title ?? opt.code ?? `Option ${idx + 1}`;
               const isSatisfiedOption =
                 node.satisfiedOptionIndex === idx && opt.complete;
               const isSelected = selectedOptionIndex === idx;
@@ -226,55 +339,32 @@ function RequirementNode({
                   selectedOptionIndex === idx);
               return (
                 <Box key={idx}>
-                  <Group gap="xs" align="center" wrap="nowrap">
-                    {node.requirementId != null && !node.complete && (
-                      <Radio
-                        checked={isSelected}
-                        onChange={() => onSelectOption(node.requirementId!, idx)}
-                        name={node.requirementId}
-                        value={String(idx)}
-                      />
-                    )}
-                    <Text size="sm" fw={500}>
-                      {optTitle}
-                    </Text>
-                    {isSatisfiedOption && opt.satisfiedBy.length > 0 && (
+                  <RequirementNode
+                    node={opt}
+                    cache={cache}
+                    completedCourses={completedCourses}
+                    selectedPerRequirement={selectedPerRequirement}
+                    onSelect={onSelect}
+                    selectedOptionsPerRequirement={selectedOptionsPerRequirement}
+                    onSelectOption={onSelectOption}
+                    activeBranch={childActiveBranch}
+                    depth={depth + 1}
+                    radio={
+                      node.requirementId != null && !node.complete
+                        ? {
+                            checked: isSelected,
+                            onChange: () => onSelectOption(node.requirementId!, idx),
+                            name: node.requirementId,
+                            value: String(idx),
+                          }
+                        : undefined
+                    }
+                  />
+                  {isSatisfiedOption && opt.satisfiedBy.length > 0 && (
+                    <Box pl="sm" mt={4}>
                       <Badge color="green" variant="light" size="sm">
                         Satisfied by: {opt.satisfiedBy.join(', ')}
                       </Badge>
-                    )}
-                  </Group>
-                  {opt.requirementId != null && (
-                    <Box mt="xs" pl="sm">
-                      <RequirementNode
-                        node={opt}
-                        cache={cache}
-                        completedCourses={completedCourses}
-                        selectedPerRequirement={selectedPerRequirement}
-                        onSelect={onSelect}
-                        selectedOptionsPerRequirement={selectedOptionsPerRequirement}
-                        onSelectOption={onSelectOption}
-                        activeBranch={childActiveBranch}
-                        depth={depth + 1}
-                      />
-                    </Box>
-                  )}
-                  {opt.options && opt.options.length > 0 && !opt.requirementId && (
-                    <Box pl="sm" mt="xs">
-                      {opt.options.map((child, j) => (
-                        <RequirementNode
-                          key={j}
-                          node={child}
-                          cache={cache}
-                          completedCourses={completedCourses}
-                          selectedPerRequirement={selectedPerRequirement}
-                          onSelect={onSelect}
-                          selectedOptionsPerRequirement={selectedOptionsPerRequirement}
-                          onSelectOption={onSelectOption}
-                          activeBranch={childActiveBranch}
-                          depth={depth + 1}
-                        />
-                      ))}
                     </Box>
                   )}
                 </Box>
@@ -313,6 +403,16 @@ function RequirementNode({
           style={{ cursor: 'pointer' }}
         >
           <Group gap="xs" align="center">
+            {radio && (
+              <Radio
+                checked={radio.checked}
+                onChange={radio.onChange}
+                name={radio.name}
+                value={radio.value}
+                disabled={radio.disabled}
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
             <IconChevronDown
               size={14}
               style={{
@@ -353,32 +453,27 @@ function RequirementNode({
                   selectedOptionIndex === idx);
               return (
                 <Box key={idx}>
-                  <Group gap="xs" align="center">
-                    {node.requirementId != null && !node.complete && (
-                      <Radio
-                        checked={isSelected}
-                        onChange={() => onSelectOption(node.requirementId!, idx)}
-                        name={node.requirementId}
-                        value={String(idx)}
-                      />
-                    )}
-                    <Text size="sm" fw={500}>
-                      {opt.title ?? opt.code ?? `Option ${idx + 1}`}
-                    </Text>
-                  </Group>
-                  <Box mt="xs" pl="sm">
-                    <RequirementNode
-                      node={opt}
-                      cache={cache}
-                      completedCourses={completedCourses}
-                      selectedPerRequirement={selectedPerRequirement}
-                      onSelect={onSelect}
-                      selectedOptionsPerRequirement={selectedOptionsPerRequirement}
-                      onSelectOption={onSelectOption}
-                      activeBranch={childActiveBranch}
-                      depth={depth + 1}
-                    />
-                  </Box>
+                  <RequirementNode
+                    node={opt}
+                    cache={cache}
+                    completedCourses={completedCourses}
+                    selectedPerRequirement={selectedPerRequirement}
+                    onSelect={onSelect}
+                    selectedOptionsPerRequirement={selectedOptionsPerRequirement}
+                    onSelectOption={onSelectOption}
+                    activeBranch={childActiveBranch}
+                    depth={depth + 1}
+                    radio={
+                      node.requirementId != null && !node.complete
+                        ? {
+                            checked: isSelected,
+                            onChange: () => onSelectOption(node.requirementId!, idx),
+                            name: node.requirementId,
+                            value: String(idx),
+                          }
+                        : undefined
+                    }
+                  />
                 </Box>
               );
             })}
@@ -410,6 +505,16 @@ function RequirementNode({
             style={{ cursor: 'pointer' }}
           >
             <Group gap="xs" align="center">
+              {radio && (
+                <Radio
+                  checked={radio.checked}
+                  onChange={radio.onChange}
+                  name={radio.name}
+                  value={radio.value}
+                  disabled={radio.disabled}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
               <IconChevronDown
                 size={14}
                 style={{
@@ -480,6 +585,16 @@ function RequirementNode({
           style={hasOptions ? { cursor: 'pointer' } : undefined}
         >
           <Group gap="xs" align="flex-start">
+            {radio && (
+              <Radio
+                checked={radio.checked}
+                onChange={radio.onChange}
+                name={radio.name}
+                value={radio.value}
+                disabled={radio.disabled}
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
             {hasOptions && (
               <IconChevronDown
                 size={16}
