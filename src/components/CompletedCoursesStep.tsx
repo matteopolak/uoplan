@@ -1,4 +1,5 @@
 import { MultiSelect, Text, Stack } from '@mantine/core';
+import type { ComboboxItem } from '@mantine/core';
 import { createCourseOptions, renderCourseOption } from './CourseSelect';
 import type { DataCache } from '../lib/dataCache';
 import type { RemainingRequirement } from '../lib/requirements';
@@ -45,7 +46,7 @@ export function CompletedCoursesStep({
         filter={({ options, search }) => {
           const q = search.toLowerCase().trim();
           if (!q) return options;
-          return options.filter(
+          return (options as ComboboxItem[]).filter(
             (o) =>
               o.value.toLowerCase().includes(q) ||
               o.label.toLowerCase().includes(q)

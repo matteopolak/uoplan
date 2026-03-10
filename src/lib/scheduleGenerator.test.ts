@@ -7,13 +7,13 @@ import {
 } from './scheduleGenerator';
 import { buildDataCache } from './dataCache';
 import type { Catalogue } from '../schemas/catalogue';
-import type { SchedulesData, CourseSchedule } from '../schemas/schedules';
+import type { SchedulesData, CourseSchedule, DayOfWeek } from '../schemas/schedules';
 
 const emptyCatalogue: Catalogue = { courses: [], programs: [] };
 
 function makeSchedule(
   courseCode: string,
-  times: { day: string; start: number; end: number }[]
+  times: { day: DayOfWeek; start: number; end: number }[]
 ): CourseSchedule {
   return {
     subject: courseCode.split(' ')[0],

@@ -3,7 +3,6 @@ import {
   CatalogueSchema,
   CourseSchema,
   ProgramRequirementSchema,
-  ProgramSchema,
 } from './catalogue';
 
 const minimalCourse = {
