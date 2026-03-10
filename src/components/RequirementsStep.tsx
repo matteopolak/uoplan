@@ -234,6 +234,7 @@ function RequirementNode({
   ).filter((c) => availableSet.has(c));
   const selectedCredits = getSelectedCredits(cache, selected);
   const creditsRemaining = Math.max(0, creditsNeeded - selectedCredits);
+  const isOverSelected = creditsNeeded > 0 && selectedCredits > creditsNeeded;
 
   const multiSelectBlock =
     hasRequirementId && !showAsComplete ? (
@@ -244,10 +245,12 @@ function RequirementNode({
           </Text>
         )}
         {creditsNeeded > 0 && (
-          <Text size="xs" c="dimmed">
-            {selectedCredits > 0
-              ? `${selectedCredits} of ${creditsNeeded} credits selected — pick ${Math.ceil(creditsRemaining / 3)} more course${Math.ceil(creditsRemaining / 3) !== 1 ? 's' : ''}`
-              : `Select course(s) to fulfill this requirement (${creditsNeeded} credit${creditsNeeded !== 1 ? 's' : ''} total).`}
+          <Text size="xs" c={isOverSelected ? 'yellow' : 'dimmed'}>
+            {isOverSelected
+              ? `You have selected ${selectedCredits} credits, which is more than the ${creditsNeeded} credit${creditsNeeded !== 1 ? 's' : ''} required. Extra courses may not count toward this requirement.`
+              : selectedCredits > 0
+                ? `${selectedCredits} of ${creditsNeeded} credits selected — pick ${Math.ceil(creditsRemaining / 3)} more course${Math.ceil(creditsRemaining / 3) !== 1 ? 's' : ''}`
+                : `Select course(s) to fulfill this requirement (${creditsNeeded} credit${creditsNeeded !== 1 ? 's' : ''} total).`}
           </Text>
         )}
         <MultiSelect
@@ -419,7 +422,6 @@ function RequirementNode({
               );
             })}
           </Stack>
-          {multiSelectBlock}
         </Collapse>
       </Paper>
     );
