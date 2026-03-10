@@ -34,9 +34,12 @@ import {
   getValidSectionCombos,
   getEnrollmentsForCourse,
   enrollmentsOverlap,
+  type CourseEnrollment,
   type GeneratedSchedule,
 } from '../lib/scheduleGenerator';
 import type { DataCache } from '../lib/dataCache';
+
+const validEnrollmentsByCourseCode = new Map<string, CourseEnrollment[]>();
 
 export interface AppState {
   catalogue: { courses: unknown[]; programs: Program[] } | null;
@@ -54,6 +57,7 @@ export interface AppState {
   selectedOptionsPerRequirement: Record<string, number>;
   coursesThisSemester: number;
   generatedSchedules: GeneratedSchedule[];
+  swapPool: string[];
   selectedScheduleIndex: number;
   generationError: string | null;
 }
@@ -74,6 +78,7 @@ export interface AppActions {
     enrollmentIndex: number,
     newCourseCode: string
   ) => void;
+  getSwapCandidates: (scheduleIndex: number, enrollmentIndex: number) => string[];
 }
 
 export type AppStore = AppState & AppActions;
@@ -94,6 +99,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   selectedOptionsPerRequirement: {},
   coursesThisSemester: 5,
   generatedSchedules: [],
+  swapPool: [],
   selectedScheduleIndex: 0,
   generationError: null,
 
@@ -220,9 +226,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       completedCourses,
     } = get();
     if (!cache) return;
+    const cacheVal = cache;
 
     function isHonoursProject(code: string): boolean {
-      const course = cache.getCourse(code);
+      const course = cacheVal.getCourse(code);
       const component = course?.component?.trim().toLowerCase() ?? '';
       return component.startsWith('recherche / research');
     }
@@ -301,12 +308,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
     function helpsRequirements(code: string): boolean {
       if (!program) return false;
       const base = completedCourses;
-      const before = computeRequirementsState(program, base, cache).remaining;
+      const before = computeRequirementsState(program, base, cacheVal).remaining;
       const beforeCredits = before.reduce(
         (sum, r) => sum + (r.creditsNeeded ?? 0),
         0
       );
-      const after = computeRequirementsState(program, [...base, code], cache).remaining;
+      const after = computeRequirementsState(program, [...base, code], cacheVal).remaining;
       const afterCredits = after.reduce(
         (sum, r) => sum + (r.creditsNeeded ?? 0),
         0
@@ -323,7 +330,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const remainingNeeded = coursesThisSemester - pinned.length;
     if (remainingNeeded > 0) {
       for (const req of remainingRequirements) {
-        const selectedOpt = selectedOptionsPerRequirement[req.requirementId];
         const candidates = req.candidateCourses;
         for (const code of candidates) {
           if (
@@ -331,7 +337,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
             || pinned.includes(code)
             || optionalPool.includes(code)
             || isHonoursProject(code)
-            || !cache.getSchedule(code)
+            || !cacheVal.getSchedule(code)
           ) {
             continue;
           }
@@ -341,14 +347,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
       }
 
       if (optionalPool.length < remainingNeeded) {
-        for (const course of cache.getAllCourses()) {
+        for (const course of cacheVal.getAllCourses()) {
           const code = course.code;
           if (
             optionalPool.length >= remainingNeeded * 6
             || pinned.includes(code)
             || optionalPool.includes(code)
             || isHonoursProject(code)
-            || !cache.getSchedule(code)
+            || !cacheVal.getSchedule(code)
           ) {
             continue;
           }
@@ -359,6 +365,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
 
     const filteredOptionalPool = optionalPool.filter((code) => !isHonoursProject(code));
+    const swapPool = [...new Set([...pinned, ...filteredOptionalPool])];
 
     // Debugging: inspect schedule generation inputs
     // eslint-disable-next-line no-console
@@ -373,11 +380,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     const schedules =
       pinned.length === 0
-        ? genSchedules(filteredOptionalPool, coursesThisSemester, cache)
-        : generateSchedulesWithPinned(pinned, filteredOptionalPool, coursesThisSemester, cache);
+        ? genSchedules(filteredOptionalPool, coursesThisSemester, cacheVal)
+        : generateSchedulesWithPinned(pinned, filteredOptionalPool, coursesThisSemester, cacheVal);
 
     set({
       generatedSchedules: schedules,
+      swapPool,
       selectedScheduleIndex: 0,
       generationError: schedules.length === 0 ? 'No non-overlapping schedules could be generated with your selections.' : null,
     });
@@ -411,5 +419,70 @@ export const useAppStore = create<AppStore>((set, get) => ({
         return;
       }
     }
+  },
+
+  getSwapCandidates: (scheduleIndex, enrollmentIndex) => {
+    const {
+      cache,
+      generatedSchedules,
+      completedCourses,
+      remainingRequirements,
+    } = get();
+    if (!cache || scheduleIndex >= generatedSchedules.length) return [];
+
+    const cacheVal = cache;
+    const schedule = generatedSchedules[scheduleIndex];
+    const enrollment = schedule.enrollments[enrollmentIndex];
+    if (!enrollment) return [];
+
+    const oldCode = enrollment.courseCode;
+    // Ignore conflicts with the swapped course and any duplicate blocks for same code.
+    const others = schedule.enrollments.filter(
+      (e, i) => i !== enrollmentIndex && e.courseCode !== oldCode
+    );
+    const alreadyInSchedule = new Set(schedule.enrollments.map((e) => e.courseCode));
+
+    function isHonoursProject(code: string): boolean {
+      const course = cacheVal.getCourse(code);
+      const component = course?.component?.trim().toLowerCase() ?? '';
+      return component.startsWith('recherche / research');
+    }
+
+    const candidateSet = new Set<string>();
+    for (const req of remainingRequirements) {
+      for (const code of req.candidateCourses) candidateSet.add(code);
+    }
+
+    function getValidEnrollmentsFor(code: string): CourseEnrollment[] {
+      const cached = validEnrollmentsByCourseCode.get(code);
+      if (cached) return cached;
+      const sched = cacheVal.getSchedule(code);
+      if (!sched) {
+        validEnrollmentsByCourseCode.set(code, []);
+        return [];
+      }
+      const combos = getValidSectionCombos(sched);
+      const enrollments = combos.map((combo) => getEnrollmentsForCourse(sched, combo));
+      validEnrollmentsByCourseCode.set(code, enrollments);
+      return enrollments;
+    }
+
+    const candidates: string[] = [];
+    for (const code of candidateSet) {
+      if (code === oldCode) continue;
+      if (completedCourses.includes(code)) continue;
+      if (alreadyInSchedule.has(code)) continue;
+      if (isHonoursProject(code)) continue;
+      const possibleEnrollments = getValidEnrollmentsFor(code);
+      if (possibleEnrollments.length === 0) continue;
+      for (const candidate of possibleEnrollments) {
+        const conflicts = others.some((e) => enrollmentsOverlap(e, candidate));
+        if (!conflicts) {
+          candidates.push(code);
+          break;
+        }
+      }
+    }
+    return candidates;
   },
 }));

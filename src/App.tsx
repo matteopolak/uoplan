@@ -41,6 +41,7 @@ function App() {
     generateSchedules,
     setSelectedScheduleIndex,
     swapCourseInSchedule,
+    getSwapCandidates,
     generationError,
   } = useAppStore();
 
@@ -302,7 +303,7 @@ function App() {
             selectedIndex={selectedScheduleIndex}
             onSelectIndex={setSelectedScheduleIndex}
             cache={cache}
-            selectedPerRequirement={selectedPerRequirement}
+            getSwapCandidates={getSwapCandidates}
             onSwap={swapCourseInSchedule}
           />
         </Box>

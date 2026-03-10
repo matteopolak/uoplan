@@ -1,21 +1,18 @@
-import { useRef, useEffect } from 'react';
-import { Box, Text } from '@mantine/core';
+import { useRef, useEffect, useMemo, useState } from 'react';
+import { Box, Text, Modal, Stack, Button, Select } from '@mantine/core';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { startOfWeek } from 'date-fns';
 import type { DataCache } from '../lib/dataCache';
-import type {
-  GeneratedSchedule,
-  CourseEnrollment,
-} from '../lib/scheduleGenerator';
+import type { GeneratedSchedule } from '../lib/scheduleGenerator';
 
 interface CalendarViewProps {
   schedules: GeneratedSchedule[];
   selectedIndex: number;
   onSelectIndex: (idx: number) => void;
   cache: DataCache | null;
-  selectedPerRequirement: Record<string, string[]>;
+  getSwapCandidates: (scheduleIndex: number, enrollmentIndex: number) => string[];
   onSwap: (scheduleIndex: number, enrollmentIndex: number, newCourseCode: string) => void;
 }
 
@@ -56,34 +53,10 @@ interface CalendarEvent {
   end: Date;
   courseCode: string;
   enrollmentIndex: number;
-  swapCandidates: string[];
   startMinutes: number;
   endMinutes: number;
   componentSection: string;
   professor: string;
-}
-
-function getSwapCandidates(
-  courseCode: string,
-  selectedPerRequirement: Record<string, string[]>
-): string[] {
-  const reqIds = Object.entries(selectedPerRequirement)
-    .filter(([, courses]) => courses.includes(courseCode))
-    .map(([id]) => id);
-
-  const candidates = new Set<string>();
-  for (const id of reqIds) {
-    for (const c of selectedPerRequirement[id] ?? []) {
-      if (c !== courseCode) candidates.add(c);
-    }
-  }
-  return [...candidates];
-}
-
-function formatTime(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return `${h}:${m.toString().padStart(2, '0')}`;
 }
 
 function addDays(date: Date, amount: number): Date {
@@ -103,11 +76,97 @@ function minutesToDate(base: Date, totalMinutes: number): Date {
 export function CalendarView({
   schedules,
   selectedIndex,
-  onSelectIndex,
+  onSelectIndex: _onSelectIndex,
   cache,
-  selectedPerRequirement,
+  getSwapCandidates,
   onSwap,
 }: CalendarViewProps) {
+  const [swapModal, setSwapModal] = useState<{
+    enrollmentIndex: number;
+    courseCode: string;
+  } | null>(null);
+  const [swapCandidates, setSwapCandidates] = useState<string[]>([]);
+  const [loadingSwapCandidates, setLoadingSwapCandidates] = useState(false);
+  const [swapQuery, setSwapQuery] = useState('');
+
+  useEffect(() => {
+    if (!swapModal) {
+      setSwapCandidates([]);
+      setLoadingSwapCandidates(false);
+      setSwapQuery('');
+      return;
+    }
+    setLoadingSwapCandidates(true);
+    setSwapCandidates([]);
+    setSwapQuery('');
+    // Defer so modal can paint before doing heavier work.
+    const t = window.setTimeout(() => {
+      const next = getSwapCandidates(selectedIndex, swapModal.enrollmentIndex);
+      setSwapCandidates(next);
+      setLoadingSwapCandidates(false);
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [getSwapCandidates, selectedIndex, swapModal]);
+
+  const swapCandidateOptions = useMemo(() => {
+    return swapCandidates.map((code) => {
+      const course = cache?.getCourse(code);
+      const title = (course?.title ?? '').trim();
+      return {
+        value: code,
+        label: title ? `${code} — ${title}` : code,
+      };
+    });
+  }, [cache, swapCandidates]);
+
+  const swapDropdown = useMemo(() => {
+    if (!swapModal) return null;
+    if (loadingSwapCandidates) {
+      return (
+        <Text size="sm" c="dimmed">
+          Finding swap options…
+        </Text>
+      );
+    }
+    if (swapCandidates.length === 0) {
+      return (
+        <Text size="sm" c="dimmed">
+          No alternative courses available.
+        </Text>
+      );
+    }
+    return (
+      <Select
+        label="Swap with"
+        placeholder="Search courses…"
+        searchable
+        data={swapCandidateOptions}
+        value={null}
+        searchValue={swapQuery}
+        onSearchChange={setSwapQuery}
+        nothingFoundMessage="No matches"
+        maxDropdownHeight={260}
+        onChange={(v: string | null) => {
+          if (!v) return;
+          onSwap(selectedIndex, swapModal.enrollmentIndex, v);
+          setSwapModal(null);
+        }}
+        styles={{
+          option: { paddingTop: 6, paddingBottom: 6 },
+          dropdown: { padding: 4 },
+        }}
+      />
+    );
+  }, [
+    loadingSwapCandidates,
+    onSwap,
+    selectedIndex,
+    swapCandidateOptions,
+    swapCandidates.length,
+    swapModal,
+    swapQuery,
+  ]);
+
   if (schedules.length === 0) {
     return (
       <Text c="dimmed">
@@ -121,7 +180,6 @@ export function CalendarView({
   const referenceWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
 
   const events: CalendarEvent[] = currentSchedule.enrollments.flatMap((enrollment, enrollIdx) => {
-    const swapCandidates = getSwapCandidates(enrollment.courseCode, selectedPerRequirement);
     const out: CalendarEvent[] = [];
     let timeIdx = 0;
     for (const [comp, { section }] of Object.entries(enrollment.sectionCombo)) {
@@ -142,7 +200,6 @@ export function CalendarView({
           end,
           courseCode: enrollment.courseCode,
           enrollmentIndex: enrollIdx,
-          swapCandidates,
           startMinutes: t.startMinutes,
           endMinutes: t.endMinutes,
           componentSection,
@@ -157,12 +214,8 @@ export function CalendarView({
   const fcEvents = events;
   const calendarRef = useRef<FullCalendar>(null);
 
-  useEffect(() => {
-    const el = calendarRef.current;
-    if (!el) return;
-    const api = el.getApi();
-    //api.setOption('height', '100%');
-  }, [selectedIndex, schedules.length]);
+  // Keep ref stable; no imperative calendar calls currently needed.
+  useEffect(() => {}, [selectedIndex, schedules.length]);
 
   return (
     <Box
@@ -214,6 +267,10 @@ export function CalendarView({
             height="100%"
             eventContent={(arg) => {
               const ext = arg.event.extendedProps as CalendarEvent;
+              const courseTitle = cache?.getCourse(ext.courseCode)?.title ?? '';
+              const heading = courseTitle
+                ? `${ext.courseCode} — ${courseTitle}`
+                : ext.courseCode;
               const colorName = COLORS[ext.enrollmentIndex % COLORS.length];
               const hex = COLOR_HEX[colorName];
               const [r, g, b] = hex.replace('#', '').match(/.{2}/g)!.map((x) => parseInt(x, 16));
@@ -221,13 +278,18 @@ export function CalendarView({
                 <div
                   className="fc-uschedule-event"
                   style={{
-                    cursor: ext.swapCandidates.length > 0 ? 'pointer' : 'default',
+                    cursor: 'pointer',
                     borderLeft: `4px solid ${hex}`,
                     backgroundColor: `rgba(${r}, ${g}, ${b}, 0.38)`,
                   }}
                 >
                   <div className="fc-uschedule-event-body">
-                    <span className="fc-uschedule-event-code">{ext.courseCode}</span>
+                    <span
+                      className="fc-uschedule-event-code"
+                      title={heading}
+                    >
+                      {heading}
+                    </span>
                     <span className="fc-uschedule-event-type">{ext.componentSection}</span>
                     <span className="fc-uschedule-event-professor">{ext.professor}</span>
                   </div>
@@ -236,13 +298,31 @@ export function CalendarView({
             }}
             eventClick={(info) => {
               const ext = info.event.extendedProps as CalendarEvent;
-              if (!ext.swapCandidates.length) return;
-              // Simple first-candidate swap to keep behavior without a custom menu
-              const nextCode = ext.swapCandidates[0];
-              onSwap(selectedIndex, ext.enrollmentIndex, nextCode);
+              setSwapModal({
+                enrollmentIndex: ext.enrollmentIndex,
+                courseCode: ext.courseCode,
+              });
             }}
           />
       </div>
+
+      <Modal
+        opened={swapModal !== null}
+        onClose={() => setSwapModal(null)}
+        title={`Swap ${swapModal?.courseCode ?? ''}`}
+      >
+        {swapModal && (
+          <Stack gap="md">
+            <Text size="sm" c="dimmed">
+              Choose a course to replace {swapModal.courseCode}:
+            </Text>
+            {swapDropdown}
+            <Button variant="default" onClick={() => setSwapModal(null)}>
+              Cancel
+            </Button>
+          </Stack>
+        )}
+      </Modal>
     </Box>
   );
 }
