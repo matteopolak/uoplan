@@ -260,23 +260,16 @@ export function findBestMatchingProgram<T extends { title: string }>(
 
   // 1) Try strict extraction between "Term" and "Course" in the last semester segment.
   const fragment = extractProgramBetweenTermAndCourse(searchText);
-  console.log({fragment});
   if (fragment) {
-    const fragLower = fragment.toLowerCase();
+    const fragLower = fragment.toLowerCase().replace(/\s+/g, ' ').trim();
     let bestProgramFromFragment: T | null = null;
     let bestFragmentScore = 0;
 
     for (const program of programs) {
       const title = program.title.trim();
       if (!title) continue;
-      const titleLower = title.toLowerCase();
-
-      let score = 0;
-      if (fragLower.includes(titleLower) || titleLower.includes(fragLower)) {
-        score = 1;
-      } else {
-        score = normalizedSimilarity(titleLower, fragLower);
-      }
+      const titleLower = title.toLowerCase().replace(/\s+/g, ' ').trim();
+      const score = normalizedSimilarity(titleLower, fragLower);
 
       if (score > bestFragmentScore) {
         bestFragmentScore = score;
@@ -284,7 +277,6 @@ export function findBestMatchingProgram<T extends { title: string }>(
       }
     }
 
-    // If we have a reasonably strong match from the explicit fragment, use it.
     if (bestProgramFromFragment && bestFragmentScore >= 0.6) {
       return bestProgramFromFragment;
     }
