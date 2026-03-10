@@ -1,17 +1,14 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import * as cheerio from 'cheerio';
 import pLimit from 'p-limit';
 import got, { type Got } from 'got';
 import { CookieJar } from 'tough-cookie';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const BASE_URL =
   'https://uocampus.public.uottawa.ca/psc/csprpr9pub/EMPLOYEE/SA/c/UO_SR_AA_MODS.UO_PUB_CLSSRCH.GBL';
-const MAX_CONCURRENCY = 10;
+const HTML_CACHE_DIR = '.cache/course-search-html';
+const MAX_CONCURRENCY = 20;
 
 // Default to the currently selected term on the search page (2026 Winter Term as of 2026-03-09)
 const DEFAULT_TERM_ID: string = process.env.UOTTAWA_TERM_ID || '2261';
@@ -127,12 +124,18 @@ function parseCourseCode(code: string): ParsedCourseCode | null {
 }
 
 async function loadCatalogue(): Promise<ParsedCourseCode[]> {
-  const cataloguePath = path.join(__dirname, 'catalogue.json');
-  const raw = await fs.readFile(cataloguePath, 'utf-8');
+  const raw = await fs.readFile('public/data/catalogue.json', 'utf-8');
   const data = JSON.parse(raw) as { courses?: CatalogueCourse[] };
   if (!Array.isArray(data.courses)) {
     throw new Error('catalogue.json does not contain a courses array');
   }
+
+  //const mat1300 = data.courses.find(c => c.code === 'MAT 1300');
+
+  /*data.courses = data.courses.slice(0, 100);
+  if (!data.courses.includes(mat1300!)) {
+    data.courses.push(mat1300!);
+  }*/
 
   const unique = new Map<string, ParsedCourseCode>();
   for (const course of data.courses) {
@@ -158,7 +161,7 @@ async function createClient(): Promise<ClientInfo> {
 
   // Initial GET to establish session and retrieve ICSID (with a few retries for transient pages)
   let lastHtml = '';
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  for (let attempt = 1; attempt <= 10; attempt++) {
     // eslint-disable-next-line no-await-in-loop
     const res = await client.get(BASE_URL);
     const html = res.body;
@@ -276,15 +279,6 @@ function parseScheduleHtml(
 ): CourseSchedule | null {
   const $ = cheerio.load(html);
 
-  const noResultsText = $('span.PSERRORTEXT, div.PSERRORTEXT, span.SSSMSGALERTTEXT')
-    .text()
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLowerCase();
-  if (noResultsText.includes('no classes') || noResultsText.includes('no results')) {
-    return null;
-  }
-
   const headerDiv = $('div[id^="win0divSSR_CLSRSLT_WRK_GROUPBOX2$"]').first();
   let headerText = headerDiv.text().replace(/\s+/g, ' ').trim();
   if (!headerText) {
@@ -399,27 +393,121 @@ async function fetchScheduleForCourse(
   clientInfo: ClientInfo,
   course: ParsedCourseCode,
 ): Promise<CourseSchedule | null> {
-  const { client, icsid, dataLang, icStateNum } = clientInfo;
-  const body = buildSearchBody({
-    icsid,
-    dataLang,
-    icStateNum,
-    subject: course.subject,
-    catalogNbr: course.catalogNbr,
-    termId: DEFAULT_TERM_ID,
-  });
+  const { client, dataLang } = clientInfo;
+  const safeSubject = course.subject.replace(/[^A-Za-z0-9]+/g, '_');
+  const safeCatalog = course.catalogNbr.replace(/[^A-Za-z0-9]+/g, '_');
+  const cacheFilename = `${safeSubject}-${safeCatalog}-${DEFAULT_TERM_ID}.html`;
+  const cachePath = path.join(HTML_CACHE_DIR, cacheFilename);
 
-  const res = await client.post(BASE_URL, {
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body,
-  });
+  for (let attempt = 1; attempt <= 10; attempt++) {
+    // Refresh page-level state (ICSID / ICStateNum) from a fresh criteria page load.
+    // This keeps us in sync with PeopleSoft even if previous interactions changed state.
+    const initRes = await client.get(BASE_URL);
+    try {
+      const $init = cheerio.load(initRes.body);
+      const pageIcsid = $init('#ICSID').attr('value');
+      if (pageIcsid) clientInfo.icsid = pageIcsid;
+      const pageState = $init('#ICStateNum').attr('value');
+      if (pageState) clientInfo.icStateNum = pageState;
+    } catch {
+      // Ignore and fall back to previously known state.
+    }
 
-  return parseScheduleHtml(res.body, {
-    subject: course.subject,
-    catalogNbr: course.catalogNbr,
-  });
+    const body = buildSearchBody({
+      icsid: clientInfo.icsid,
+      dataLang,
+      icStateNum: clientInfo.icStateNum,
+      subject: course.subject,
+      catalogNbr: course.catalogNbr,
+      termId: DEFAULT_TERM_ID,
+    });
+
+    const res = await client.post(BASE_URL, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body,
+    });
+
+    // Update session state (ICSID / ICStateNum) from the response for subsequent requests.
+    try {
+      const $ = cheerio.load(res.body);
+      const newIcsid = $('#ICSID').attr('value');
+      if (newIcsid) {
+        clientInfo.icsid = newIcsid;
+      }
+      const newStateNum = $('#ICStateNum').attr('value');
+      if (newStateNum) {
+        clientInfo.icStateNum = newStateNum;
+      }
+    } catch {
+      // Non-fatal; fall back to previous state values.
+    }
+
+    // Persist raw HTML per-course for debugging / verification.
+    try {
+      await fs.mkdir(HTML_CACHE_DIR, { recursive: true });
+      await fs.writeFile(cachePath, res.body, 'utf-8');
+    } catch (err) {
+      console.error(
+        `Warning: failed to write HTML cache for ${course.subject} ${course.catalogNbr}:`,
+        (err as any)?.message ?? err,
+      );
+    }
+
+    // Detect login / redirect pages (not real search or results pages).
+    const lowerHtml = res.body.toLowerCase();
+    const looksLikeLogin =
+      lowerHtml.includes('sign in to peoplesoft') ||
+      lowerHtml.includes('you must have cookies enabled') ||
+      (/<meta[^>]+http-equiv=['"]refresh['"]/i.test(res.body) &&
+        res.body.includes('CAMPUS_URL='));
+    if (looksLikeLogin) {
+      console.error(
+        `Received login/redirect page instead of search results for ${course.subject} ${course.catalogNbr}. ` +
+          `See cached HTML at ${cachePath}. Will retry with new session (attempt ${attempt}/10).`,
+      );
+      if (attempt < 10) {
+        // Replace this session with a fresh one (new cookie jar + fresh GET).
+        const newSession = await createClient();
+        Object.assign(clientInfo, newSession);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        continue;
+      }
+      // On the final attempt, give up on this course but let the overall run continue.
+      return null;
+    }
+
+    // Check for explicit "no results" banner; if present, do not retry.
+    const bannerText = cheerio
+      .load(res.body)('span.PSERRORTEXT, div.PSERRORTEXT, span.SSSMSGALERTTEXT')
+      .text()
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+    if (bannerText.includes('no classes') || bannerText.includes('no results')) {
+      return null;
+    }
+
+    const schedule = parseScheduleHtml(res.body, {
+      subject: course.subject,
+      catalogNbr: course.catalogNbr,
+    });
+    if (schedule) {
+      return schedule;
+    }
+
+    if (attempt < 10) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  }
+
+  console.error(
+    `Failed to parse schedule for ${course.subject} ${course.catalogNbr} after 10 attempts. ` +
+      `See cached HTML at ${cachePath}`,
+  );
+  // Exit the whole process so the failure is visible and repeatable.
+  process.exit(1);
 }
 
 async function main(): Promise<void> {
@@ -446,14 +534,8 @@ async function main(): Promise<void> {
   }
 
   console.log('Initializing PeopleSoft session...');
-  const clientInfos: ClientInfo[] = [];
-  for (let i = 0; i < MAX_CONCURRENCY; i++) {
-    // Create multiple independent sessions/cookie jars for higher parallelism.
-    // If any single session fails to initialize, surface the error early.
-    // eslint-disable-next-line no-await-in-loop
-    const info = await createClient();
-    clientInfos.push(info);
-  }
+  const clientInfos: ClientInfo[] = await Promise.all(Array.from({ length: MAX_CONCURRENCY }, createClient));
+  
   console.log(
     `Initialized ${clientInfos.length} PeopleSoft session(s), starting schedule scraping...`,
   );
@@ -494,7 +576,7 @@ async function main(): Promise<void> {
     schedules: results,
   };
 
-  const outPath = path.join(__dirname, '..', 'schedules.json');
+  const outPath = 'public/data/schedules.json';
   await fs.writeFile(outPath, JSON.stringify(output, null, 2), 'utf-8');
   console.log(
     `Done. Saved schedules for ${results.length} courses (out of ${courses.length}) to schedules.json`,

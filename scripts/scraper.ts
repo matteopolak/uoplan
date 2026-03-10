@@ -44,6 +44,9 @@ const ProgramRequirementBaseSchema = z.object({
   disciplineLevels: z.array(DisciplineLevelSchema).optional(),
   excluded_disciplines: z.array(z.string()).optional(),
   faculty: z.string().optional(),
+  // Row was visually indented in the source table (e.g. via `commentindent`).
+  // Used to correctly group option contents.
+  indented: z.boolean().optional(),
 });
 
 type ProgramRequirementType = z.infer<typeof ProgramRequirementBaseSchema> & {
@@ -283,6 +286,10 @@ async function scrapeProgram(url: string): Promise<Program> {
     const rowClass = $(el).attr('class') || '';
     if (rowClass.includes('listsum')) return;
 
+    const isIndented = $(el).find('div[style*="margin-left"]').length > 0 ||
+      $(el).find('.blockind').length > 0 ||
+      $(el).find('.commentindent').length > 0;
+
     const isHeaderRow = $(el).find('th').length > 0;
     const isSectionHeader = $(el).find('.areaheader').length > 0;
 
@@ -292,6 +299,7 @@ async function scrapeProgram(url: string): Promise<Program> {
         requirements.push(ProgramRequirementSchema.parse({
           type: 'section',
           title: $(el).text().replace(/\s+/g, ' ').trim(),
+          indented: isIndented || undefined,
         }));
       }
       return;
@@ -302,6 +310,7 @@ async function scrapeProgram(url: string): Promise<Program> {
       requirements.push(ProgramRequirementSchema.parse({
         type: 'section',
         title: $(el).text().replace(/\s+/g, ' ').trim(),
+        indented: isIndented || undefined,
       }));
       return;
     }
@@ -318,18 +327,18 @@ async function scrapeProgram(url: string): Promise<Program> {
       code = code.substring(3).trim();
     }
 
-    const isIndented = $(el).find('div[style*="margin-left"]').length > 0 ||
-      $(el).find('.blockind').length > 0 ||
-      $(el).find('.commentindent').length > 0;
-
     const isComment = $(el).find('.courselistcomment').length > 0;
 
     if (isComment) {
       const commentText = $(el).find('.courselistcomment').text().replace(/\s+/g, ' ').trim();
       const parsedNode = parseElectiveRequirement(commentText, credits);
+      const parsedWithIndent: ProgramRequirement = {
+        ...parsedNode,
+        indented: isIndented || undefined,
+      };
 
       if (isIndented && currentGroup && currentGroup.options) {
-        currentGroup.options.push(parsedNode);
+        currentGroup.options.push(parsedWithIndent);
       } else {
         if (commentText.endsWith(':') || commentText.toLowerCase().includes('from:')) {
           currentGroup = {
@@ -337,39 +346,43 @@ async function scrapeProgram(url: string): Promise<Program> {
             title: commentText,
             credits,
             options: [],
+            indented: isIndented || undefined,
           };
           requirements.push(currentGroup);
         } else {
           currentGroup = null;
-          requirements.push(parsedNode);
+          requirements.push(parsedWithIndent);
         }
       }
       return;
     }
 
     if (code) {
+      const courseReq: ProgramRequirement = {
+        type: isOr ? 'or_course' : 'course',
+        code,
+        title: rowTitle || undefined,
+        credits,
+        indented: isIndented || undefined,
+      };
+
       if (isIndented && currentGroup && currentGroup.options) {
-        currentGroup.options.push({
-          type: isOr ? 'or_course' : 'course',
-          code,
-          title: rowTitle || undefined,
-        });
+        currentGroup.options.push(courseReq);
       } else {
         currentGroup = null;
-        requirements.push({
-          type: isOr ? 'or_course' : 'course',
-          code,
-          title: rowTitle || undefined,
-          credits,
-        });
+        requirements.push(courseReq);
       }
     } else if (rowTitle || hours) {
       const parsedNode = parseElectiveRequirement(rowTitle, credits);
+      const parsedWithIndent: ProgramRequirement = {
+        ...parsedNode,
+        indented: isIndented || undefined,
+      };
       if (isIndented && currentGroup && currentGroup.options) {
-        currentGroup.options.push(parsedNode);
+        currentGroup.options.push(parsedWithIndent);
       } else {
         currentGroup = null;
-        requirements.push(parsedNode);
+        requirements.push(parsedWithIndent);
       }
     }
   });
@@ -438,11 +451,19 @@ function processRequirements(reqs: ProgramRequirement[]): ProgramRequirement[] {
 
     if (currentOptionList) {
       if (r.type === 'section') {
+        // A new section always terminates the current options group.
         currentOptionsGroup = null;
         currentOptionList = null;
         foldedOptions.push(r);
-      } else {
+      } else if (r.indented) {
+        // Still visually indented under the current option; keep collecting.
         currentOptionList.push(r);
+      } else {
+        // First non-indented row after an option: end all option grouping and
+        // treat subsequent rows as top-level requirements.
+        currentOptionsGroup = null;
+        currentOptionList = null;
+        foldedOptions.push(r);
       }
     } else {
       foldedOptions.push(r);
@@ -532,8 +553,8 @@ async function main() {
     })),
   });
 
-  await fs.writeFile('catalogue.json', JSON.stringify(catalogue, null, 2));
-  console.log(`Successfully saved ${allCourses.length} courses and ${allPrograms.length} programs to catalogue.json`);
+  await fs.writeFile('../public/data/catalogue.json', JSON.stringify(catalogue, null, 2));
+  console.log(`Successfully saved ${allCourses.length} courses and ${allPrograms.length} programs to public/data/catalogue.json`);
 }
 
 main().catch(e => {
