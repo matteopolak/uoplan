@@ -22,11 +22,25 @@ import {
   type CourseLanguageBucket,
   type CourseLevelBucket,
 } from '../lib/courseFilters';
+import type { Indices } from '../schemas/indices';
+import {
+  decodeStateFromBase64,
+  encodeState,
+  encodeStateToBase64,
+  parseStateFromUrl,
+  requirementIdsFromTree,
+  stateToShareUrl,
+  type DecodedState,
+  type EncodeInput,
+} from '../lib/stateEncode';
 
 const validEnrollmentsByCourseCode = new Map<string, CourseEnrollment[]>();
 
+const LOCAL_STORAGE_KEY = 'uschedule-state';
+
 export interface AppState {
   catalogue: { courses: unknown[]; programs: Program[] } | null;
+  indices: Indices | null;
   schedulesData: { termId: string; schedules: unknown[] } | null;
   cache: DataCache | null;
   loading: boolean;
@@ -272,6 +286,9 @@ function recomputeStateForProgram(
 
 export interface AppActions {
   loadData: () => Promise<void>;
+  loadEncodedState: (decoded: DecodedState) => void;
+  getShareUrl: () => string | null;
+  getEncodedStateBase64: () => string | null;
   setProgram: (program: Program | null) => void;
   setCompletedCourses: (courses: string[]) => void;
   addCompletedCourse: (code: string) => void;
@@ -296,6 +313,7 @@ export type AppStore = AppState & AppActions;
 
 export const useAppStore = create<AppStore>((set, get) => ({
   catalogue: null,
+  indices: null,
   schedulesData: null,
   cache: null,
   loading: false,
@@ -319,12 +337,122 @@ export const useAppStore = create<AppStore>((set, get) => ({
   selectedScheduleIndex: 0,
   generationError: null,
 
+  loadEncodedState: (decoded) => {
+    const { catalogue, indices, cache } = get();
+    if (!catalogue || !cache || !indices) return;
+
+    const firstPass = recomputeStateForProgram(
+      decoded.program,
+      decoded.completedCourseCodes,
+      cache,
+      {},
+      {},
+      decoded.levelBuckets,
+      decoded.languageBuckets,
+    );
+    const orderedReqIds = requirementIdsFromTree(firstPass.requirementTreeWithStatus);
+    const reqIndexToId = new Map<number, string>();
+    orderedReqIds.forEach((id, i) => reqIndexToId.set(i, id));
+
+    const selectedOptionsPerRequirement: Record<string, number> = {};
+    for (const { reqIndex, optionIndex } of decoded.optionSelections) {
+      const reqId = reqIndexToId.get(reqIndex);
+      if (reqId != null) selectedOptionsPerRequirement[reqId] = optionIndex;
+    }
+
+    const selectedPerRequirement: Record<string, string[]> = {};
+    for (const { reqIndex, courseIndices } of decoded.courseSelections) {
+      const reqId = reqIndexToId.get(reqIndex);
+      if (reqId == null) continue;
+      const codes = courseIndices
+        .map((i) => (i < indices.courses.length ? indices.courses[i] : null))
+        .filter((c): c is string => c != null);
+      const inCatalogue = new Set(
+        (catalogue.courses as Array<{ code: string }>).map((c) => c.code),
+      );
+      const valid = codes.filter((code) => inCatalogue.has(code));
+      if (valid.length) selectedPerRequirement[reqId] = valid;
+    }
+
+    const full = recomputeStateForProgram(
+      decoded.program,
+      decoded.completedCourseCodes,
+      cache,
+      selectedPerRequirement,
+      selectedOptionsPerRequirement,
+      decoded.levelBuckets,
+      decoded.languageBuckets,
+    );
+
+    set({
+      program: decoded.program,
+      completedCourses: decoded.completedCourseCodes,
+      levelBuckets: decoded.levelBuckets,
+      languageBuckets: decoded.languageBuckets,
+      electiveLevelBuckets: decoded.electiveLevelBuckets,
+      coursesThisSemester: decoded.coursesThisSemester,
+      selectedScheduleIndex: Math.max(0, decoded.selectedScheduleIndex),
+      generatedSchedules: [],
+      generationError: null,
+      ...full,
+    });
+  },
+
+  getEncodedStateBase64: () => {
+    const s = get();
+    if (!s.catalogue || !s.indices) return null;
+    const input: EncodeInput = {
+      program: s.program,
+      completedCourses: s.completedCourses,
+      levelBuckets: s.levelBuckets,
+      languageBuckets: s.languageBuckets,
+      electiveLevelBuckets: s.electiveLevelBuckets,
+      coursesThisSemester: s.coursesThisSemester,
+      selectedScheduleIndex: s.selectedScheduleIndex,
+      selectedPerRequirement: s.selectedPerRequirement,
+      selectedOptionsPerRequirement: s.selectedOptionsPerRequirement,
+      requirementTreeWithStatus: s.requirementTreeWithStatus,
+      remainingRequirements: s.remainingRequirements,
+    };
+    return encodeStateToBase64(
+      input,
+      s.catalogue as { courses: Array<{ code: string }>; programs: Program[] },
+      s.indices,
+    );
+  },
+
+  getShareUrl: () => {
+    const s = get();
+    if (!s.catalogue || !s.indices) return null;
+    const input: EncodeInput = {
+      program: s.program,
+      completedCourses: s.completedCourses,
+      levelBuckets: s.levelBuckets,
+      languageBuckets: s.languageBuckets,
+      electiveLevelBuckets: s.electiveLevelBuckets,
+      coursesThisSemester: s.coursesThisSemester,
+      selectedScheduleIndex: s.selectedScheduleIndex,
+      selectedPerRequirement: s.selectedPerRequirement,
+      selectedOptionsPerRequirement: s.selectedOptionsPerRequirement,
+      requirementTreeWithStatus: s.requirementTreeWithStatus,
+      remainingRequirements: s.remainingRequirements,
+    };
+    const bytes = encodeState(
+      input,
+      s.catalogue as { courses: Array<{ code: string }>; programs: Program[] },
+      s.indices,
+    );
+    if (!bytes) return null;
+    return stateToShareUrl(bytes);
+  },
+
   loadData: async () => {
     set({ loading: true, error: null });
     try {
-      const [catalogueRes, schedulesRes] = await Promise.all([
+      const [catalogueRes, schedulesRes, indicesRes] = await Promise.all([
         fetch('/data/catalogue.json'),
         fetch('/data/schedules.json'),
+        fetch('/data/indices.json').catch(() => null),
       ]);
       if (!catalogueRes.ok || !schedulesRes.ok) throw new Error('Failed to load data');
 
@@ -334,18 +462,57 @@ export const useAppStore = create<AppStore>((set, get) => ({
       const { buildDataCache } = await import('../lib/dataCache');
       const { CatalogueSchema } = await import('../schemas/catalogue');
       const { SchedulesDataSchema } = await import('../schemas/schedules');
+      const { IndicesSchema } = await import('../schemas/indices');
 
       const parsedCatalogue = CatalogueSchema.parse(catalogue);
       const parsedSchedules = SchedulesDataSchema.parse(schedulesData);
       const cache = buildDataCache(parsedCatalogue, parsedSchedules);
 
+      let indices: Indices | null = null;
+      if (indicesRes?.ok) {
+        const indicesJson = await indicesRes.json();
+        indices = IndicesSchema.parse(indicesJson);
+      } else {
+        indices = {
+          courses: (parsedCatalogue.courses as Array<{ code: string }>).map((c) => c.code),
+          programs: parsedCatalogue.programs.map((p) => p.url),
+        };
+      }
+
       set({
         catalogue: parsedCatalogue,
+        indices,
         schedulesData: parsedSchedules,
         cache,
         loading: false,
         error: null,
       });
+
+      if (indices && typeof window !== 'undefined') {
+        const catalogueLike = parsedCatalogue as {
+          courses: Array<{ code: string }>;
+          programs: Program[];
+        };
+        const urlBytes = parseStateFromUrl(window.location.search);
+        if (urlBytes && urlBytes.length > 0) {
+          const { decodeState } = await import('../lib/stateEncode');
+          const decoded = decodeState(urlBytes, catalogueLike, indices);
+          if ('error' in decoded) {
+            set({ error: decoded.error });
+          } else {
+            get().loadEncodedState(decoded);
+            const u = new URL(window.location.href);
+            u.searchParams.delete('s');
+            window.history.replaceState({}, '', u.toString());
+          }
+        } else {
+          const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+          if (stored) {
+            const decoded = decodeStateFromBase64(stored, catalogueLike, indices);
+            if (!('error' in decoded)) get().loadEncodedState(decoded);
+          }
+        }
+      }
     } catch (err) {
       set({
         loading: false,
@@ -475,7 +642,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
       selectedPerRequirement,
       selectedOptionsPerRequirement,
       coursesThisSemester,
-      program,
       completedCourses,
       prereqEligibleCourses,
       levelBuckets,
