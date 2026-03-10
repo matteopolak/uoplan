@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Box, Stack, Title, Alert, Loader, Text, Paper, Group, Button, Select, TextInput, Modal, Textarea } from '@mantine/core';
 import { AnimatePresence, motion } from 'framer-motion';
-import { IconCheck, IconShare } from '@tabler/icons-react';
+import { IconCheck, IconRefresh, IconShare } from '@tabler/icons-react';
 import { useAppStore } from './store/appStore';
 import { ProgramStep } from './components/ProgramStep';
 import { CompletedCoursesStep } from './components/CompletedCoursesStep';
@@ -32,6 +32,7 @@ function App() {
     remainingRequirements,
     requirementTreeWithStatus,
     completedRequirementsList,
+    unassignedCompletedCourses,
     selectedPerRequirement,
     selectedOptionsPerRequirement,
     coursesThisSemester,
@@ -55,6 +56,7 @@ function App() {
     setLevelBuckets,
     setLanguageBuckets,
     setElectiveLevelBuckets,
+    resetToDefault,
   } = useAppStore();
 
   const [active, setActive] = useState(0);
@@ -334,19 +336,36 @@ function App() {
           >
             Back to setup
           </Button>
-          {indices && (
+          <Group gap="xs">
+            {indices && (
+              <Button
+                variant="subtle"
+                color="gray"
+                size="sm"
+                radius={0}
+                leftSection={<IconShare size={14} />}
+                onClick={() => setShareModalOpen(true)}
+                style={{ border: 'none', alignSelf: 'flex-start' }}
+              >
+                Share
+              </Button>
+            )}
             <Button
               variant="subtle"
               color="gray"
               size="sm"
               radius={0}
-              leftSection={<IconShare size={14} />}
-              onClick={() => setShareModalOpen(true)}
+              leftSection={<IconRefresh size={14} />}
+              onClick={() => {
+                resetToDefault();
+                setShowCalendar(false);
+                setActive(0);
+              }}
               style={{ border: 'none', alignSelf: 'flex-start' }}
             >
-              Share
+              Reset
             </Button>
-          )}
+          </Group>
           <Select
             label="Schedule"
             data={scheduleOptions}
@@ -533,24 +552,39 @@ function App() {
                     STEP {active + 1} OF {STEPS.length} –{' '}
                     {STEPS[active].description.toUpperCase()}
                   </Text>
-                  {indices && (
+                  <Group gap="xs">
+                    {indices && (
+                      <Button
+                        variant="subtle"
+                        color="gray"
+                        size="xs"
+                        leftSection={<IconShare size={14} />}
+                        onClick={() => {
+                          const url = getShareUrl();
+                          if (url && navigator.clipboard?.writeText) {
+                            navigator.clipboard.writeText(url);
+                            setShareCopied(true);
+                            setTimeout(() => setShareCopied(false), 2000);
+                          }
+                        }}
+                      >
+                        {shareCopied ? 'Link copied' : 'Share'}
+                      </Button>
+                    )}
                     <Button
                       variant="subtle"
                       color="gray"
                       size="xs"
-                      leftSection={<IconShare size={14} />}
+                      leftSection={<IconRefresh size={14} />}
                       onClick={() => {
-                        const url = getShareUrl();
-                        if (url && navigator.clipboard?.writeText) {
-                          navigator.clipboard.writeText(url);
-                          setShareCopied(true);
-                          setTimeout(() => setShareCopied(false), 2000);
-                        }
+                        resetToDefault();
+                        setActive(0);
+                        setShowCalendar(false);
                       }}
                     >
-                      {shareCopied ? 'Link copied' : 'Share'}
+                      Reset
                     </Button>
-                  )}
+                  </Group>
                 </Group>
 
                 {active === 0 && (
@@ -581,6 +615,7 @@ function App() {
                       requirementTreeWithStatus={requirementTreeWithStatus}
                       completedRequirementsList={completedRequirementsList}
                       completedCourses={completedCourses}
+                      unassignedCompletedCourses={unassignedCompletedCourses}
                       selectedPerRequirement={selectedPerRequirement}
                       onSelect={setSelectedForRequirement}
                       selectedOptionsPerRequirement={selectedOptionsPerRequirement}

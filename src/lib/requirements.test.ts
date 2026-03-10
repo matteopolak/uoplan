@@ -120,7 +120,7 @@ describe('computeRemainingRequirements', () => {
       expect(remaining[0].candidateCourses).toContain('ESL 2121');
     });
 
-    it('returns 0 when any one done', () => {
+    it('still returns one remaining slot when one option completed (user assigns explicitly)', () => {
       const program: Program = {
         title: 'Test',
         url: '',
@@ -135,7 +135,9 @@ describe('computeRemainingRequirements', () => {
         ],
       };
       const remaining = computeRemainingRequirements(program, ['ESL 2100'], cache);
-      expect(remaining).toHaveLength(0);
+      expect(remaining).toHaveLength(1);
+      expect(remaining[0].candidateCourses).toContain('ESL 2100');
+      expect(remaining[0].candidateCourses).toContain('ESL 2121');
     });
   });
 
@@ -203,7 +205,7 @@ describe('computeRemainingRequirements', () => {
       expect(remaining[0].candidateCourses).toContain('ESL 2332');
     });
 
-    it('subtracts credits when courses completed', () => {
+    it('still returns one slot with full credits needed when courses completed (user assigns explicitly)', () => {
       const program: Program = {
         title: 'Test',
         url: '',
@@ -220,10 +222,12 @@ describe('computeRemainingRequirements', () => {
         ],
       };
       const remaining = computeRemainingRequirements(program, ['ESL 2181', 'ESL 2332', 'ESL 3181'], cache);
-      expect(remaining).toHaveLength(0);
+      expect(remaining).toHaveLength(1);
+      expect(remaining[0].creditsNeeded).toBe(9);
+      expect(remaining[0].satisfiedBy).toEqual([]);
     });
 
-    it('shows reduced credits when partially completed', () => {
+    it('shows full credits needed when partially completed (user assigns explicitly)', () => {
       const program: Program = {
         title: 'Test',
         url: '',
@@ -241,7 +245,7 @@ describe('computeRemainingRequirements', () => {
       };
       const remaining = computeRemainingRequirements(program, ['ESL 2181'], cache);
       expect(remaining).toHaveLength(1);
-      expect(remaining[0].creditsNeeded).toBe(6);
+      expect(remaining[0].creditsNeeded).toBe(9);
     });
   });
 
@@ -350,7 +354,7 @@ describe('computeRequirementTreeWithStatus', () => {
     expect(tree[0].satisfiedBy).toEqual([]);
   });
 
-  it('or_group has satisfiedOptionIndex and option titles when one option satisfied', () => {
+  it('or_group stays incomplete when one option completed (user assigns explicitly)', () => {
     const program: Program = {
       title: 'Test',
       url: '',
@@ -368,13 +372,13 @@ describe('computeRequirementTreeWithStatus', () => {
     const tree = computeRequirementTreeWithStatus(program, ['ESL 2121'], cache);
     expect(tree).toHaveLength(1);
     expect(tree[0].type).toBe('or_group');
-    expect(tree[0].complete).toBe(true);
-    expect(tree[0].satisfiedOptionIndex).toBe(1);
-    expect(tree[0].satisfiedBy).toEqual(['ESL 2121']);
+    expect(tree[0].complete).toBe(false);
+    expect(tree[0].satisfiedOptionIndex).toBeUndefined();
+    expect(tree[0].satisfiedBy).toEqual([]);
     expect(tree[0].options).toHaveLength(2);
-    expect(tree[0].options![0].complete).toBe(false);
-    expect(tree[0].options![1].complete).toBe(true);
-    expect(tree[0].options![1].satisfiedBy).toEqual(['ESL 2121']);
+    expect(tree[0].requirementId).toBeDefined();
+    expect(tree[0].candidateCourses).toContain('ESL 2100');
+    expect(tree[0].candidateCourses).toContain('ESL 2121');
   });
 
   it('or_group option children expose selectable requirement slots when incomplete', () => {
@@ -409,7 +413,7 @@ describe('computeRequirementTreeWithStatus', () => {
     }
   });
 
-  it('options_group has satisfiedOptionIndex when one branch satisfied', () => {
+  it('options_group stays incomplete when one branch would be satisfied (user assigns explicitly)', () => {
     const program: Program = {
       title: 'Test',
       url: '',
@@ -427,9 +431,8 @@ describe('computeRequirementTreeWithStatus', () => {
     const tree = computeRequirementTreeWithStatus(program, ['ESL 2100'], cache);
     expect(tree).toHaveLength(1);
     expect(tree[0].type).toBe('options_group');
-    expect(tree[0].complete).toBe(true);
-    expect(tree[0].satisfiedOptionIndex).toBe(0);
-    expect(tree[0].satisfiedBy).toContain('ESL 2100');
+    expect(tree[0].complete).toBe(false);
+    expect(tree[0].satisfiedBy).toEqual([]);
   });
 });
 
@@ -453,7 +456,7 @@ describe('collectCompletedRequirements', () => {
     expect(completed.some((c) => c.satisfiedBy.includes('ESL 2121'))).toBe(true);
   });
 
-  it('returns completed or_group as one item when satisfied', () => {
+  it('or_group root is incomplete when option completed; completed list may contain child course', () => {
     const program: Program = {
       title: 'Test',
       url: '',
@@ -469,8 +472,9 @@ describe('collectCompletedRequirements', () => {
       ],
     };
     const tree = computeRequirementTreeWithStatus(program, ['ESL 2100'], cache);
+    expect(tree[0].complete).toBe(false);
     const completed = collectCompletedRequirements(tree);
-    expect(completed).toHaveLength(1);
-    expect(completed[0].satisfiedBy).toEqual(['ESL 2100']);
+    // or_group itself is not complete; child course node may appear as completed when walking tree
+    expect(completed.length).toBeLessThanOrEqual(1);
   });
 });

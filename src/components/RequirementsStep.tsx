@@ -1,7 +1,7 @@
 import { useState, MouseEvent } from 'react';
 import { Stack, MultiSelect, Text, Paper, Badge, Group, Box, Collapse, Radio } from '@mantine/core';
-import { IconChevronDown } from '@tabler/icons-react';
-import { createCourseOptions, renderCourseOption } from './CourseSelect';
+import { IconCheck, IconChevronDown } from '@tabler/icons-react';
+import { createCourseOptions } from './CourseSelect';
 import type { ComboboxItem } from '@mantine/core';
 import type { DataCache } from '../lib/dataCache';
 import { courseMatchesFilters } from '../lib/courseFilters';
@@ -20,6 +20,7 @@ interface RequirementsStepProps {
   requirementTreeWithStatus: RequirementWithStatus[];
   completedRequirementsList: CompletedRequirementItem[];
   completedCourses: string[];
+  unassignedCompletedCourses: string[];
   selectedPerRequirement: Record<string, string[]>;
   onSelect: (requirementId: string, courses: string[]) => void;
   selectedOptionsPerRequirement: Record<string, number>;
@@ -121,6 +122,8 @@ interface RequirementNodeProps {
   levelBuckets: ('undergrad' | 'grad')[];
   languageBuckets: ('en' | 'fr' | 'other')[];
   electiveLevelBuckets: number[];
+  /** Course codes that are completed but not yet assigned to any requirement; show first in dropdown with checkmark. */
+  unassignedCompletedSet: Set<string>;
 }
 
 function RequirementNode({
@@ -139,6 +142,7 @@ function RequirementNode({
   levelBuckets,
   languageBuckets,
   electiveLevelBuckets,
+  unassignedCompletedSet,
 }: RequirementNodeProps) {
   // If a parent (like an option) is responsible for selection UX, don't remove it,
   // but we still want to reduce *nested* single-child wrappers inside it.
@@ -205,7 +209,13 @@ function RequirementNode({
     );
   }
 
-  const showAsComplete = node.complete && node.satisfiedBy.length > 0;
+  const selected = node.requirementId
+    ? (selectedPerRequirement[node.requirementId] ?? [])
+    : [];
+  const selectedCreditsForComplete = getSelectedCredits(cache, selected);
+  const showAsComplete =
+    (node.complete && node.satisfiedBy.length > 0) ||
+    (node.requirementId != null && creditsNeeded > 0 && selectedCreditsForComplete >= creditsNeeded);
   const hasRequirementId = node.requirementId != null;
   const isElectiveWithExclusions =
     (node.type === 'discipline_elective' ||
@@ -216,10 +226,9 @@ function RequirementNode({
     (node.excluded_disciplines?.length ?? 0) > 0;
   const available =
     node.candidateCourses
-      // Only consider courses not already completed
-      ?.filter((c) => !completedCourses.has(c))
+      // Include both completed (for assignment to this requirement) and not-yet-taken (for "want in schedule")
       // Must be eligible based on prerequisites
-      .filter((c) => prereqEligible.has(c))
+      ?.filter((c) => prereqEligible.has(c))
       // Must match current level/language filters
       .filter((c) => courseMatchesFilters(c, { levels: levelBuckets, languageBuckets }))
       // Only allow courses that have an actual schedule in the current term
@@ -234,22 +243,29 @@ function RequirementNode({
         const bucket = Math.floor(num / 1000) * 1000;
         return electiveLevelBuckets.includes(bucket);
       }) ?? [];
-  const options = createCourseOptions(available, cache);
-  const availableSet = new Set(available);
-  const selected = (node.requirementId
-    ? (selectedPerRequirement[node.requirementId] ?? [])
-    : []
-  ).filter((c) => availableSet.has(c));
+  const availableSorted = [...available].sort((a, b) => {
+    const aUn = unassignedCompletedSet.has(a);
+    const bUn = unassignedCompletedSet.has(b);
+    if (aUn && !bUn) return -1;
+    if (!aUn && bUn) return 1;
+    return 0;
+  });
+  const options = createCourseOptions(availableSorted, cache);
   const selectedCredits = getSelectedCredits(cache, selected);
+  const satisfiedByDisplay = [
+    ...(node.satisfiedBy ?? []),
+    ...selected,
+  ].filter(Boolean);
+  const satisfiedByDisplayUnique = [...new Set(satisfiedByDisplay)];
   const creditsRemaining = Math.max(0, creditsNeeded - selectedCredits);
   const isOverSelected = creditsNeeded > 0 && selectedCredits > creditsNeeded;
 
   const multiSelectBlock =
     hasRequirementId && !showAsComplete ? (
       <Stack gap="xs" mt="xs">
-        {node.satisfiedBy.length > 0 && (
+        {satisfiedByDisplayUnique.length > 0 && (
           <Text size="xs" c="dimmed">
-            Satisfied by completed: {node.satisfiedBy.sort().join(', ')}
+            Satisfied by: {satisfiedByDisplayUnique.sort().join(', ')}
           </Text>
         )}
         {creditsNeeded > 0 && (
@@ -270,7 +286,23 @@ function RequirementNode({
           onClick={(e) => e.stopPropagation()}
           searchable
           clearable
-          renderOption={renderCourseOption(cache)}
+          renderOption={({ option }) => {
+            const label =
+              cache?.getCourse(option.value)?.title
+                ? `${option.value} – ${cache.getCourse(option.value)?.title}`
+                : option.value;
+            if (unassignedCompletedSet.has(option.value)) {
+              return (
+                <Group gap="xs" wrap="nowrap">
+                  <IconCheck size={14} color="var(--mantine-color-green-6)" />
+                  <Text span size="sm">
+                    {label}
+                  </Text>
+                </Group>
+              );
+            }
+            return label;
+          }}
           filter={({ options: opts, search }) => {
             const q = search.toLowerCase().trim();
             if (!q) return opts;
@@ -303,7 +335,7 @@ function RequirementNode({
             {title}
           </Text>
           <Text size="xs" c="dimmed">
-            {node.satisfiedBy.sort().join(', ')}
+            {satisfiedByDisplayUnique.sort().join(', ')}
           </Text>
           <Badge color="green" variant="light" size="sm">
             Complete
@@ -415,6 +447,7 @@ function RequirementNode({
                     levelBuckets={levelBuckets}
                     languageBuckets={languageBuckets}
                     electiveLevelBuckets={electiveLevelBuckets}
+                    unassignedCompletedSet={unassignedCompletedSet}
                     radio={
                       node.requirementId != null && !node.complete
                         ? {
@@ -544,6 +577,7 @@ function RequirementNode({
                     levelBuckets={levelBuckets}
                     languageBuckets={languageBuckets}
                     electiveLevelBuckets={electiveLevelBuckets}
+                    unassignedCompletedSet={unassignedCompletedSet}
                     radio={
                       node.requirementId != null && !node.complete
                         ? {
@@ -638,6 +672,7 @@ function RequirementNode({
                 levelBuckets={levelBuckets}
                 languageBuckets={languageBuckets}
                 electiveLevelBuckets={electiveLevelBuckets}
+                unassignedCompletedSet={unassignedCompletedSet}
               />
             ))}
           </Stack>
@@ -731,6 +766,7 @@ function RequirementNode({
                   levelBuckets={levelBuckets}
                   languageBuckets={languageBuckets}
                   electiveLevelBuckets={electiveLevelBuckets}
+                  unassignedCompletedSet={unassignedCompletedSet}
                 />
               ))}
             </Stack>
@@ -747,6 +783,7 @@ export function RequirementsStep({
   requirementTreeWithStatus,
   completedRequirementsList,
   completedCourses,
+  unassignedCompletedCourses,
   selectedPerRequirement,
   onSelect,
   selectedOptionsPerRequirement,
@@ -762,6 +799,7 @@ export function RequirementsStep({
   const [completedOpen, setCompletedOpen] = useState(false);
   const completedSet = new Set(completedCourses);
   const prereqEligible = new Set(prereqEligibleCourses);
+  const unassignedCompletedSet = new Set(unassignedCompletedCourses);
   const hasTree = requirementTreeWithStatus.length > 0;
   const incompleteNodes = requirementTreeWithStatus.filter((node) => !node.complete);
   const hasRemaining = incompleteNodes.length > 0;
@@ -862,6 +900,7 @@ export function RequirementsStep({
               levelBuckets={levelBuckets}
               languageBuckets={languageBuckets}
               electiveLevelBuckets={electiveLevelBuckets}
+              unassignedCompletedSet={unassignedCompletedSet}
             />
           ))
         ) : (

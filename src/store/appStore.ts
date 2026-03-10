@@ -16,6 +16,7 @@ import {
   type GeneratedSchedule,
 } from '../lib/scheduleGenerator';
 import type { DataCache } from '../lib/dataCache';
+import { normalizeCourseCode } from '../lib/dataCache';
 import { buildPrereqContext, canTakeCourse } from '../lib/prerequisites';
 import {
   courseMatchesFilters,
@@ -63,6 +64,7 @@ export interface AppState {
   swapPool: string[];
   selectedScheduleIndex: number;
   generationError: string | null;
+  unassignedCompletedCourses: string[];
 }
 
 interface RecomputedState {
@@ -73,6 +75,7 @@ interface RecomputedState {
   selectedOptionsPerRequirement: Record<string, number>;
   prereqEligibleCourses: string[];
   filteredPrereqEligibleCourses: string[];
+  unassignedCompletedCourses: string[];
 }
 
 type RequirementPool = {
@@ -83,6 +86,37 @@ type RequirementPool = {
   creditsNeeded: number;
   minCourses: number;
 };
+
+/** Collect course codes that satisfy exact (course/or_course) requirements from the tree. */
+function collectAssignedFromExactRequirements(tree: RequirementWithStatus[]): Set<string> {
+  const assigned = new Set<string>();
+  function walk(nodes: RequirementWithStatus[]) {
+    for (const node of nodes) {
+      if (
+        (node.type === 'course' || node.type === 'or_course') &&
+        node.satisfiedBy?.length
+      ) {
+        for (const code of node.satisfiedBy) {
+          assigned.add(normalizeCourseCode(code));
+        }
+      }
+      if (node.options?.length) walk(node.options);
+    }
+  }
+  walk(tree);
+  return assigned;
+}
+
+const GROUP_STYLE_TYPES = [
+  'group',
+  'pick',
+  'or_group',
+  'discipline_elective',
+  'faculty_elective',
+  'free_elective',
+  'elective',
+  'non_discipline_elective',
+] as const;
 
 function buildRequirementPools(remaining: RemainingRequirement[]): RequirementPool[] {
   const pools: RequirementPool[] = [];
@@ -236,6 +270,7 @@ function recomputeStateForProgram(
       selectedOptionsPerRequirement: {},
       prereqEligibleCourses: [],
       filteredPrereqEligibleCourses: [],
+      unassignedCompletedCourses: [],
     };
   }
 
@@ -251,9 +286,43 @@ function recomputeStateForProgram(
     cache,
   );
 
+  // Unassigned completed = completed minus (exact-match satisfied) minus (user-selected per requirement).
+  const assignedFromExact = collectAssignedFromExactRequirements(tree);
+  const assignedFromSelected = new Set<string>();
+  for (const codes of Object.values(existingSelectedPerRequirement)) {
+    for (const code of codes) {
+      assignedFromSelected.add(normalizeCourseCode(code));
+    }
+  }
+  const completedNormalized = new Set(completedCourses.map(normalizeCourseCode));
+  const unassignedCompleted = [...completedNormalized].filter(
+    (norm) => !assignedFromExact.has(norm) && !assignedFromSelected.has(norm),
+  );
+
+  // For group-style requirements, augment candidate list with unassigned completed (eligible) first.
+  const augmentedRemaining = remaining.map((req) => {
+    if (
+      !req.candidateCourses?.length ||
+      !GROUP_STYLE_TYPES.includes(req.type as (typeof GROUP_STYLE_TYPES)[number])
+    ) {
+      return req;
+    }
+    const eligibleSet = new Set(req.candidateCourses.map(normalizeCourseCode));
+    const unassignedEligible = unassignedCompleted.filter((norm) =>
+      eligibleSet.has(norm),
+    );
+    const displayCodes = unassignedEligible.map(
+      (norm) => cache.getCourse(norm)?.code ?? norm,
+    );
+    const candidateCourses = [
+      ...new Set([...displayCodes, ...req.candidateCourses]),
+    ];
+    return { ...req, candidateCourses };
+  });
+
   const ctx = buildPrereqContext(completedCourses, cache);
   const candidateSet = new Set<string>();
-  for (const req of remaining) {
+  for (const req of augmentedRemaining) {
     for (const code of req.candidateCourses) {
       candidateSet.add(code);
     }
@@ -273,14 +342,19 @@ function recomputeStateForProgram(
     courseMatchesFilters(code, filters),
   );
 
+  const unassignedCompletedCourses = unassignedCompleted.map(
+    (norm) => cache.getCourse(norm)?.code ?? norm,
+  );
+
   return {
-    remainingRequirements: remaining,
+    remainingRequirements: augmentedRemaining,
     requirementTreeWithStatus: tree,
     completedRequirementsList: completedList,
     selectedPerRequirement: autoSelected,
     selectedOptionsPerRequirement: existingSelectedOptionsPerRequirement,
     prereqEligibleCourses,
     filteredPrereqEligibleCourses,
+    unassignedCompletedCourses,
   };
 }
 
@@ -307,6 +381,7 @@ export interface AppActions {
   setLevelBuckets: (buckets: CourseLevelBucket[]) => void;
   setLanguageBuckets: (buckets: CourseLanguageBucket[]) => void;
   setElectiveLevelBuckets: (buckets: number[]) => void;
+  resetToDefault: () => void;
 }
 
 export type AppStore = AppState & AppActions;
@@ -336,6 +411,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   swapPool: [],
   selectedScheduleIndex: 0,
   generationError: null,
+  unassignedCompletedCourses: [],
 
   loadEncodedState: (decoded) => {
     const { catalogue, indices, cache } = get();
@@ -573,6 +649,25 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set((s) => ({
       selectedPerRequirement: { ...s.selectedPerRequirement, [requirementId]: courses },
     }));
+    const {
+      program,
+      cache,
+      completedCourses,
+      selectedPerRequirement,
+      selectedOptionsPerRequirement,
+      levelBuckets,
+      languageBuckets,
+    } = get();
+    const state = recomputeStateForProgram(
+      program,
+      completedCourses,
+      cache,
+      selectedPerRequirement,
+      selectedOptionsPerRequirement,
+      levelBuckets,
+      languageBuckets,
+    );
+    set(state);
   },
 
   setLevelBuckets: (buckets) => {
@@ -621,6 +716,39 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   setElectiveLevelBuckets: (buckets) => {
     set({ electiveLevelBuckets: buckets });
+  },
+
+  resetToDefault: () => {
+    const { catalogue, indices, schedulesData, cache, loading, error } = get();
+    set({
+      catalogue,
+      indices,
+      schedulesData,
+      cache,
+      loading,
+      error,
+      program: null,
+      completedCourses: [],
+      remainingRequirements: [],
+      requirementTreeWithStatus: [],
+      completedRequirementsList: [],
+      selectedPerRequirement: {},
+      selectedOptionsPerRequirement: {},
+      coursesThisSemester: 5,
+      prereqEligibleCourses: [],
+      filteredPrereqEligibleCourses: [],
+      levelBuckets: ['undergrad'],
+      languageBuckets: ['en', 'other'],
+      electiveLevelBuckets: [1000, 2000],
+      generatedSchedules: [],
+      swapPool: [],
+      selectedScheduleIndex: 0,
+      generationError: null,
+      unassignedCompletedCourses: [],
+    });
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+    }
   },
 
   setSelectedOptionForRequirement: (requirementId, optionIndex) => {
