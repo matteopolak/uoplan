@@ -37,10 +37,6 @@ export interface CompletedRequirementItem {
   satisfiedBy: string[];
 }
 
-function normalizeSet(codes: string[]): Set<string> {
-  return new Set(codes.map(normalizeCourseCode));
-}
-
 function getCreditsForCourse(cache: DataCache, code: string): number {
   const course = cache.getCourse(code);
   return course?.credits ?? 3;
@@ -154,9 +150,22 @@ function runRequirementPass(
     return null;
   }
 
-  function toStatusBase(req: ProgramRequirement): Partial<RequirementWithStatus> {
+  type RequirementStatusBase = Omit<
+    RequirementWithStatus,
+    | 'complete'
+    | 'satisfiedBy'
+    | 'options'
+    | 'satisfiedOptionIndex'
+    | 'requirementId'
+    | 'candidateCourses'
+    | 'creditsNeeded'
+    | 'pickedCount'
+  >;
+
+  function toStatusBase(req: ProgramRequirement): RequirementStatusBase {
     return {
-      type: req.type,
+      // ProgramRequirementSchema should always provide type, but keep a safe fallback.
+      type: req.type ?? 'unknown',
       title: req.title,
       code: req.code,
       credits: req.credits,

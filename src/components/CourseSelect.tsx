@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Select } from '@mantine/core';
+import type { ComboboxItem } from '@mantine/core';
 import type { DataCache } from '../lib/dataCache';
 
 interface CourseSelectProps {
@@ -8,17 +9,15 @@ interface CourseSelectProps {
   data: { value: string; label: string }[];
   value: string | null;
   onChange: (value: string | null) => void;
-  cache: DataCache | null;
   filter?: (code: string) => boolean;
   multiple?: boolean;
 }
 
-function filterByQuery(options: { value: string; label: string }[], query: string) {
+function filterByQuery(options: ComboboxItem[], query: string): ComboboxItem[] {
   const q = query.toLowerCase().trim();
   if (!q) return options;
   return options.filter(
-    (o) =>
-      o.value.toLowerCase().includes(q) || o.label.toLowerCase().includes(q)
+    (o) => o.value.toLowerCase().includes(q) || o.label.toLowerCase().includes(q)
   );
 }
 
@@ -28,7 +27,6 @@ export function CourseSelect({
   data,
   value,
   onChange,
-  cache,
   filter,
 }: CourseSelectProps) {
   const filteredData = filter
@@ -44,9 +42,7 @@ export function CourseSelect({
       onChange={onChange}
       searchable
       clearable
-      filterOption={({ options, search }) =>
-        filterByQuery(options, search)
-      }
+      filter={({ options, search }) => filterByQuery(options as ComboboxItem[], search)}
       nothingFoundMessage="No courses found"
     />
   );

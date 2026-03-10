@@ -1,4 +1,4 @@
-import { Stack, NumberInput, Button, Text, Alert } from '@mantine/core';
+import { Stack, NumberInput, Button, Alert } from '@mantine/core';
 
 interface ScheduleCountStepProps {
   coursesThisSemester: number;
