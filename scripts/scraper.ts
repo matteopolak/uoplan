@@ -367,8 +367,10 @@ function parseCoursePrerequisites(text: string): CoursePrereqNode | undefined {
 function parseElectiveRequirement(text: string, credits?: number): ProgramRequirement {
   const trimmed = text.replace(/^\s*(and|or)\s+/i, '').trim();
 
+  const effectiveCredits = credits ?? parseCreditRequirement(trimmed);
+
   if (/free elective/i.test(trimmed)) {
-    return { type: 'free_elective', title: trimmed, credits };
+    return { type: 'free_elective', title: trimmed, credits: effectiveCredits };
   }
 
   const orParts = trimmed.split(/;\s*or\s+/i).map(s => s.trim()).filter(Boolean);
@@ -387,16 +389,16 @@ function parseElectiveRequirement(text: string, credits?: number): ProgramRequir
     return {
       type: 'non_discipline_elective',
       title: trimmed,
-      credits,
+      credits: effectiveCredits,
       excluded_disciplines: exclusions.length > 0 ? exclusions : undefined,
     };
   }
 
   if (/Faculty of/i.test(trimmed)) {
-    return { type: 'faculty_elective', title: trimmed, credits };
+    return { type: 'faculty_elective', title: trimmed, credits: effectiveCredits };
   }
   if (/in science/i.test(trimmed)) {
-    return { type: 'faculty_elective', title: trimmed, credits, faculty: 'Science' };
+    return { type: 'faculty_elective', title: trimmed, credits: effectiveCredits, faculty: 'Science' };
   }
 
   const disciplines = extractDisciplines(trimmed);
@@ -419,18 +421,18 @@ function parseElectiveRequirement(text: string, credits?: number): ProgramRequir
     }
 
     if (options.length === 1) {
-      return { ...options[0], credits, title: trimmed };
+      return { ...options[0], credits: effectiveCredits, title: trimmed };
     }
 
     return {
       type: 'pick',
       title: trimmed,
-      credits,
+      credits: effectiveCredits,
       options,
     };
   }
 
-  return { type: 'elective', title: trimmed, credits };
+  return { type: 'elective', title: trimmed, credits: effectiveCredits };
 }
 
 const ProgramSchema = z.object({

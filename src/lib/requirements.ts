@@ -116,7 +116,16 @@ function resolveElectiveCandidates(
 
 type ProcessResult = { satisfied: boolean; creditsUsed: number; coursesUsed: string[] };
 
-type ProcessOptions = { dryRun?: boolean };
+type ProcessOptions = {
+  /** When true, do not mutate the shared completion pool, but still build a status node. */
+  dryRun?: boolean;
+  /**
+   * When true, assign a requirementId even in dry-run mode.
+   * This is used to give option branches in OR groups their own selectable slots in the UI
+   * without emitting additional RemainingRequirement entries.
+   */
+  forceRequirementId?: boolean;
+};
 
 function runRequirementPass(
   program: Program,
@@ -181,6 +190,7 @@ function runRequirementPass(
     opts: ProcessOptions = {}
   ): { result: ProcessResult; node: RequirementWithStatus } {
     const dryRun = opts.dryRun ?? false;
+    const forceRequirementId = opts.forceRequirementId ?? false;
 
     switch (req.type) {
       case 'section': {
@@ -217,7 +227,7 @@ function runRequirementPass(
         }
         const course = cache.getCourse(code);
         const displayCode = course?.code ?? code;
-        const requirementId = dryRun ? undefined : nextId();
+        const requirementId = forceRequirementId || !dryRun ? nextId() : undefined;
         if (!dryRun) {
           result.push({
             requirementId: requirementId!,
@@ -298,15 +308,19 @@ function runRequirementPass(
               coursesUsed: [taken.displayCode],
             };
             satisfiedIdx = i;
-            const { node } = process(opt, '', { ...opts, dryRun: true });
+            const { node } = process(opt, '', { ...opts, dryRun: true, forceRequirementId: true });
             orChildNodes.push({ ...node, complete: true, satisfiedBy: [taken.displayCode] });
             for (let j = i + 1; j < req.options.length; j++) {
-              const { node: n } = process(req.options[j], '', { ...opts, dryRun: true });
+              const { node: n } = process(req.options[j], '', {
+                ...opts,
+                dryRun: true,
+                forceRequirementId: true,
+              });
               orChildNodes.push(n);
             }
             break;
           }
-          const { node } = process(opt, '', { ...opts, dryRun: true });
+          const { node } = process(opt, '', { ...opts, dryRun: true, forceRequirementId: true });
           orChildNodes.push(node);
           if (opt.type === 'course' && opt.code) {
             allCandidates.push(cache.getCourse(opt.code)?.code ?? opt.code);
@@ -415,7 +429,7 @@ function runRequirementPass(
           };
         }
 
-        const requirementId = dryRun ? undefined : nextId();
+        const requirementId = forceRequirementId || !dryRun ? nextId() : undefined;
         if (!dryRun) {
           result.push({
             requirementId: requirementId!,
@@ -527,7 +541,7 @@ function runRequirementPass(
           };
         }
 
-        const requirementId = dryRun ? undefined : nextId();
+        const requirementId = forceRequirementId || !dryRun ? nextId() : undefined;
         if (!dryRun) {
           result.push({
             requirementId: requirementId!,
@@ -589,7 +603,7 @@ function runRequirementPass(
           };
         }
 
-        const requirementId = dryRun ? undefined : nextId();
+        const requirementId = forceRequirementId || !dryRun ? nextId() : undefined;
         if (!dryRun) {
           result.push({
             requirementId: requirementId!,

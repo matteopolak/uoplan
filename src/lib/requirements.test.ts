@@ -377,6 +377,38 @@ describe('computeRequirementTreeWithStatus', () => {
     expect(tree[0].options![1].satisfiedBy).toEqual(['ESL 2121']);
   });
 
+  it('or_group option children expose selectable requirement slots when incomplete', () => {
+    const program: Program = {
+      title: 'Test',
+      url: '',
+      requirements: [
+        {
+          type: 'or_group',
+          title: 'One of',
+          options: [
+            { type: 'course', code: 'ESL 2100', credits: 3 },
+            { type: 'course', code: 'ESL 2121', credits: 3 },
+          ],
+        },
+      ],
+    };
+    const tree = computeRequirementTreeWithStatus(program, [], cache);
+    expect(tree).toHaveLength(1);
+    const group = tree[0];
+    expect(group.type).toBe('or_group');
+    expect(group.complete).toBe(false);
+    expect(group.options).toBeDefined();
+    expect(group.options!.length).toBe(2);
+    for (const opt of group.options!) {
+      // Each option should have its own requirementId and candidate list so the UI
+      // can render a per-option dropdown and progress.
+      expect(opt.requirementId).toBeDefined();
+      expect(opt.candidateCourses).toBeDefined();
+      expect(opt.candidateCourses!.length).toBeGreaterThan(0);
+      expect(opt.creditsNeeded).toBeGreaterThan(0);
+    }
+  });
+
   it('options_group has satisfiedOptionIndex when one branch satisfied', () => {
     const program: Program = {
       title: 'Test',

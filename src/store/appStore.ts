@@ -61,6 +61,115 @@ interface RecomputedState {
   filteredPrereqEligibleCourses: string[];
 }
 
+type RequirementPool = {
+  requirementId: string;
+  type: RemainingRequirement['type'];
+  label: string;
+  candidateCourses: string[];
+  creditsNeeded: number;
+  minCourses: number;
+};
+
+function buildRequirementPools(remaining: RemainingRequirement[]): RequirementPool[] {
+  const pools: RequirementPool[] = [];
+
+  for (const req of remaining) {
+    if (!req.requirementId || !req.candidateCourses?.length) continue;
+    const creditsNeeded = req.creditsNeeded ?? 0;
+    if (creditsNeeded <= 0) continue;
+
+    const uniqueCandidates = [...new Set(req.candidateCourses)];
+    if (uniqueCandidates.length === 0) continue;
+
+    const label = req.title ?? req.type ?? 'Requirement';
+    let minCourses = 0;
+    if (req.type === 'course' || req.type === 'or_course') {
+      minCourses = 1;
+    }
+
+    pools.push({
+      requirementId: req.requirementId,
+      type: req.type,
+      label,
+      candidateCourses: uniqueCandidates,
+      creditsNeeded,
+      minCourses,
+    });
+  }
+
+  return pools;
+}
+
+function averageCreditsForCodes(codes: string[], cache: DataCache): number {
+  if (codes.length === 0) return 3;
+  let total = 0;
+  let count = 0;
+  for (const code of codes) {
+    const course = cache.getCourse(code);
+    total += course?.credits ?? 3;
+    count += 1;
+  }
+  return count === 0 ? 3 : total / count;
+}
+
+function computeCoursesPerPool(
+  pools: RequirementPool[],
+  remainingCourseSlots: number,
+  cache: DataCache,
+): Map<string, number> {
+  const result = new Map<string, number>();
+  if (remainingCourseSlots <= 0 || pools.length === 0) {
+    return result;
+  }
+
+  let totalPlanned = 0;
+  for (const pool of pools) {
+    const avgCredits = averageCreditsForCodes(pool.candidateCourses, cache) || 3;
+    const ideal = Math.ceil(pool.creditsNeeded / avgCredits);
+    const withMin = Math.max(pool.minCourses, ideal);
+    const clamped = Math.max(0, Math.min(withMin, remainingCourseSlots));
+    if (clamped > 0) {
+      result.set(pool.requirementId, clamped);
+      totalPlanned += clamped;
+    }
+  }
+
+  if (totalPlanned === 0) {
+    return result;
+  }
+
+  while (totalPlanned > remainingCourseSlots) {
+    let maxKey: string | null = null;
+    let maxVal = 0;
+    for (const [reqId, count] of result.entries()) {
+      if (count > maxVal) {
+        maxVal = count;
+        maxKey = reqId;
+      }
+    }
+    if (maxKey == null) break;
+    const current = result.get(maxKey) ?? 0;
+    const pool = pools.find((p) => p.requirementId === maxKey);
+    const minCourses = pool?.minCourses ?? 0;
+    if (current <= minCourses || current <= 0) {
+      break;
+    }
+    result.set(maxKey, current - 1);
+    totalPlanned -= 1;
+  }
+
+  return result;
+}
+
+function shuffleInPlace<T>(arr: T[]): void {
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  }
+}
+
 function getAutoSelectedForRequirements(
   remaining: RemainingRequirement[],
   existing: Record<string, string[]>,
@@ -371,6 +480,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       prereqEligibleCourses,
       levelBuckets,
       languageBuckets,
+      electiveLevelBuckets,
     } = get();
     if (!cache) return;
     const cacheVal = cache;
@@ -381,13 +491,23 @@ export const useAppStore = create<AppStore>((set, get) => ({
       return component.startsWith('recherche / research');
     }
 
+    console.log({selectedPerRequirement});
+
     const allSelected = Object.values(selectedPerRequirement).flat();
     const unique = [...new Set(allSelected)];
+
+    // Separate out honours project selections: they **do** satisfy requirements but are not
+    // scheduled like regular courses. We treat them as occupying a slot in the user's
+    // requested course load, but we do not attempt to place them into time-based schedules.
+    const honoursSelected = unique.filter((code) => isHonoursProject(code));
     const pinned = unique.filter(
       (code) => !isHonoursProject(code) && !!cacheVal.getSchedule(code),
     );
 
-    if (pinned.length > coursesThisSemester) {
+    const honoursCount = honoursSelected.length;
+    const effectiveTarget = Math.max(0, coursesThisSemester - honoursCount);
+
+    if (pinned.length > effectiveTarget) {
       set({
         generationError:
           'You selected more mandatory courses than your target per semester. Increase the target or deselect some courses.',
@@ -454,75 +574,145 @@ export const useAppStore = create<AppStore>((set, get) => ({
       return;
     }
 
-    function helpsRequirements(code: string): boolean {
-      if (!program) return false;
-      const base = completedCourses;
-      const before = computeRequirementsState(program, base, cacheVal).remaining;
-      const beforeCredits = before.reduce(
-        (sum, r) => sum + (r.creditsNeeded ?? 0),
-        0
-      );
-      const after = computeRequirementsState(program, [...base, code], cacheVal).remaining;
-      const afterCredits = after.reduce(
-        (sum, r) => sum + (r.creditsNeeded ?? 0),
-        0
-      );
-      return afterCredits < beforeCredits;
-    }
-
-    const remainingById = new Map<string, RemainingRequirement>();
-    for (const r of remainingRequirements) {
-      remainingById.set(r.requirementId, r);
-    }
-
     const prereqEligibleSet = new Set(prereqEligibleCourses);
     const filters = {
       levels: levelBuckets,
       languageBuckets,
     };
-    const optionalPool: string[] = [];
-    const remainingNeeded = coursesThisSemester - pinned.length;
+    const remainingNeeded = effectiveTarget - pinned.length;
+    let filteredOptionalPool: string[] = [];
+
     if (remainingNeeded > 0) {
-      for (const req of remainingRequirements) {
-        const candidates = req.candidateCourses;
-        for (const code of candidates) {
+      const allPools = buildRequirementPools(remainingRequirements);
+
+      // Adjust pool credits to account for pinned courses that already satisfy them.
+      const pools: RequirementPool[] = allPools
+        .map((pool) => {
+          let pinnedCredits = 0;
+          for (const code of pinned) {
+            if (!pool.candidateCourses.includes(code)) continue;
+            const course = cacheVal.getCourse(code);
+            pinnedCredits += course?.credits ?? 3;
+          }
+          const remainingCredits = Math.max(0, pool.creditsNeeded - pinnedCredits);
+          return { ...pool, creditsNeeded: remainingCredits };
+        })
+        .filter((pool) => pool.creditsNeeded > 0);
+
+      const coursesPerPool = computeCoursesPerPool(pools, remainingNeeded, cacheVal);
+
+      const candidatesByRequirement = new Map<string, string[]>();
+      for (const pool of pools) {
+        const candidates: string[] = [];
+        for (const code of pool.candidateCourses) {
           if (
-            optionalPool.length >= remainingNeeded * 4
-            || pinned.includes(code)
-            || optionalPool.includes(code)
-            || isHonoursProject(code)
-            || !cacheVal.getSchedule(code)
+            !cacheVal.getSchedule(code) ||
+            pinned.includes(code) ||
+            !prereqEligibleSet.has(code) ||
+            !courseMatchesFilters(code, filters)
           ) {
             continue;
           }
-          if (!prereqEligibleSet.has(code)) continue;
-          if (!courseMatchesFilters(code, filters)) continue;
-          if (!helpsRequirements(code)) continue;
-          optionalPool.push(code);
+          // For elective-style pools, also respect elective level buckets from the
+          // requirements page (e.g., only 3000/4000-level electives).
+          const isElectiveType =
+            pool.type === 'elective' ||
+            pool.type === 'free_elective' ||
+            pool.type === 'non_discipline_elective' ||
+            pool.type === 'faculty_elective' ||
+            pool.type === 'discipline_elective';
+          if (electiveLevelBuckets.length > 0 && isElectiveType) {
+            const match = code.match(/\d{4}/);
+            if (match) {
+              const num = Number.parseInt(match[0], 10);
+              if (!Number.isNaN(num)) {
+                const bucket = Math.floor(num / 1000) * 1000;
+                if (!electiveLevelBuckets.includes(bucket)) {
+                  continue;
+                }
+              }
+            }
+          }
+          // Exclude honours/research courses from automatic scheduling; they are
+          // handled separately as honours selections.
+          if (isHonoursProject(code)) continue;
+          candidates.push(code);
+        }
+        if (candidates.length > 0) {
+          shuffleInPlace(candidates);
+          candidatesByRequirement.set(pool.requirementId, candidates);
         }
       }
 
-      if (optionalPool.length < remainingNeeded) {
-        for (const course of cacheVal.getAllCourses()) {
-          const code = course.code;
-          if (
-            optionalPool.length >= remainingNeeded * 6
-            || pinned.includes(code)
-            || optionalPool.includes(code)
-            || isHonoursProject(code)
-            || !cacheVal.getSchedule(code)
-          ) {
-            continue;
-          }
-          if (!prereqEligibleSet.has(code)) continue;
-          if (!courseMatchesFilters(code, filters)) continue;
-          if (!helpsRequirements(code)) continue;
-          optionalPool.push(code);
+      const chosenCodes = new Set<string>();
+
+      for (const pool of pools) {
+        let need = coursesPerPool.get(pool.requirementId) ?? 0;
+        if (need <= 0) continue;
+        const candidates = candidatesByRequirement.get(pool.requirementId) ?? [];
+        if (candidates.length === 0) continue;
+
+        for (const code of candidates) {
+          if (chosenCodes.size >= remainingNeeded) break;
+          if (chosenCodes.has(code)) continue;
+          if (pinned.includes(code)) continue;
+          chosenCodes.add(code);
+          need -= 1;
+          if (need <= 0) break;
         }
       }
+
+      // Debug logging for pool-based selection before we flatten to a single list.
+      // eslint-disable-next-line no-console
+      console.log('generateSchedules pools snapshot', {
+        remainingNeeded,
+        pools: pools.map((p) => ({
+          requirementId: p.requirementId,
+          type: p.type,
+          label: p.label,
+          creditsNeeded: p.creditsNeeded,
+          minCourses: p.minCourses,
+        })),
+        coursesPerPool: Array.from(coursesPerPool.entries()),
+        candidatesByRequirementSizes: Array.from(candidatesByRequirement.entries()).map(
+          ([reqId, codes]) => ({
+            requirementId: reqId,
+            candidateCount: codes.length,
+          }),
+        ),
+        chosenCodes: Array.from(chosenCodes),
+        pinned,
+        levelBuckets,
+        languageBuckets,
+        electiveLevelBuckets,
+      });
+
+      filteredOptionalPool = Array.from(chosenCodes)
+        .filter((code) => !isHonoursProject(code))
+        .filter((code) => !pinned.includes(code));
     }
 
-    const filteredOptionalPool = optionalPool.filter((code) => !isHonoursProject(code));
+    if (remainingNeeded <= 0) {
+      filteredOptionalPool = [];
+    }
+
+    shuffleInPlace(filteredOptionalPool);
+
+    // If we cannot even assemble enough eligible courses to hit the target
+    // count (including pinned), surface a clear error instead of silently
+    // generating partial schedules.
+    if (filteredOptionalPool.length + pinned.length < effectiveTarget) {
+      const swapPool = [...new Set([...pinned, ...filteredOptionalPool])];
+      set({
+        generatedSchedules: [],
+        swapPool,
+        selectedScheduleIndex: 0,
+        generationError:
+          'Not enough eligible courses match your filters and requirements to build a full schedule. Try relaxing filters or changing selections.',
+      });
+      return;
+    }
+
     const swapPool = [...new Set([...pinned, ...filteredOptionalPool])];
 
     // Debugging: inspect schedule generation inputs
@@ -531,21 +721,36 @@ export const useAppStore = create<AppStore>((set, get) => ({
       selectedPerRequirement,
       uniqueSelected: unique,
       pinned,
-      optionalPool,
-      filteredOptionalPool,
+      honoursSelected,
+      remainingRequirements,
+      remainingNeeded,
+      candidateCount: filteredOptionalPool.length,
+       requirementMeta: remainingRequirements.map((r) => ({
+         requirementId: r.requirementId,
+         type: r.type,
+         title: r.title,
+         creditsNeeded: r.creditsNeeded,
+         candidateCount: r.candidateCourses.length,
+       })),
       coursesThisSemester,
+      effectiveTarget,
     });
 
     const schedules =
       pinned.length === 0
-        ? genSchedules(filteredOptionalPool, coursesThisSemester, cacheVal)
-        : generateSchedulesWithPinned(pinned, filteredOptionalPool, coursesThisSemester, cacheVal);
+        ? genSchedules(filteredOptionalPool, effectiveTarget, cacheVal)
+        : generateSchedulesWithPinned(pinned, filteredOptionalPool, effectiveTarget, cacheVal);
+
+    const limitedSchedules = schedules.slice(0, 10);
 
     set({
-      generatedSchedules: schedules,
+      generatedSchedules: limitedSchedules,
       swapPool,
       selectedScheduleIndex: 0,
-      generationError: schedules.length === 0 ? 'No non-overlapping schedules could be generated with your selections.' : null,
+      generationError:
+        limitedSchedules.length === 0
+          ? 'No non-overlapping schedules could be generated with your selections.'
+          : null,
     });
   },
 
