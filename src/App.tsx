@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Stack, Title, Alert, Loader, Text, Paper, Group, Button, Select } from '@mantine/core';
+import { Box, Stack, Title, Alert, Loader, Text, Paper, Group, Button, Select, TextInput } from '@mantine/core';
 import { AnimatePresence, motion } from 'framer-motion';
 import { IconCheck } from '@tabler/icons-react';
 import { useAppStore } from './store/appStore';
@@ -8,6 +8,7 @@ import { CompletedCoursesStep } from './components/CompletedCoursesStep';
 import { RequirementsStep } from './components/RequirementsStep';
 import { ScheduleCountStep } from './components/ScheduleCountStep';
 import { CalendarView } from './components/CalendarView';
+import { buildScheduleIcs, downloadTextFile } from './lib/ics';
 
 const STEPS = [
   { label: 'Program', description: 'Choose your program' },
@@ -48,6 +49,8 @@ function App() {
   const [active, setActive] = useState(0);
   const [generating, setGenerating] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [timetableStartDate, setTimetableStartDate] = useState<string>('');
+  const [timetableEndDate, setTimetableEndDate] = useState<string>('');
 
   useEffect(() => {
     loadData();
@@ -65,6 +68,36 @@ function App() {
   };
 
   const uniqueSelected = new Set(Object.values(selectedPerRequirement).flat()).size;
+
+  useEffect(() => {
+    if (!showCalendar || generatedSchedules.length === 0) return;
+    const currentSchedule = generatedSchedules[selectedScheduleIndex] ?? generatedSchedules[0];
+
+    let minStart: string | null = null;
+    let maxEnd: string | null = null;
+
+    for (const enrollment of currentSchedule.enrollments) {
+      for (const { section } of Object.values(enrollment.sectionCombo)) {
+        const md = section.meetingDates;
+        if (!md || md.length < 2) continue;
+        const start = md[0];
+        const end = md[1];
+        if (start && (!minStart || start < minStart)) minStart = start;
+        if (end && (!maxEnd || end > maxEnd)) maxEnd = end;
+      }
+    }
+
+    if (!timetableStartDate && minStart) setTimetableStartDate(minStart);
+    if (!timetableEndDate && maxEnd) setTimetableEndDate(maxEnd);
+  }, [generatedSchedules, selectedScheduleIndex, showCalendar, timetableEndDate, timetableStartDate]);
+
+  const startOk =
+    Boolean(timetableStartDate) &&
+    !Number.isNaN(Date.parse(`${timetableStartDate}T00:00:00Z`));
+  const endOk =
+    Boolean(timetableEndDate) &&
+    !Number.isNaN(Date.parse(`${timetableEndDate}T00:00:00Z`));
+  const dateRangeOk = startOk && endOk && timetableStartDate <= timetableEndDate;
 
   if (loading) {
     return (
@@ -278,6 +311,50 @@ function App() {
             size="md"
             radius="sm"
           />
+          <Stack gap="xs">
+            <TextInput
+              label="Start date"
+              type="date"
+              value={timetableStartDate}
+              onChange={(e) => setTimetableStartDate(e.currentTarget.value)}
+              size="sm"
+              radius="sm"
+            />
+            <TextInput
+              label="End date"
+              type="date"
+              value={timetableEndDate}
+              onChange={(e) => setTimetableEndDate(e.currentTarget.value)}
+              size="sm"
+              radius="sm"
+            />
+            <Button
+              size="sm"
+              color="violet"
+              variant="filled"
+              radius={0}
+              style={{ border: '2px solid black' }}
+              disabled={!dateRangeOk}
+              onClick={() => {
+                const ics = buildScheduleIcs({
+                  schedule: currentSchedule,
+                  cache,
+                  startDate: timetableStartDate,
+                  endDate: timetableEndDate,
+                });
+                const idx = (selectedScheduleIndex ?? 0) + 1;
+                const filename = `uschedule-schedule-${idx}-${timetableStartDate}-to-${timetableEndDate}.ics`;
+                downloadTextFile(filename, ics, 'text/calendar;charset=utf-8');
+              }}
+            >
+              Download iCalendar (.ics)
+            </Button>
+            {!dateRangeOk && (
+              <Text size="xs" c="dimmed">
+                Choose a valid date range to enable export.
+              </Text>
+            )}
+          </Stack>
           <Stack gap={0}>
             <Text size="sm" c="dimmed">
               {generatedSchedules.length} total · click a block to swap
