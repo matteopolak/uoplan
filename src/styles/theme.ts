@@ -56,6 +56,7 @@ export const theme = createTheme({
     Button: {
       defaultProps: {
         variant: 'filled',
+        radius: 0,
       },
       styles: () => ({
         root: {

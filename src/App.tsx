@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Box, Stack, Title, Alert, Loader, Text, Paper, Group, Button } from '@mantine/core';
+import { AnimatePresence, motion } from 'framer-motion';
 import { IconCheck } from '@tabler/icons-react';
 import { useAppStore } from './store/appStore';
 import { ProgramStep } from './components/ProgramStep';
@@ -246,6 +247,7 @@ function App() {
                 variant="subtle"
                 color="gray"
                 size="xs"
+                radius={0}
                 onClick={() => {
                   setShowCalendar(false);
                   setActive(3);
@@ -329,86 +331,99 @@ function App() {
               backgroundColor: '#1E1E20',
             }}
           >
-            <Group justify="space-between" mb={8}>
-              <Text
-                size="xs"
-                fw={500}
-                style={{
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: '#A6A7AB',
-                }}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={active}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
               >
-                STEP {active + 1} OF {STEPS.length} – {STEPS[active].description.toUpperCase()}
-              </Text>
-            </Group>
+                <Group justify="space-between" mb={8}>
+                  <Text
+                    size="xs"
+                    fw={500}
+                    style={{
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                      color: '#A6A7AB',
+                    }}
+                  >
+                    STEP {active + 1} OF {STEPS.length} –{' '}
+                    {STEPS[active].description.toUpperCase()}
+                  </Text>
+                </Group>
 
-            {active === 0 && (
-              <Stack gap="md">
-                <ProgramStep
-                  programs={programs}
-                  value={program?.url ?? null}
-                  onChange={setProgram}
-                />
-              </Stack>
-            )}
-            {active === 1 && (
-              <Stack gap="md">
-                <CompletedCoursesStep
-                  cache={cache}
-                  remainingRequirements={remainingRequirements}
-                  completedCourses={completedCourses}
-                  onChange={setCompletedCourses}
-                  hasProgram={!!program}
-                />
-              </Stack>
-            )}
-            {active === 2 && (
-              <Stack gap="md">
-                <RequirementsStep
-                  cache={cache}
-                  remainingRequirements={remainingRequirements}
-                  requirementTreeWithStatus={requirementTreeWithStatus}
-                  completedRequirementsList={completedRequirementsList}
-                  completedCourses={completedCourses}
-                  selectedPerRequirement={selectedPerRequirement}
-                  onSelect={setSelectedForRequirement}
-                  selectedOptionsPerRequirement={selectedOptionsPerRequirement}
-                  onSelectOption={setSelectedOptionForRequirement}
-                />
-              </Stack>
-            )}
-            {active === 3 && (
-              <Stack gap="md">
-                <ScheduleCountStep
-                  coursesThisSemester={coursesThisSemester}
-                  onCoursesChange={setCoursesThisSemester}
-                  selectedCount={uniqueSelected}
-                  onGenerate={handleGenerate}
-                  generating={generating}
-                  error={generationError}
-                />
-              </Stack>
-            )}
+                {active === 0 && (
+                  <Stack gap="md">
+                    <ProgramStep
+                      programs={programs}
+                      value={program?.url ?? null}
+                      onChange={setProgram}
+                    />
+                  </Stack>
+                )}
+                {active === 1 && (
+                  <Stack gap="md">
+                    <CompletedCoursesStep
+                      cache={cache}
+                      remainingRequirements={remainingRequirements}
+                      completedCourses={completedCourses}
+                      onChange={setCompletedCourses}
+                      hasProgram={!!program}
+                    />
+                  </Stack>
+                )}
+                {active === 2 && (
+                  <Stack gap="md">
+                    <RequirementsStep
+                      cache={cache}
+                      remainingRequirements={remainingRequirements}
+                      requirementTreeWithStatus={requirementTreeWithStatus}
+                      completedRequirementsList={completedRequirementsList}
+                      completedCourses={completedCourses}
+                      selectedPerRequirement={selectedPerRequirement}
+                      onSelect={setSelectedForRequirement}
+                      selectedOptionsPerRequirement={selectedOptionsPerRequirement}
+                      onSelectOption={setSelectedOptionForRequirement}
+                    />
+                  </Stack>
+                )}
+                {active === 3 && (
+                  <Stack gap="md">
+                    <ScheduleCountStep
+                      coursesThisSemester={coursesThisSemester}
+                      onCoursesChange={setCoursesThisSemester}
+                      selectedCount={uniqueSelected}
+                      onGenerate={handleGenerate}
+                      generating={generating}
+                      error={generationError}
+                    />
+                  </Stack>
+                )}
 
-            <Group justify="space-between" mt={30}>
-              <Button
-                variant="subtle"
-                color="gray"
-                onClick={() => setActive((current) => Math.max(0, current - 1))}
-                disabled={active === 0}
-                style={{ border: 'none' }}
-              >
-                Back
-              </Button>
-              <Button
-                color="constructBlack"
-                onClick={() => setActive((current) => Math.min(STEPS.length - 1, current + 1))}
-                disabled={active === STEPS.length - 1}
-              >
-                Next
-              </Button>
-            </Group>
+                <Group justify="space-between" mt={30}>
+                  <Button
+                    variant="subtle"
+                    color="gray"
+                    radius={0}
+                    onClick={() => setActive((current) => Math.max(0, current - 1))}
+                    disabled={active === 0}
+                    style={{ border: 'none' }}
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    color="constructBlack"
+                    radius={0}
+                    onClick={() => setActive((current) => Math.min(STEPS.length - 1, current + 1))}
+                    disabled={active === STEPS.length - 1}
+                  >
+                    Next
+                  </Button>
+                </Group>
+              </motion.div>
+            </AnimatePresence>
           </Box>
         </Box>
 

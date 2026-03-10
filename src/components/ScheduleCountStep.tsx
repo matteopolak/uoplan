@@ -24,7 +24,7 @@ export function ScheduleCountStep({
       <NumberInput
         label="How many courses do you want this semester?"
         value={coursesThisSemester}
-        onChange={(v) => onCoursesChange(Number(v) || 4)}
+        onChange={(v) => onCoursesChange(Number(v) || 5)}
         min={1}
         max={10}
       />
@@ -40,12 +40,13 @@ export function ScheduleCountStep({
         </Alert>
       )}
       <Button
-        size="md"
+        size="sm"
         color="violet"
         variant="filled"
         onClick={onGenerate}
         loading={generating}
-        radius="sm"
+        radius={0}
+        style={{ border: '2px solid black' }}
       >
         Generate Schedules
       </Button>
