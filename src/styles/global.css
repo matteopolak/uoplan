@@ -1,4 +1,5 @@
 @import '@mantine/core/styles.css';
+@import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 body {
   background-color: #141517;
@@ -35,5 +36,47 @@ a {
 .stamp-hover:active {
   transform: rotate(0deg) scale(0.98);
   box-shadow: none;
+}
+
+/* React Big Calendar dark theme tweaks */
+.rbc-calendar {
+  background-color: #141517;
+  color: var(--mantine-color-gray-3);
+}
+
+.rbc-time-view,
+.rbc-time-content {
+  background-color: #141517;
+}
+
+.rbc-header {
+  background-color: #141517;
+  color: var(--mantine-color-gray-3);
+  border-bottom-color: var(--mantine-color-dark-4);
+}
+
+.rbc-time-header-content {
+  border-left-color: var(--mantine-color-dark-4);
+}
+
+.rbc-time-slot,
+.rbc-day-bg,
+.rbc-timeslot-group {
+  border-color: var(--mantine-color-dark-4);
+}
+
+.rbc-today {
+  background-color: rgba(134, 46, 156, 0.18); /* subtle purple highlight instead of solid white */
+}
+
+.rbc-time-gutter,
+.rbc-time-column {
+  color: var(--mantine-color-gray-5);
+}
+
+.rbc-event {
+  background-color: transparent;
+  border: none;
+  padding: 0;
 }
 

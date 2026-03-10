@@ -482,9 +482,6 @@ export function RequirementsStep({
       </Text>
 
       <Stack gap="md">
-        <Text fw={600} size="md">
-          Requirements
-        </Text>
         {hasRemaining ? (
           incompleteNodes.map((node, idx) => (
             <RequirementNode

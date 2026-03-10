@@ -16,14 +16,26 @@ export interface DataCache {
   getAllSchedules(): CourseSchedule[];
 }
 
+function isStageWorkTermCourse(course: Course): boolean {
+  const component = course.component?.trim().toLowerCase() ?? '';
+  return component.startsWith('stage / work term');
+}
+
 export function buildDataCache(catalogue: Catalogue, schedulesData: SchedulesData): DataCache {
   const courseMap = new Map<string, Course>();
   const scheduleMap = new Map<string, CourseSchedule>();
   const disciplineMap = new Map<string, Course[]>();
+  const eligibleCourses: Course[] = [];
 
   for (const course of catalogue.courses) {
     const key = normalizeCourseCode(course.code);
     courseMap.set(key, course);
+
+    if (isStageWorkTermCourse(course)) {
+      continue;
+    }
+
+    eligibleCourses.push(course);
 
     const subject = course.code.split(/\s+/)[0]?.toUpperCase() ?? '';
     if (subject) {
@@ -50,7 +62,7 @@ export function buildDataCache(catalogue: Catalogue, schedulesData: SchedulesDat
       return disciplineMap.get(key) ?? [];
     },
     getAllCourses(): Course[] {
-      return catalogue.courses;
+      return eligibleCourses;
     },
     getAllSchedules(): CourseSchedule[] {
       return schedulesData.schedules;
