@@ -1,9 +1,14 @@
-import { Stack, Select, Group, Text, Menu, Paper } from '@mantine/core';
-import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay } from 'date-fns';
-import { enUS } from 'date-fns/locale';
+import { useRef, useEffect } from 'react';
+import { Box, Text } from '@mantine/core';
+import FullCalendar from '@fullcalendar/react';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import { startOfWeek } from 'date-fns';
 import type { DataCache } from '../lib/dataCache';
-import type { GeneratedSchedule } from '../lib/scheduleGenerator';
+import type {
+  GeneratedSchedule,
+  CourseEnrollment,
+} from '../lib/scheduleGenerator';
 
 interface CalendarViewProps {
   schedules: GeneratedSchedule[];
@@ -13,24 +18,6 @@ interface CalendarViewProps {
   selectedPerRequirement: Record<string, string[]>;
   onSwap: (scheduleIndex: number, enrollmentIndex: number, newCourseCode: string) => void;
 }
-
-const locales = {
-  'en-US': enUS,
-};
-
-const localizer = dateFnsLocalizer({
-  format,
-  parse: (value, formatString) => parse(value, formatString, new Date(), { locale: enUS }),
-  startOfWeek: (date) => startOfWeek(date, { weekStartsOn: 1 }),
-  getDay,
-  locales,
-});
-
-const formats = {
-  dayFormat: (date: Date, culture: string | undefined, loc: typeof localizer) =>
-    loc.format(date, 'EEE', culture),
-  dayRangeHeaderFormat: () => '',
-};
 
 const DAY_OFFSETS: Record<string, number> = {
   Mo: 0,
@@ -51,6 +38,17 @@ const COLORS = [
   'orange',
 ] as const;
 
+const COLOR_HEX: Record<(typeof COLORS)[number], string> = {
+  violet: '#7950f2',
+  blue: '#228be6',
+  teal: '#12b886',
+  cyan: '#15aabf',
+  pink: '#e64980',
+  grape: '#be4bdb',
+  indigo: '#4c6ef5',
+  orange: '#fd7e14',
+};
+
 interface CalendarEvent {
   id: string;
   title: string;
@@ -61,6 +59,8 @@ interface CalendarEvent {
   swapCandidates: string[];
   startMinutes: number;
   endMinutes: number;
+  componentSection: string;
+  professor: string;
 }
 
 function getSwapCandidates(
@@ -116,150 +116,133 @@ export function CalendarView({
     );
   }
 
-  const scheduleOptions = schedules.map((_, i) => ({
-    value: String(i),
-    label: `Schedule #${i + 1}`,
-  }));
-
   const currentSchedule = schedules[selectedIndex] ?? schedules[0];
 
   const referenceWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
 
   const events: CalendarEvent[] = currentSchedule.enrollments.flatMap((enrollment, enrollIdx) => {
-    if (enrollment.times.length === 0) {
-      return [];
-    }
-
     const swapCandidates = getSwapCandidates(enrollment.courseCode, selectedPerRequirement);
-
-    return enrollment.times.map((t, timeIdx) => {
-      const offset = DAY_OFFSETS[t.day] ?? null;
-      if (offset == null) return null;
-
-      const dayDate = addDays(referenceWeekStart, offset);
-      const start = minutesToDate(dayDate, t.startMinutes);
-      const end = minutesToDate(dayDate, t.endMinutes);
-
-      return {
-        id: `${enrollment.courseCode}-${timeIdx}`,
-        title: enrollment.courseCode,
-        start,
-        end,
-        courseCode: enrollment.courseCode,
-        enrollmentIndex: enrollIdx,
-        swapCandidates,
-        startMinutes: t.startMinutes,
-        endMinutes: t.endMinutes,
-      } satisfies CalendarEvent;
-    });
-  }).filter((e): e is CalendarEvent => e !== null);
-
-  function CourseEventInner({
-    event,
-  }: {
-    event: CalendarEvent;
-  }) {
-    const color = COLORS[event.enrollmentIndex % COLORS.length];
-
-    const block = (
-      <Paper
-        p="xs"
-        radius="sm"
-        bg={`var(--mantine-color-${color}-7)`}
-        style={{
-          fontSize: '0.7rem',
-          cursor: event.swapCandidates.length > 0 ? 'pointer' : 'default',
-          minHeight: 0,
-        }}
-      >
-        <Text size="xs" fw={600} lineClamp={1} c="white">
-          {event.courseCode}
-        </Text>
-        <Text size="xs" c="gray.3" lineClamp={1}>
-          {formatTime(event.startMinutes)}–{formatTime(event.endMinutes)}
-        </Text>
-      </Paper>
-    );
-
-    if (event.swapCandidates.length === 0) {
-      return block;
+    const out: CalendarEvent[] = [];
+    let timeIdx = 0;
+    for (const [comp, { section }] of Object.entries(enrollment.sectionCombo)) {
+      const sectionCode = section.sectionCode ?? section.section ?? '';
+      const componentSection = `${comp} - ${sectionCode}`;
+      const professor = [...new Set(section.instructors ?? [])].filter(Boolean).join(', ') || '—';
+      for (const t of section.times) {
+        if (t.startMinutes >= t.endMinutes) continue;
+        const offset = DAY_OFFSETS[t.day] ?? null;
+        if (offset == null) continue;
+        const dayDate = addDays(referenceWeekStart, offset);
+        const start = minutesToDate(dayDate, t.startMinutes);
+        const end = minutesToDate(dayDate, t.endMinutes);
+        out.push({
+          id: `${enrollment.courseCode}-${comp}-${timeIdx}`,
+          title: enrollment.courseCode,
+          start,
+          end,
+          courseCode: enrollment.courseCode,
+          enrollmentIndex: enrollIdx,
+          swapCandidates,
+          startMinutes: t.startMinutes,
+          endMinutes: t.endMinutes,
+          componentSection,
+          professor,
+        } satisfies CalendarEvent);
+        timeIdx += 1;
+      }
     }
+    return out;
+  });
 
-    return (
-      <Menu position="bottom-start" withArrow>
-        <Menu.Target>{block}</Menu.Target>
-        <Menu.Dropdown>
-          <Menu.Label>Swap with</Menu.Label>
-          {event.swapCandidates.map((code) => {
-            const course = cache?.getCourse(code);
-            return (
-              <Menu.Item
-                key={code}
-                onClick={() => onSwap(selectedIndex, event.enrollmentIndex, code)}
-              >
-                {code} – {course?.title ?? ''}
-              </Menu.Item>
-            );
-          })}
-        </Menu.Dropdown>
-      </Menu>
-    );
-  }
+  const fcEvents = events;
+  const calendarRef = useRef<FullCalendar>(null);
+
+  useEffect(() => {
+    const el = calendarRef.current;
+    if (!el) return;
+    const api = el.getApi();
+    //api.setOption('height', '100%');
+  }, [selectedIndex, schedules.length]);
 
   return (
-    <Stack gap="sm">
-      <Group align="flex-end">
-        <Select
-          label="Schedule"
-          data={scheduleOptions}
-          value={String(Math.min(selectedIndex, schedules.length - 1))}
-          onChange={(v) => onSelectIndex(Number(v ?? 0))}
-          w={200}
-          size="md"
-          radius="sm"
-        />
-        <Stack gap={0} mb={4}>
-          <Text size="sm" c="dimmed">
-            {schedules.length} total · click a block to swap
-          </Text>
-          <Text size="xs" c="dimmed">
-            Showing {events.length} meeting block{events.length === 1 ? '' : 's'} this week
-          </Text>
-        </Stack>
-      </Group>
+    <Box
+      style={{
+        width: '100%',
+        height: '100%',
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       <div
         style={{
-          height: 600,
-          background: 'var(--mantine-color-dark-6)',
+          flex: 1,
+          minHeight: 0,
+          width: '100%',
+          background: '#111113',
           borderRadius: 'var(--mantine-radius-sm)',
           padding: '0.5rem',
+          height: '100%',
         }}
       >
-        <Calendar
-          localizer={localizer}
-          events={events}
-          defaultView="week"
-          views={['week']}
-          toolbar={false}
-          formats={formats}
-          step={30}
-          timeslots={1}
-          defaultDate={referenceWeekStart}
-          min={minutesToDate(referenceWeekStart, 8 * 60)}
-          max={minutesToDate(referenceWeekStart, 22 * 60)}
-          style={{ height: '100%' }}
-          components={{
-            event: ({ event }) => <CourseEventInner event={event as CalendarEvent} />,
-          }}
-          eventPropGetter={() => ({
-            style: {
-              backgroundColor: 'transparent',
-              border: 'none',
-              padding: 0,
-            },
-          })}
-        />
+          <FullCalendar
+            ref={calendarRef}
+            plugins={[timeGridPlugin, interactionPlugin]}
+            initialView="timeGridWeek"
+            headerToolbar={false}
+            firstDay={1}
+            weekends={false}
+            allDaySlot={false}
+            slotDuration="01:00:00"
+            slotMinTime="08:00:00"
+            slotMaxTime="22:00:00"
+            slotLabelFormat={{
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: false,
+            }}
+            expandRows={true}
+            dayHeaderFormat={{ weekday: 'short' }}
+            events={fcEvents.map((e) => ({
+              id: e.id,
+              title: e.courseCode,
+              start: e.start,
+              end: e.end,
+              extendedProps: e,
+            }))}
+            initialDate={referenceWeekStart}
+            height="100%"
+            eventContent={(arg) => {
+              const ext = arg.event.extendedProps as CalendarEvent;
+              const colorName = COLORS[ext.enrollmentIndex % COLORS.length];
+              const hex = COLOR_HEX[colorName];
+              const [r, g, b] = hex.replace('#', '').match(/.{2}/g)!.map((x) => parseInt(x, 16));
+              return (
+                <div
+                  className="fc-uschedule-event"
+                  style={{
+                    cursor: ext.swapCandidates.length > 0 ? 'pointer' : 'default',
+                    borderLeft: `4px solid ${hex}`,
+                    backgroundColor: `rgba(${r}, ${g}, ${b}, 0.38)`,
+                  }}
+                >
+                  <div className="fc-uschedule-event-body">
+                    <span className="fc-uschedule-event-code">{ext.courseCode}</span>
+                    <span className="fc-uschedule-event-type">{ext.componentSection}</span>
+                    <span className="fc-uschedule-event-professor">{ext.professor}</span>
+                  </div>
+                </div>
+              );
+            }}
+            eventClick={(info) => {
+              const ext = info.event.extendedProps as CalendarEvent;
+              if (!ext.swapCandidates.length) return;
+              // Simple first-candidate swap to keep behavior without a custom menu
+              const nextCode = ext.swapCandidates[0];
+              onSwap(selectedIndex, ext.enrollmentIndex, nextCode);
+            }}
+          />
       </div>
-    </Stack>
+    </Box>
   );
 }
