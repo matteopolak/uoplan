@@ -48,8 +48,10 @@ function App() {
     filteredPrereqEligibleCourses,
     levelBuckets,
     languageBuckets,
+    electiveLevelBuckets,
     setLevelBuckets,
     setLanguageBuckets,
+    setElectiveLevelBuckets,
   } = useAppStore();
 
   const [active, setActive] = useState(0);
@@ -496,6 +498,8 @@ function App() {
                       languageBuckets={languageBuckets}
                       onChangeLevelBuckets={setLevelBuckets}
                       onChangeLanguageBuckets={setLanguageBuckets}
+                      electiveLevelBuckets={electiveLevelBuckets}
+                      onChangeElectiveLevelBuckets={setElectiveLevelBuckets}
                     />
                   </Stack>
                 )}

@@ -6,28 +6,6 @@ import type {
   CompletedRequirementItem,
 } from '../lib/requirements';
 import { computeRequirementsState } from '../lib/requirements';
-
-function getAutoSelectedForRequirements(
-  remaining: RemainingRequirement[],
-  existing: Record<string, string[]>
-): Record<string, string[]> {
-  const candidateSetByReq = new Map<string, Set<string>>();
-  for (const req of remaining) {
-    candidateSetByReq.set(req.requirementId, new Set(req.candidateCourses));
-  }
-  const out: Record<string, string[]> = {};
-  for (const req of remaining) {
-    const candidateSet = candidateSetByReq.get(req.requirementId)!;
-    if (req.candidateCourses.length === 1) {
-      out[req.requirementId] = [req.candidateCourses[0]];
-    } else {
-      const prev = existing[req.requirementId] ?? [];
-      const valid = prev.filter((c) => candidateSet.has(c));
-      if (valid.length) out[req.requirementId] = valid;
-    }
-  }
-  return out;
-}
 import {
   generateSchedules as genSchedules,
   generateSchedulesWithPinned,
@@ -66,6 +44,7 @@ export interface AppState {
   filteredPrereqEligibleCourses: string[];
   levelBuckets: CourseLevelBucket[];
   languageBuckets: CourseLanguageBucket[];
+  electiveLevelBuckets: number[];
   generatedSchedules: GeneratedSchedule[];
   swapPool: string[];
   selectedScheduleIndex: number;
@@ -80,6 +59,40 @@ interface RecomputedState {
   selectedOptionsPerRequirement: Record<string, number>;
   prereqEligibleCourses: string[];
   filteredPrereqEligibleCourses: string[];
+}
+
+function getAutoSelectedForRequirements(
+  remaining: RemainingRequirement[],
+  existing: Record<string, string[]>,
+  cache: DataCache | null,
+): Record<string, string[]> {
+  if (!cache) {
+    return {};
+  }
+
+  const hasSchedule = (code: string) => !!cache.getSchedule(code);
+  const candidateSetByReq = new Map<string, Set<string>>();
+
+  for (const req of remaining) {
+    const scheduledCandidates = req.candidateCourses.filter(hasSchedule);
+    candidateSetByReq.set(req.requirementId, new Set(scheduledCandidates));
+  }
+
+  const out: Record<string, string[]> = {};
+  for (const req of remaining) {
+    const candidateSet = candidateSetByReq.get(req.requirementId)!;
+    const scheduledCandidates = Array.from(candidateSet);
+
+    if (scheduledCandidates.length === 1) {
+      out[req.requirementId] = [scheduledCandidates[0]];
+    } else {
+      const prev = existing[req.requirementId] ?? [];
+      const valid = prev.filter((c) => candidateSet.has(c));
+      if (valid.length) out[req.requirementId] = valid;
+    }
+  }
+
+  return out;
 }
 
 function recomputeStateForProgram(
@@ -109,7 +122,11 @@ function recomputeStateForProgram(
     cache
   );
 
-  const autoSelected = getAutoSelectedForRequirements(remaining, existingSelectedPerRequirement);
+  const autoSelected = getAutoSelectedForRequirements(
+    remaining,
+    existingSelectedPerRequirement,
+    cache,
+  );
 
   const ctx = buildPrereqContext(completedCourses, cache);
   const candidateSet = new Set<string>();
@@ -163,6 +180,7 @@ export interface AppActions {
   getSwapCandidates: (scheduleIndex: number, enrollmentIndex: number) => string[];
   setLevelBuckets: (buckets: CourseLevelBucket[]) => void;
   setLanguageBuckets: (buckets: CourseLanguageBucket[]) => void;
+  setElectiveLevelBuckets: (buckets: number[]) => void;
 }
 
 export type AppStore = AppState & AppActions;
@@ -186,6 +204,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   filteredPrereqEligibleCourses: [],
   levelBuckets: ['undergrad'],
   languageBuckets: ['en', 'other'],
+  electiveLevelBuckets: [1000, 2000],
   generatedSchedules: [],
   swapPool: [],
   selectedScheduleIndex: 0,
@@ -324,6 +343,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set(state);
   },
 
+  setElectiveLevelBuckets: (buckets) => {
+    set({ electiveLevelBuckets: buckets });
+  },
+
   setSelectedOptionForRequirement: (requirementId, optionIndex) => {
     set((s) => ({
       selectedOptionsPerRequirement: {
@@ -360,7 +383,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     const allSelected = Object.values(selectedPerRequirement).flat();
     const unique = [...new Set(allSelected)];
-    const pinned = unique.filter((code) => !isHonoursProject(code));
+    const pinned = unique.filter(
+      (code) => !isHonoursProject(code) && !!cacheVal.getSchedule(code),
+    );
 
     if (pinned.length > coursesThisSemester) {
       set({
@@ -561,6 +586,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
       completedCourses,
       prereqEligibleCourses,
       filteredPrereqEligibleCourses,
+      levelBuckets,
+      languageBuckets,
+      electiveLevelBuckets,
     } = get();
     if (!cache || scheduleIndex >= generatedSchedules.length) return [];
 
@@ -599,6 +627,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       return enrollments;
     }
 
+    const filters = { levels: levelBuckets, languageBuckets };
+
     const candidates: string[] = [];
     for (const code of candidateSet) {
       if (!prereqEligibleSet.has(code)) continue;
@@ -606,6 +636,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
       if (completedCourses.includes(code)) continue;
       if (alreadyInSchedule.has(code)) continue;
       if (isHonoursProject(code)) continue;
+      if (!courseMatchesFilters(code, filters)) continue;
+      if (electiveLevelBuckets.length > 0) {
+        const match = code.match(/\d{4}/);
+        if (match) {
+          const num = parseInt(match[0], 10);
+          if (!Number.isNaN(num)) {
+            const bucket = Math.floor(num / 1000) * 1000;
+            if (!electiveLevelBuckets.includes(bucket)) continue;
+          }
+        }
+      }
       const possibleEnrollments = getValidEnrollmentsFor(code);
       if (possibleEnrollments.length === 0) continue;
       for (const candidate of possibleEnrollments) {

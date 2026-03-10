@@ -11,6 +11,9 @@ import type {
   CompletedRequirementItem,
 } from '../lib/requirements';
 
+const REQUIREMENT_INDENT_PX = 12;
+const REQUIREMENT_BASE_PADDING_PX = 10;
+
 interface RequirementsStepProps {
   cache: DataCache | null;
   remainingRequirements: RemainingRequirement[];
@@ -24,8 +27,10 @@ interface RequirementsStepProps {
   prereqEligibleCourses: string[];
   levelBuckets: ('undergrad' | 'grad')[];
   languageBuckets: ('en' | 'fr' | 'other')[];
+  electiveLevelBuckets: number[];
   onChangeLevelBuckets: (buckets: ('undergrad' | 'grad')[]) => void;
   onChangeLanguageBuckets: (buckets: ('en' | 'fr' | 'other')[]) => void;
+  onChangeElectiveLevelBuckets: (buckets: number[]) => void;
 }
 
 function getSelectedCredits(cache: DataCache | null, courseCodes: string[]): number {
@@ -110,6 +115,7 @@ interface RequirementNodeProps {
   prereqEligible: Set<string>;
   levelBuckets: ('undergrad' | 'grad')[];
   languageBuckets: ('en' | 'fr' | 'other')[];
+  electiveLevelBuckets: number[];
 }
 
 function RequirementNode({
@@ -126,6 +132,7 @@ function RequirementNode({
   prereqEligible,
   levelBuckets,
   languageBuckets,
+  electiveLevelBuckets,
 }: RequirementNodeProps) {
   // If a parent (like an option) is responsible for selection UX, don't remove it,
   // but we still want to reduce *nested* single-child wrappers inside it.
@@ -192,11 +199,33 @@ function RequirementNode({
 
   const showAsComplete = node.complete && node.satisfiedBy.length > 0;
   const hasRequirementId = node.requirementId != null;
+  const isElectiveWithExclusions =
+    (node.type === 'discipline_elective' ||
+      node.type === 'elective' ||
+      node.type === 'faculty_elective' ||
+      node.type === 'free_elective' ||
+      node.type === 'non_discipline_elective') &&
+    (node.excluded_disciplines?.length ?? 0) > 0;
   const available =
     node.candidateCourses
+      // Only consider courses not already completed
       ?.filter((c) => !completedCourses.has(c))
+      // Must be eligible based on prerequisites
       .filter((c) => prereqEligible.has(c))
-      .filter((c) => courseMatchesFilters(c, { levels: levelBuckets, languageBuckets })) ?? [];
+      // Must match current level/language filters
+      .filter((c) => courseMatchesFilters(c, { levels: levelBuckets, languageBuckets }))
+      // Only allow courses that have an actual schedule in the current term
+      .filter((c) => !cache || !!cache.getSchedule(c))
+      // Elective-specific level bucket filtering
+      .filter((c) => {
+        if (!isElectiveWithExclusions || electiveLevelBuckets.length === 0) return true;
+        const match = c.match(/\d{4}/);
+        if (!match) return true;
+        const num = parseInt(match[0], 10);
+        if (Number.isNaN(num)) return true;
+        const bucket = Math.floor(num / 1000) * 1000;
+        return electiveLevelBuckets.includes(bucket);
+      }) ?? [];
   const options = createCourseOptions(available, cache);
   const availableSet = new Set(available);
   const selected = (node.requirementId
@@ -249,12 +278,12 @@ function RequirementNode({
     return (
       <Paper
         key={title}
-        p="md"
+        p="sm"
         withBorder
         radius={0}
-        mt="sm"
+        mt="xs"
         style={{
-          paddingLeft: depth * 16 + 12,
+          paddingLeft: depth * REQUIREMENT_INDENT_PX + REQUIREMENT_BASE_PADDING_PX,
           backgroundColor: 'var(--mantine-color-dark-7)',
         }}
       >
@@ -290,16 +319,16 @@ function RequirementNode({
         p="sm"
         withBorder
         radius={0}
-        mt="sm"
+        mt="xs"
         style={{
-          paddingLeft: depth * 16 + 12,
+          paddingLeft: depth * REQUIREMENT_INDENT_PX + REQUIREMENT_BASE_PADDING_PX,
           backgroundColor: opened ? 'var(--mantine-color-dark-6)' : 'var(--mantine-color-dark-8)',
         }}
       >
         <Group
           justify="space-between"
           align="center"
-          mb="xs"
+          mb={0}
           onClick={toggleLocal}
           style={{ cursor: 'pointer' }}
         >
@@ -321,7 +350,7 @@ function RequirementNode({
                 transition: 'transform 150ms ease',
               }}
             />
-            <Text fw={600} size="sm">
+            <Text fw={500} size="sm" lh={1.25}>
               {groupLabel}
             </Text>
           </Group>
@@ -367,6 +396,7 @@ function RequirementNode({
                     prereqEligible={prereqEligible}
                     levelBuckets={levelBuckets}
                     languageBuckets={languageBuckets}
+                    electiveLevelBuckets={electiveLevelBuckets}
                     radio={
                       node.requirementId != null && !node.complete
                         ? {
@@ -407,16 +437,16 @@ function RequirementNode({
         p="sm"
         withBorder
         radius={0}
-        mt="sm"
+        mt="xs"
         style={{
-          paddingLeft: depth * 16 + 12,
+          paddingLeft: depth * REQUIREMENT_INDENT_PX + REQUIREMENT_BASE_PADDING_PX,
           backgroundColor: opened ? 'var(--mantine-color-dark-6)' : 'var(--mantine-color-dark-8)',
         }}
       >
         <Group
           justify="space-between"
           align="center"
-          mb="xs"
+          mb={0}
           onClick={toggleLocal}
           style={{ cursor: 'pointer' }}
         >
@@ -438,7 +468,7 @@ function RequirementNode({
                 transition: 'transform 150ms ease',
               }}
             />
-            <Text fw={600} size="sm">
+            <Text fw={500} size="sm" lh={1.25}>
               {title}
             </Text>
           </Group>
@@ -459,7 +489,7 @@ function RequirementNode({
           </Text>
         )}
         <Collapse in={opened}>
-          <Stack gap="md">
+          <Stack gap="xs">
             {node.options!.map((opt, idx) => {
               const isSelected =
                 node.requirementId != null &&
@@ -484,6 +514,7 @@ function RequirementNode({
                     prereqEligible={prereqEligible}
                     levelBuckets={levelBuckets}
                     languageBuckets={languageBuckets}
+                    electiveLevelBuckets={electiveLevelBuckets}
                     radio={
                       node.requirementId != null && !node.complete
                         ? {
@@ -511,9 +542,9 @@ function RequirementNode({
         p="sm"
         withBorder
         radius={0}
-        mt="sm"
+        mt="xs"
         style={{
-          paddingLeft: depth * 16 + 12,
+          paddingLeft: depth * REQUIREMENT_INDENT_PX + REQUIREMENT_BASE_PADDING_PX,
           backgroundColor: opened ? 'var(--mantine-color-dark-6)' : 'var(--mantine-color-dark-8)',
         }}
       >
@@ -521,7 +552,7 @@ function RequirementNode({
           <Group
             justify="space-between"
             align="center"
-            mb="xs"
+            mb={0}
             onClick={toggleLocal}
             style={{ cursor: 'pointer' }}
           >
@@ -543,7 +574,7 @@ function RequirementNode({
                   transition: 'transform 150ms ease',
                 }}
               />
-              <Text fw={600} size="sm">
+              <Text fw={500} size="sm" lh={1.25}>
                 {title}
               </Text>
             </Group>
@@ -571,6 +602,7 @@ function RequirementNode({
                 prereqEligible={prereqEligible}
                 levelBuckets={levelBuckets}
                 languageBuckets={languageBuckets}
+                electiveLevelBuckets={electiveLevelBuckets}
               />
             ))}
           </Stack>
@@ -587,12 +619,12 @@ function RequirementNode({
   return (
     <Paper
       key={label}
-      p="md"
+      p="sm"
       withBorder
       radius={0}
-      mt="sm"
+      mt="xs"
       style={{
-        paddingLeft: depth * 16 + 12,
+        paddingLeft: depth * REQUIREMENT_INDENT_PX + REQUIREMENT_BASE_PADDING_PX,
         backgroundColor: hasOptions
           ? opened
             ? 'var(--mantine-color-dark-6)'
@@ -600,7 +632,7 @@ function RequirementNode({
           : 'var(--mantine-color-dark-7)',
       }}
     >
-      <Stack gap="sm">
+      <Stack gap="xs">
         <Group
           justify="space-between"
           wrap="nowrap"
@@ -629,7 +661,7 @@ function RequirementNode({
                 }}
               />
             )}
-            <Text fw={600} size="md" lineClamp={2}>
+            <Text fw={500} size="sm" lh={1.3} lineClamp={2}>
               {label}
             </Text>
           </Group>
@@ -646,7 +678,7 @@ function RequirementNode({
         {multiSelectBlock}
         {hasOptions && (node.type === 'pick' || node.type === 'group') && (
           <Collapse in={opened}>
-            <Stack gap="xs" pl="sm">
+            <Stack gap="xs" pl="xs">
               {node.options!.map((child, idx) => (
                 <RequirementNode
                   key={idx}
@@ -662,6 +694,7 @@ function RequirementNode({
                   prereqEligible={prereqEligible}
                   levelBuckets={levelBuckets}
                   languageBuckets={languageBuckets}
+                  electiveLevelBuckets={electiveLevelBuckets}
                 />
               ))}
             </Stack>
@@ -687,6 +720,8 @@ export function RequirementsStep({
   languageBuckets,
   onChangeLevelBuckets,
   onChangeLanguageBuckets,
+  electiveLevelBuckets,
+  onChangeElectiveLevelBuckets,
 }: RequirementsStepProps) {
   const [completedOpen, setCompletedOpen] = useState(false);
   const completedSet = new Set(completedCourses);
@@ -747,6 +782,24 @@ export function RequirementsStep({
               }
               clearable={false}
             />
+            <MultiSelect
+              label="Elective levels"
+              data={[
+                { value: '1000', label: '1XXX' },
+                { value: '2000', label: '2XXX' },
+                { value: '3000', label: '3XXX' },
+                { value: '4000', label: '4XXX' },
+              ]}
+              value={electiveLevelBuckets.map((v) => String(v))}
+              onChange={(vals) =>
+                onChangeElectiveLevelBuckets(
+                  vals
+                    .map((v) => parseInt(v, 10))
+                    .filter((n) => n === 1000 || n === 2000 || n === 3000 || n === 4000),
+                )
+              }
+              clearable={false}
+            />
           </Group>
         </Stack>
       </Paper>
@@ -772,6 +825,7 @@ export function RequirementsStep({
               prereqEligible={prereqEligible}
               levelBuckets={levelBuckets}
               languageBuckets={languageBuckets}
+              electiveLevelBuckets={electiveLevelBuckets}
             />
           ))
         ) : (
@@ -818,7 +872,7 @@ export function RequirementsStep({
                 <Box
                   key={idx}
                   px="sm"
-                  py={8}
+                  py={6}
                   style={{
                     backgroundColor:
                       idx % 2 === 0
