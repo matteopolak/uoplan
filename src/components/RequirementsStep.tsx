@@ -95,6 +95,9 @@ function simplifySingleChildChain(node: RequirementWithStatus): {
   return { node: current, autoExpanded: changed };
 }
 
+/** Path of (requirementId, optionIndex) from root to this node so selecting a nested option can auto-select parents. */
+type AncestorSelection = { requirementId: string; optionIndex: number };
+
 interface RequirementNodeProps {
   node: RequirementWithStatus;
   cache: DataCache | null;
@@ -103,6 +106,8 @@ interface RequirementNodeProps {
   onSelect: (requirementId: string, courses: string[]) => void;
   selectedOptionsPerRequirement: Record<string, number>;
   onSelectOption: (requirementId: string, optionIndex: number) => void;
+  /** When selecting this node's option, also set these parent options so the full path is selected. */
+  ancestorSelections?: AncestorSelection[];
   activeBranch: boolean;
   depth?: number;
   radio?: {
@@ -126,6 +131,7 @@ function RequirementNode({
   onSelect,
   selectedOptionsPerRequirement,
   onSelectOption,
+  ancestorSelections,
   activeBranch,
   depth = 0,
   radio,
@@ -181,7 +187,9 @@ function RequirementNode({
   const hasSatisfiedInfo = node.complete && node.satisfiedBy.length > 0;
   const hasSummary = hasNiceTitle || hasCode || hasCreditsInfo || hasSatisfiedInfo;
 
-  const [opened, setOpened] = useState(() => autoExpanded || !hasSummary);
+  const [opened, setOpened] = useState(
+    () => depth === 0 && (autoExpanded || !hasSummary)
+  );
 
   const toggleLocal = (e: MouseEvent) => {
     e.stopPropagation();
@@ -384,6 +392,12 @@ function RequirementNode({
                 (!node.requirementId ||
                   selectedOptionIndex == null ||
                   selectedOptionIndex === idx);
+              const childAncestors: AncestorSelection[] = [
+                ...(ancestorSelections ?? []),
+                ...(node.requirementId != null
+                  ? [{ requirementId: node.requirementId, optionIndex: idx }]
+                  : []),
+              ];
               return (
                 <Box key={idx}>
                   <RequirementNode
@@ -394,6 +408,7 @@ function RequirementNode({
                     onSelect={onSelect}
                     selectedOptionsPerRequirement={selectedOptionsPerRequirement}
                     onSelectOption={onSelectOption}
+                    ancestorSelections={childAncestors}
                     activeBranch={childActiveBranch}
                     depth={depth + 1}
                     prereqEligible={prereqEligible}
@@ -404,7 +419,12 @@ function RequirementNode({
                       node.requirementId != null && !node.complete
                         ? {
                             checked: isSelected,
-                            onChange: () => onSelectOption(node.requirementId!, idx),
+                            onChange: () => {
+                              ancestorSelections?.forEach(({ requirementId, optionIndex }) =>
+                                onSelectOption(requirementId, optionIndex)
+                              );
+                              onSelectOption(node.requirementId!, idx);
+                            },
                             name: node.requirementId,
                             value: String(idx),
                           }
@@ -501,6 +521,12 @@ function RequirementNode({
                 (!node.requirementId ||
                   selectedOptionIndex == null ||
                   selectedOptionIndex === idx);
+              const childAncestors: AncestorSelection[] = [
+                ...(ancestorSelections ?? []),
+                ...(node.requirementId != null
+                  ? [{ requirementId: node.requirementId, optionIndex: idx }]
+                  : []),
+              ];
               return (
                 <Box key={idx}>
                   <RequirementNode
@@ -511,6 +537,7 @@ function RequirementNode({
                     onSelect={onSelect}
                     selectedOptionsPerRequirement={selectedOptionsPerRequirement}
                     onSelectOption={onSelectOption}
+                    ancestorSelections={childAncestors}
                     activeBranch={childActiveBranch}
                     depth={depth + 1}
                     prereqEligible={prereqEligible}
@@ -521,7 +548,12 @@ function RequirementNode({
                       node.requirementId != null && !node.complete
                         ? {
                             checked: isSelected,
-                            onChange: () => onSelectOption(node.requirementId!, idx),
+                            onChange: () => {
+                              ancestorSelections?.forEach(({ requirementId, optionIndex }) =>
+                                onSelectOption(requirementId, optionIndex)
+                              );
+                              onSelectOption(node.requirementId!, idx);
+                            },
                             name: node.requirementId,
                             value: String(idx),
                           }
@@ -599,6 +631,7 @@ function RequirementNode({
                 onSelect={onSelect}
                 selectedOptionsPerRequirement={selectedOptionsPerRequirement}
                 onSelectOption={onSelectOption}
+                ancestorSelections={ancestorSelections}
                 activeBranch={activeBranch}
                 depth={depth + 1}
                 prereqEligible={prereqEligible}
@@ -691,6 +724,7 @@ function RequirementNode({
                   onSelect={onSelect}
                   selectedOptionsPerRequirement={selectedOptionsPerRequirement}
                   onSelectOption={onSelectOption}
+                  ancestorSelections={ancestorSelections}
                   activeBranch={activeBranch}
                   depth={depth + 1}
                   prereqEligible={prereqEligible}
