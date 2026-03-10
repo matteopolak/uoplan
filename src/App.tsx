@@ -13,7 +13,6 @@ const STEPS = [
   { label: 'Completed', description: 'Mark completed courses' },
   { label: 'Requirements', description: 'Select courses' },
   { label: 'Generate', description: 'Choose count and generate' },
-  { label: 'Calendar', description: 'View schedules' },
 ] as const;
 
 function App() {
@@ -43,6 +42,7 @@ function App() {
 
   const [active, setActive] = useState(0);
   const [generating, setGenerating] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -55,7 +55,7 @@ function App() {
     setTimeout(() => {
       generateSchedules();
       setGenerating(false);
-      setActive(4);
+      setShowCalendar(true);
     }, 0);
   };
 
@@ -198,7 +198,7 @@ function App() {
                       lineHeight: 1.3,
                     }}
                   >
-                    {idx + 1}. {step.label}
+                    {step.label}
                   </Text>
                 </Group>
               </Box>
@@ -209,105 +209,63 @@ function App() {
     </Box>
   );
 
-  return (
-    <Box
-      component="main"
-      style={{
-        minHeight: '100vh',
-        padding: '60px 24px',
-        display: 'grid',
-        gridTemplateColumns: 'minmax(0, 260px) minmax(0, 760px) minmax(0, 260px)',
-      }}
-    >
-      <Box style={{ display: 'flex', justifyContent: 'flex-end', paddingRight: 40, paddingTop: 4 }}>
-        <StepList />
-      </Box>
+  if (showCalendar && generatedSchedules.length > 0) {
+    return (
+      <Box
+        component="main"
+        style={{
+          minHeight: '100vh',
+          padding: '60px 24px',
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 260px) minmax(0, 760px) minmax(0, 260px)',
+          justifyContent: 'center',
+        }}
+      >
+        <Box />
 
-      <Box style={{ minWidth: 0 }}>
-        <Box
-          style={{
-            border: '2px solid #2C2E33',
-            padding: 40,
-            backgroundColor: '#1E1E20',
-          }}
-        >
-          <Group justify="space-between" mb={8}>
-            <Text
-              size="xs"
-              fw={500}
-              style={{ textTransform: 'uppercase', letterSpacing: '0.08em', color: '#A6A7AB' }}
+        <Box style={{ minWidth: 0 }}>
+          <Box
+            style={{
+              border: '2px solid #2C2E33',
+              padding: 40,
+              backgroundColor: '#1E1E20',
+            }}
+          >
+            <Group justify="space-between" mb={8}>
+              <Text
+                size="xs"
+                fw={500}
+                style={{ textTransform: 'uppercase', letterSpacing: '0.08em', color: '#A6A7AB' }}
+              >
+                Generated schedules
+              </Text>
+              <Button
+                variant="subtle"
+                color="gray"
+                size="xs"
+                onClick={() => {
+                  setShowCalendar(false);
+                  setActive(3);
+                }}
+                style={{ border: 'none' }}
+              >
+                Back to setup
+              </Button>
+            </Group>
+
+            <Title
+              order={1}
+              mb={16}
+              style={{ fontFamily: '"DM Serif Display", serif', color: '#F8F9FA' }}
             >
-              Step {active + 1} of {STEPS.length}
+              Your weekly timetable
+            </Title>
+
+            <Text size="sm" style={{ color: '#ADB5BD' }} mb={24}>
+              Review your generated schedules on a weekly calendar. You can swap courses directly
+              from the timetable.
             </Text>
-            <Text size="xs" style={{ color: '#868E96' }}>
-              {STEPS[active].label}
-            </Text>
-          </Group>
 
-          <Title
-            order={1}
-            mb={16}
-            style={{ fontFamily: '"DM Serif Display", serif', color: '#F8F9FA' }}
-          >
-            uOttawa Course Selection
-          </Title>
-
-          <Title
-            order={3}
-            mb={12}
-            style={{ fontFamily: '"DM Serif Display", serif', color: '#F1F3F5' }}
-          >
-            {STEPS[active].label}
-          </Title>
-          <Text size="sm" style={{ color: '#ADB5BD' }} mb={24}>
-            {STEPS[active].description}
-          </Text>
-
-          {active === 0 && (
-            <Stack gap="md">
-              <ProgramStep
-                programs={programs}
-                value={program?.url ?? null}
-                onChange={setProgram}
-              />
-            </Stack>
-          )}
-          {active === 1 && (
-            <Stack gap="md">
-              <CompletedCoursesStep
-                cache={cache}
-                remainingRequirements={remainingRequirements}
-                completedCourses={completedCourses}
-                onChange={setCompletedCourses}
-                hasProgram={!!program}
-              />
-            </Stack>
-          )}
-          {active === 2 && (
-            <Stack gap="md">
-              <RequirementsStep
-                cache={cache}
-                remainingRequirements={remainingRequirements}
-                requirementTreeWithStatus={requirementTreeWithStatus}
-                completedRequirementsList={completedRequirementsList}
-                completedCourses={completedCourses}
-                selectedPerRequirement={selectedPerRequirement}
-                onSelect={setSelectedForRequirement}
-              />
-            </Stack>
-          )}
-          {active === 3 && (
-            <Stack gap="md">
-              <ScheduleCountStep
-                coursesThisSemester={coursesThisSemester}
-                onCoursesChange={setCoursesThisSemester}
-                selectedCount={uniqueSelected}
-                onGenerate={handleGenerate}
-                generating={generating}
-              />
-            </Stack>
-          )}
-          {active === 4 && (
             <Stack gap="md">
               <CalendarView
                 schedules={generatedSchedules}
@@ -318,30 +276,138 @@ function App() {
                 onSwap={swapCourseInSchedule}
               />
             </Stack>
-          )}
-
-          <Group justify="space-between" mt={30}>
-            <Button
-              variant="subtle"
-              color="gray"
-              onClick={() => setActive((current) => Math.max(0, current - 1))}
-              disabled={active === 0}
-              style={{ border: 'none' }}
-            >
-              Back
-            </Button>
-            <Button
-              color="constructBlack"
-              onClick={() => setActive((current) => Math.min(STEPS.length - 1, current + 1))}
-              disabled={active === STEPS.length - 1}
-            >
-              Next
-            </Button>
-          </Group>
+          </Box>
         </Box>
-      </Box>
 
-      <Box />
+        <Box />
+      </Box>
+    );
+  }
+
+  return (
+    <Box
+      component="main"
+      style={{
+        minHeight: '100vh',
+        padding: '40px 24px 60px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 24,
+      }}
+    >
+      <Title
+        order={1}
+        style={{ fontFamily: '"DM Serif Display", serif', color: '#F8F9FA' }}
+      >
+        uOttawa Course Selection
+      </Title>
+
+      <Box
+        style={{
+          width: '100%',
+          maxWidth: 1320,
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 260px) minmax(0, 760px) minmax(0, 260px)',
+          justifyContent: 'center',
+        }}
+      >
+        <Box
+          style={{ display: 'flex', justifyContent: 'flex-end', paddingRight: 40, paddingTop: 4 }}
+        >
+          <StepList />
+        </Box>
+
+        <Box style={{ minWidth: 0 }}>
+          <Box
+            style={{
+              border: '2px solid #2C2E33',
+              padding: 40,
+              backgroundColor: '#1E1E20',
+            }}
+          >
+            <Group justify="space-between" mb={8}>
+              <Text
+                size="xs"
+                fw={500}
+                style={{
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  color: '#A6A7AB',
+                }}
+              >
+                STEP {active + 1} OF {STEPS.length} – {STEPS[active].description.toUpperCase()}
+              </Text>
+            </Group>
+
+            {active === 0 && (
+              <Stack gap="md">
+                <ProgramStep
+                  programs={programs}
+                  value={program?.url ?? null}
+                  onChange={setProgram}
+                />
+              </Stack>
+            )}
+            {active === 1 && (
+              <Stack gap="md">
+                <CompletedCoursesStep
+                  cache={cache}
+                  remainingRequirements={remainingRequirements}
+                  completedCourses={completedCourses}
+                  onChange={setCompletedCourses}
+                  hasProgram={!!program}
+                />
+              </Stack>
+            )}
+            {active === 2 && (
+              <Stack gap="md">
+                <RequirementsStep
+                  cache={cache}
+                  remainingRequirements={remainingRequirements}
+                  requirementTreeWithStatus={requirementTreeWithStatus}
+                  completedRequirementsList={completedRequirementsList}
+                  completedCourses={completedCourses}
+                  selectedPerRequirement={selectedPerRequirement}
+                  onSelect={setSelectedForRequirement}
+                />
+              </Stack>
+            )}
+            {active === 3 && (
+              <Stack gap="md">
+                <ScheduleCountStep
+                  coursesThisSemester={coursesThisSemester}
+                  onCoursesChange={setCoursesThisSemester}
+                  selectedCount={uniqueSelected}
+                  onGenerate={handleGenerate}
+                  generating={generating}
+                />
+              </Stack>
+            )}
+
+            <Group justify="space-between" mt={30}>
+              <Button
+                variant="subtle"
+                color="gray"
+                onClick={() => setActive((current) => Math.max(0, current - 1))}
+                disabled={active === 0}
+                style={{ border: 'none' }}
+              >
+                Back
+              </Button>
+              <Button
+                color="constructBlack"
+                onClick={() => setActive((current) => Math.min(STEPS.length - 1, current + 1))}
+                disabled={active === STEPS.length - 1}
+              >
+                Next
+              </Button>
+            </Group>
+          </Box>
+        </Box>
+
+        <Box />
+      </Box>
     </Box>
   );
 }

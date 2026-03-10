@@ -194,6 +194,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const { cache, remainingRequirements, selectedPerRequirement, coursesThisSemester } = get();
     if (!cache) return;
 
+    function isHonoursProject(code: string): boolean {
+      const course = cache.getCourse(code);
+      const component = course?.component?.trim().toLowerCase() ?? '';
+      return component.startsWith('recherche / research');
+    }
+
     const allSelected = Object.values(selectedPerRequirement).flat();
     const unique = [...new Set(allSelected)];
 
@@ -208,7 +214,19 @@ export const useAppStore = create<AppStore>((set, get) => ({
       }
     }
 
-    const schedules = genSchedules(coursePool, coursesThisSemester, cache);
+    const filteredCoursePool = coursePool.filter((code) => !isHonoursProject(code));
+
+    // Debugging: inspect schedule generation inputs
+    // eslint-disable-next-line no-console
+    console.log('generateSchedules input', {
+      selectedPerRequirement,
+      uniqueSelected: unique,
+      coursePool,
+      filteredCoursePool,
+      coursesThisSemester,
+    });
+
+    const schedules = genSchedules(filteredCoursePool, coursesThisSemester, cache);
 
     set({
       generatedSchedules: schedules,
