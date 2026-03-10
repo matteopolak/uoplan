@@ -1,9 +1,8 @@
-import type { CourseSchedule, ComponentSection, MeetingTime } from '../schemas/schedules';
+import type { CourseSchedule, ComponentSection, DayOfWeek } from '../schemas/schedules';
 import type { DataCache } from './dataCache';
-import { normalizeCourseCode } from './dataCache';
 
 export interface TimeSlot {
-  day: string;
+  day: DayOfWeek;
   startMinutes: number;
   endMinutes: number;
 }

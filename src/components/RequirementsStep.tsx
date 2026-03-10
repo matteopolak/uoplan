@@ -2,6 +2,7 @@ import { useState, MouseEvent } from 'react';
 import { Stack, MultiSelect, Text, Paper, Badge, Group, Box, Collapse, Radio } from '@mantine/core';
 import { IconChevronDown } from '@tabler/icons-react';
 import { createCourseOptions, renderCourseOption } from './CourseSelect';
+import type { ComboboxItem } from '@mantine/core';
 import type { DataCache } from '../lib/dataCache';
 import type {
   RemainingRequirement,
@@ -124,7 +125,7 @@ function RequirementNode({
           filter={({ options: opts, search }) => {
             const q = search.toLowerCase().trim();
             if (!q) return opts;
-            return opts.filter(
+            return (opts as ComboboxItem[]).filter(
               (o) =>
                 o.value.toLowerCase().includes(q) ||
                 o.label.toLowerCase().includes(q)
