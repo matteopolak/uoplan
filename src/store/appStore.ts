@@ -611,16 +611,26 @@ export const useAppStore = create<AppStore>((set, get) => ({
             !prereqEligibleSet.has(code) ||
             !courseMatchesFilters(code, filters)
           ) {
+            if (pool.type === 'discipline_elective') {
+              console.log('skipping course', code);
+            console.log({
+              cacheVal: !cacheVal.getSchedule(code),
+              pinned: pinned.includes(code),
+              prereqEligible: !prereqEligibleSet.has(code),
+              courseMatchesFilters: !courseMatchesFilters(code, filters),
+            })
+            }
             continue;
           }
           // For elective-style pools, also respect elective level buckets from the
           // requirements page (e.g., only 3000/4000-level electives).
+          // NOTE: discipline_elective (like \"CSI 4000-level\") is NOT treated as a
+          // generic elective for this purpose – it follows its own discipline rules.
           const isElectiveType =
             pool.type === 'elective' ||
             pool.type === 'free_elective' ||
             pool.type === 'non_discipline_elective' ||
-            pool.type === 'faculty_elective' ||
-            pool.type === 'discipline_elective';
+            pool.type === 'faculty_elective';
           if (electiveLevelBuckets.length > 0 && isElectiveType) {
             const match = code.match(/\d{4}/);
             if (match) {
@@ -633,9 +643,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
               }
             }
           }
-          // Exclude honours/research courses from automatic scheduling; they are
-          // handled separately as honours selections.
-          if (isHonoursProject(code)) continue;
+          // Exclude honours/research courses from automatic scheduling for most pools;
+          // they are handled separately as honours selections. However, when the pool
+          // itself is a concrete course requirement (type: 'course'), we keep the
+          // honours course so the requirement tree can still reflect it properly.
+          if (pool.type !== 'course' && isHonoursProject(code)) continue;
           candidates.push(code);
         }
         if (candidates.length > 0) {
@@ -666,20 +678,23 @@ export const useAppStore = create<AppStore>((set, get) => ({
       // eslint-disable-next-line no-console
       console.log('generateSchedules pools snapshot', {
         remainingNeeded,
-        pools: pools.map((p) => ({
-          requirementId: p.requirementId,
-          type: p.type,
-          label: p.label,
-          creditsNeeded: p.creditsNeeded,
-          minCourses: p.minCourses,
-        })),
-        coursesPerPool: Array.from(coursesPerPool.entries()),
-        candidatesByRequirementSizes: Array.from(candidatesByRequirement.entries()).map(
-          ([reqId, codes]) => ({
-            requirementId: reqId,
-            candidateCount: codes.length,
-          }),
-        ),
+        pools: pools.map((p) => {
+          const meta = remainingRequirements.find((r) => r.requirementId === p.requirementId);
+          const poolCandidates = candidatesByRequirement.get(p.requirementId) ?? [];
+          return {
+            requirementId: p.requirementId,
+            type: p.type,
+            label: p.label,
+            title: meta?.title,
+            creditsNeeded: p.creditsNeeded,
+            minCourses: p.minCourses,
+            originalCreditsNeeded: meta?.creditsNeeded,
+            plannedCoursesThisTerm: coursesPerPool.get(p.requirementId) ?? 0,
+            candidateCount: poolCandidates.length,
+            sampleCandidates: poolCandidates.slice(0, 15),
+          };
+        }),
+        candidatesByRequirement,
         chosenCodes: Array.from(chosenCodes),
         pinned,
         levelBuckets,
