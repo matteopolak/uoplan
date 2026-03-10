@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Stack, Title, Alert, Loader, Text, Paper, Group, Button } from '@mantine/core';
+import { Box, Stack, Title, Alert, Loader, Text, Paper, Group, Button, Select } from '@mantine/core';
 import { AnimatePresence, motion } from 'framer-motion';
 import { IconCheck } from '@tabler/icons-react';
 import { useAppStore } from './store/appStore';
@@ -214,77 +214,98 @@ function App() {
   );
 
   if (showCalendar && generatedSchedules.length > 0) {
+    const scheduleOptions = generatedSchedules.map((_, i) => ({
+      value: String(i),
+      label: `Schedule #${i + 1}`,
+    }));
+    const currentSchedule = generatedSchedules[selectedScheduleIndex] ?? generatedSchedules[0];
+    const eventCount = currentSchedule.enrollments.reduce(
+      (sum, e) => sum + e.times.length,
+      0
+    );
+
     return (
       <Box
         component="main"
         style={{
+          width: '100%',
           minHeight: '100vh',
-          padding: '60px 24px',
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 260px) minmax(0, 760px) minmax(0, 260px)',
-          justifyContent: 'center',
+          display: 'flex',
+          flexDirection: 'row',
+          boxSizing: 'border-box',
         }}
       >
-        <Box />
-
-        <Box style={{ minWidth: 0 }}>
-          <Box
-            style={{
-              border: '2px solid #2C2E33',
-              padding: 40,
-              backgroundColor: '#1E1E20',
-            }}
+        <Box
+          style={{
+            width: 260,
+            flexShrink: 0,
+            padding: '24px 20px',
+            borderRight: '2px solid #2C2E33',
+            backgroundColor: '#1E1E20',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 24,
+          }}
+        >
+          <Title
+            order={1}
+            style={{ fontFamily: '"DM Serif Display", serif', color: '#F8F9FA', marginBottom: 0 }}
           >
-            <Group justify="space-between" mb={8}>
-              <Text
-                size="xs"
-                fw={500}
-                style={{ textTransform: 'uppercase', letterSpacing: '0.08em', color: '#A6A7AB' }}
-              >
-                Generated schedules
-              </Text>
-              <Button
-                variant="subtle"
-                color="gray"
-                size="xs"
-                radius={0}
-                onClick={() => {
-                  setShowCalendar(false);
-                  setActive(3);
-                }}
-                style={{ border: 'none' }}
-              >
-                Back to setup
-              </Button>
-            </Group>
-
-            <Title
-              order={1}
-              mb={16}
-              style={{ fontFamily: '"DM Serif Display", serif', color: '#F8F9FA' }}
-            >
-              Your weekly timetable
-            </Title>
-
-            <Text size="sm" style={{ color: '#ADB5BD' }} mb={24}>
-              Review your generated schedules on a weekly calendar. You can swap courses directly
-              from the timetable.
+            Your weekly timetable
+          </Title>
+          <Text size="sm" style={{ color: '#ADB5BD', marginTop: -8 }}>
+            Review your generated schedules. Click a block to swap courses.
+          </Text>
+          <Button
+            variant="subtle"
+            color="gray"
+            size="sm"
+            radius={0}
+            onClick={() => {
+              setShowCalendar(false);
+              setActive(3);
+            }}
+            style={{ border: 'none', alignSelf: 'flex-start' }}
+          >
+            Back to setup
+          </Button>
+          <Select
+            label="Schedule"
+            data={scheduleOptions}
+            value={String(Math.min(selectedScheduleIndex, generatedSchedules.length - 1))}
+            onChange={(v) => setSelectedScheduleIndex(Number(v ?? 0))}
+            size="md"
+            radius="sm"
+          />
+          <Stack gap={0}>
+            <Text size="sm" c="dimmed">
+              {generatedSchedules.length} total · click a block to swap
             </Text>
-
-            <Stack gap="md">
-              <CalendarView
-                schedules={generatedSchedules}
-                selectedIndex={selectedScheduleIndex}
-                onSelectIndex={setSelectedScheduleIndex}
-                cache={cache}
-                selectedPerRequirement={selectedPerRequirement}
-                onSwap={swapCourseInSchedule}
-              />
-            </Stack>
-          </Box>
+            <Text size="xs" c="dimmed">
+              Showing {eventCount} meeting block{eventCount === 1 ? '' : 's'} this week
+            </Text>
+          </Stack>
         </Box>
-
-        <Box />
+        <Box
+          style={{
+            flex: 1,
+            minWidth: 0,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            padding: 24,
+            maxWidth: '66.67%',
+          }}
+        >
+          <CalendarView
+            schedules={generatedSchedules}
+            selectedIndex={selectedScheduleIndex}
+            onSelectIndex={setSelectedScheduleIndex}
+            cache={cache}
+            selectedPerRequirement={selectedPerRequirement}
+            onSwap={swapCourseInSchedule}
+          />
+        </Box>
       </Box>
     );
   }
