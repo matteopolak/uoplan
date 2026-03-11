@@ -235,7 +235,8 @@ export function generateSchedulesWithPinned(
       selected: { code: string; combo: SectionCombo }[],
       idx: number
     ): boolean {
-      if (selected.length === remainingSlots || idx === items.length) {
+      // Only accept full schedules: we need exactly remainingSlots optional courses.
+      if (selected.length === remainingSlots) {
         const all = [...chosenPinned, ...selected];
         const enrollments: CourseEnrollment[] = all.map(({ code, combo }) => {
           const s = cache.getSchedule(code)!;
@@ -244,6 +245,7 @@ export function generateSchedulesWithPinned(
         schedules.push({ enrollments });
         return schedules.length >= MAX_SCHEDULES;
       }
+      if (idx === items.length) return false;
 
       const { code, combos } = items[idx];
       const schedule = cache.getSchedule(code)!;
