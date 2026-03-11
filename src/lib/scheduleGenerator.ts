@@ -51,6 +51,35 @@ export function enrollmentsOverlap(a: CourseEnrollment, b: CourseEnrollment): bo
   return false;
 }
 
+/** Format minutes since midnight as HH:MM. */
+function formatMinutes(m: number): string {
+  const h = Math.floor(m / 60);
+  const min = m % 60;
+  return `${h}:${String(min).padStart(2, '0')}`;
+}
+
+/**
+ * Returns the first enrollment in others that overlaps with candidate, plus a human-readable
+ * time string for the overlapping slot (e.g. "Mo 10:00-11:30").
+ */
+export function getFirstOverlapWith(
+  candidate: CourseEnrollment,
+  others: CourseEnrollment[]
+): { courseCode: string; timeStr: string } | null {
+  for (const other of others) {
+    for (const ta of candidate.times) {
+      for (const tb of other.times) {
+        if (ta.day !== tb.day) continue;
+        if (ta.startMinutes < tb.endMinutes && tb.startMinutes < ta.endMinutes) {
+          const timeStr = `${tb.day} ${formatMinutes(tb.startMinutes)}-${formatMinutes(tb.endMinutes)}`;
+          return { courseCode: other.courseCode, timeStr };
+        }
+      }
+    }
+  }
+  return null;
+}
+
 function cartesianProduct<T>(arrays: T[][]): T[][] {
   if (arrays.length === 0) return [[]];
   const [first, ...rest] = arrays;
@@ -64,9 +93,24 @@ function cartesianProduct<T>(arrays: T[][]): T[][] {
   return result;
 }
 
+/** True if the section has at least one real time slot (used to skip TST/other components with empty times). */
+function sectionHasTimes(section: ComponentSection): boolean {
+  return (
+    Array.isArray(section.times) &&
+    section.times.some((t) => t.startMinutes < t.endMinutes)
+  );
+}
+
 export function getValidSectionCombos(schedule: CourseSchedule): SectionCombo[] {
   const componentKeys = Object.keys(schedule.components).sort();
-  const sectionArrays = componentKeys.map((key) => schedule.components[key] ?? []);
+  const sectionArrays = componentKeys.map((key) => {
+    const sections = schedule.components[key] ?? [];
+    return sections.filter(sectionHasTimes);
+  });
+
+  if (sectionArrays.some((arr) => arr.length === 0)) {
+    return [];
+  }
 
   const allCombos = cartesianProduct(sectionArrays);
   const valid: SectionCombo[] = [];
