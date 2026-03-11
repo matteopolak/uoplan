@@ -105,7 +105,7 @@ const programWithCsiAndElectives: Program = {
 describe('schedule generation respects per-category limits', () => {
   const cache = buildDataCache(testCatalogue, simpleSchedules);
 
-  it('avoids adding extra CSI courses beyond the required credits when other unmet categories exist', () => {
+  it('avoids adding extra CSI courses beyond the required credits when other unmet categories exist', async () => {
     // Compute remaining requirements from a clean slate.
     const completedCourses: string[] = [];
     const { remaining } = computeRequirementsState(programWithCsiAndElectives, completedCourses, cache);
@@ -138,7 +138,7 @@ describe('schedule generation respects per-category limits', () => {
     console.log = () => {};
 
     try {
-      store.getState().generateSchedules();
+      await store.getState().generateSchedules();
     } finally {
       console.log = originalLog;
     }
@@ -158,7 +158,7 @@ describe('schedule generation respects per-category limits', () => {
     }
   });
 
-  it('distributes courses across multiple requirement groups when more than one course is needed in each', () => {
+  it('distributes courses across multiple requirement groups when more than one course is needed in each', async () => {
     // Program where we need 6 credits of CSI 4000 (two courses) and
     // 6 credits of non-computing electives (two courses). With a
     // 4-course semester, schedules should tend to include 2 CSI and 2 non-computing.
@@ -218,7 +218,7 @@ describe('schedule generation respects per-category limits', () => {
     console.log = () => {};
 
     try {
-      store.getState().generateSchedules();
+      await store.getState().generateSchedules();
     } finally {
       console.log = originalLog;
     }
@@ -237,7 +237,7 @@ describe('schedule generation respects per-category limits', () => {
     }
   });
 
-  it('respects pinned selections while still balancing CSI and non-computing requirements', () => {
+  it('respects pinned selections while still balancing CSI and non-computing requirements', async () => {
     // Same program as above: 6 CSI credits and 6 non-computing credits required.
     const completedCourses: string[] = [];
     const { remaining } = computeRequirementsState(programWithCsiAndElectives, completedCourses, cache);
@@ -275,7 +275,7 @@ describe('schedule generation respects per-category limits', () => {
     console.log = () => {};
 
     try {
-      store.getState().generateSchedules();
+      await store.getState().generateSchedules();
     } finally {
       console.log = originalLog;
     }
