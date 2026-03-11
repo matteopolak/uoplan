@@ -22,17 +22,6 @@ const STEPS = [
   { label: 'Generate', description: 'Choose count and generate' },
 ] as const;
 
-function formatBuildVersion(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return 'vunknown';
-  const yyyy = String(d.getFullYear());
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const hh = String(d.getHours()).padStart(2, '0');
-  const min = String(d.getMinutes()).padStart(2, '0');
-  return `v${yyyy}${mm}${dd}-${hh}${min}`;
-}
-
 function App() {
   const {
     loadData,
@@ -920,7 +909,7 @@ function App() {
           </Box>
           <Box style={{ marginTop: 16, textAlign: 'center' }}>
             <Text size="xs" c="dimmed">
-              {typeof __BUILD_TIME__ !== 'undefined' ? formatBuildVersion(__BUILD_TIME__) : 'vdev'}{' '}
+              {typeof __COMMIT_HASH__ !== 'undefined' ? __COMMIT_HASH__ : 'dev'}{' '}
               <Text span c="dimmed">
                 •{' '}
               </Text>
