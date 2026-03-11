@@ -16,8 +16,9 @@ export function requirementIdsFromTree(nodes: RequirementWithStatus[]): string[]
   return out;
 }
 
-const VERSION = 1;
+const VERSION = 2;
 const MAX_U16 = 0xffff;
+const MAX_U32 = 0xffffffff;
 
 export interface EncodeInput {
   program: Program | null;
@@ -27,6 +28,7 @@ export interface EncodeInput {
   electiveLevelBuckets: number[];
   coursesThisSemester: number;
   selectedScheduleIndex: number;
+  generationSeed: number;
   selectedPerRequirement: Record<string, string[]>;
   selectedOptionsPerRequirement: Record<string, number>;
   /** Full requirement tree; used to get stable ordering of all requirement IDs (including parents). */
@@ -42,6 +44,7 @@ export interface DecodedState {
   electiveLevelBuckets: number[];
   coursesThisSemester: number;
   selectedScheduleIndex: number;
+  generationSeed: number;
   optionSelections: Array<{ reqIndex: number; optionIndex: number }>;
   courseSelections: Array<{ reqIndex: number; courseIndices: number[] }>;
 }
@@ -81,12 +84,21 @@ function writeU8(view: DataView, offset: number, value: number): number {
   return offset + 1;
 }
 
+function writeU32(view: DataView, offset: number, value: number): number {
+  view.setUint32(offset, value >>> 0, true);
+  return offset + 4;
+}
+
 function readU16(view: DataView, offset: number): { value: number; next: number } {
   return { value: view.getUint16(offset, true), next: offset + 2 };
 }
 
 function readU8(view: DataView, offset: number): { value: number; next: number } {
   return { value: view.getUint8(offset), next: offset + 1 };
+}
+
+function readU32(view: DataView, offset: number): { value: number; next: number } {
+  return { value: view.getUint32(offset, true), next: offset + 4 };
 }
 
 /**
@@ -120,7 +132,7 @@ export function encodeState(
     1 + input.levelBuckets.length +
     1 + input.languageBuckets.length +
     1 + input.electiveLevelBuckets.length * 2 +
-    1 + 2 +
+    1 + 2 + 4 +
     (2 + Object.keys(input.selectedOptionsPerRequirement).length * 4) +
     (2 + (() => {
       let n = 0;
@@ -152,6 +164,7 @@ export function encodeState(
 
   off = writeU8(view, off, Math.min(255, input.coursesThisSemester));
   off = writeU16(view, off, Math.min(MAX_U16, input.selectedScheduleIndex));
+  off = writeU32(view, off, Math.min(MAX_U32, input.generationSeed >>> 0));
 
   const optEntries = Object.entries(input.selectedOptionsPerRequirement)
     .map(([reqId, optionIndex]) => {
@@ -200,7 +213,9 @@ export function decodeState(
   if (buffer.length < 1) return { error: 'Invalid state: too short' };
   const { value: version, next: n0 } = readU8(view, off);
   off = n0;
-  if (version !== VERSION) return { error: 'Invalid or unsupported state version' };
+  if (version !== 1 && version !== VERSION) {
+    return { error: 'Invalid or unsupported state version' };
+  }
 
   const { value: programIndex, next: n1 } = readU16(view, off);
   off = n1;
@@ -264,6 +279,14 @@ export function decodeState(
   const { value: selectedScheduleIndex, next: n7 } = readU16(view, off);
   off = n7;
 
+  let generationSeed = 0;
+  if (version >= 2) {
+    if (off + 4 > buffer.length) return { error: 'Invalid state: truncated' };
+    const { value: seed, next: nSeed } = readU32(view, off);
+    off = nSeed;
+    generationSeed = seed >>> 0;
+  }
+
   if (off + 2 > buffer.length) return { error: 'Invalid state: truncated' };
   const { value: optCount, next: n8 } = readU16(view, off);
   off = n8;
@@ -306,6 +329,7 @@ export function decodeState(
     electiveLevelBuckets,
     coursesThisSemester,
     selectedScheduleIndex,
+    generationSeed,
     optionSelections,
     courseSelections,
   };

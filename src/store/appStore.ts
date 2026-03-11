@@ -38,6 +38,7 @@ import {
   type EncodeInput,
 } from '../lib/stateEncode';
 import type { Term } from '../schemas/terms';
+import { createSeededRng, generateRandomSeed } from '../lib/seededRandom';
 
 const validEnrollmentsByCourseCode = new Map<string, CourseEnrollment[]>();
 
@@ -80,6 +81,8 @@ export interface AppState {
   generationMinStartMinutes: number;
   generationMaxEndMinutes: number;
   generationAllowedDays: DayOfWeek[];
+  /** Seed used for deterministic randomization during schedule generation and shuffling. */
+  generationSeed: number;
 }
 
 interface RecomputedState {
@@ -242,9 +245,9 @@ function computeCoursesPerPool(
   return result;
 }
 
-function shuffleInPlace<T>(arr: T[]): void {
+function shuffleInPlace<T>(arr: T[], rng: () => number): void {
   for (let i = arr.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rng() * (i + 1));
     const tmp = arr[i];
     arr[i] = arr[j];
     arr[j] = tmp;
@@ -261,6 +264,11 @@ function getAutoSelectedForRequirements(
   }
 
   const hasSchedule = (code: string) => !!cache.getSchedule(code);
+  const isHonoursProject = (code: string): boolean => {
+    const course = cache.getCourse(code);
+    const component = course?.component?.trim().toLowerCase() ?? '';
+    return component.startsWith('recherche / research');
+  };
   const scheduledOnlyByReq = new Map<string, Set<string>>();
   const allCandidatesByReq = new Map<string, Set<string>>();
 
@@ -277,7 +285,11 @@ function getAutoSelectedForRequirements(
     const allCandidatesSet = allCandidatesByReq.get(req.requirementId)!;
 
     if (scheduledCandidates.length === 1) {
-      out[req.requirementId] = [scheduledCandidates[0]];
+      // Avoid auto-selecting honours/research courses; users should opt in explicitly.
+      const only = scheduledCandidates[0];
+      if (!isHonoursProject(only)) {
+        out[req.requirementId] = [only];
+      }
     } else {
       const prev = existing[req.requirementId] ?? [];
       // Keep existing selection if each course is in the requirement's candidate list (including courses without schedule, e.g. completed)
@@ -475,6 +487,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   generationMinStartMinutes: 8 * 60 + 30, // 8:30
   generationMaxEndMinutes: 22 * 60, // 22:00
   generationAllowedDays: ['Mo', 'Tu', 'We', 'Th', 'Fr'],
+  generationSeed: generateRandomSeed(),
 
   setGenerationMinStartMinutes: (minutes) => set({ generationMinStartMinutes: minutes }),
   setGenerationMaxEndMinutes: (minutes) => set({ generationMaxEndMinutes: minutes }),
@@ -590,6 +603,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       electiveLevelBuckets: decoded.electiveLevelBuckets,
       coursesThisSemester: decoded.coursesThisSemester,
       selectedScheduleIndex: Math.max(0, decoded.selectedScheduleIndex),
+      generationSeed: decoded.generationSeed >>> 0,
       generatedSchedules: [],
       generationError: null,
       ...full,
@@ -607,6 +621,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       electiveLevelBuckets: s.electiveLevelBuckets,
       coursesThisSemester: s.coursesThisSemester,
       selectedScheduleIndex: s.selectedScheduleIndex,
+      generationSeed: s.generationSeed >>> 0,
       selectedPerRequirement: s.selectedPerRequirement,
       selectedOptionsPerRequirement: s.selectedOptionsPerRequirement,
       requirementTreeWithStatus: s.requirementTreeWithStatus,
@@ -630,6 +645,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       electiveLevelBuckets: s.electiveLevelBuckets,
       coursesThisSemester: s.coursesThisSemester,
       selectedScheduleIndex: s.selectedScheduleIndex,
+      generationSeed: s.generationSeed >>> 0,
       selectedPerRequirement: s.selectedPerRequirement,
       selectedOptionsPerRequirement: s.selectedOptionsPerRequirement,
       requirementTreeWithStatus: s.requirementTreeWithStatus,
@@ -902,6 +918,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       selectedScheduleIndex: 0,
       generationError: null,
       unassignedCompletedCourses: [],
+      generationSeed: generateRandomSeed(),
     });
     if (typeof window !== 'undefined') {
       localStorage.removeItem(LOCAL_STORAGE_KEY);
@@ -936,9 +953,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
       generationMinStartMinutes,
       generationMaxEndMinutes,
       generationAllowedDays,
+      generationSeed,
     } = get();
     if (!cache) return;
     const cacheVal = cache;
+    // Deterministic randomness:
+    // - Base seed comes from appState and is included in share links.
+    // - When the user clicks "Generate new schedule" (appendFirstOnly), we salt the seed with
+    //   the number of schedules already generated so each click yields a different schedule,
+    //   while the whole sequence remains reproducible from the same starting state.
+    const existingScheduleCount = appendFirstOnly ? get().generatedSchedules.length : 0;
+    const rng = createSeededRng(((generationSeed >>> 0) + existingScheduleCount) >>> 0);
     const constraints: GenerationConstraints = {
       minStartMinutes: generationMinStartMinutes,
       maxEndMinutes: generationMaxEndMinutes,
@@ -955,10 +980,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const unique = [...new Set(allSelected)];
     const completedSet = new Set(completedCourses.map(normalizeCourseCode));
 
+    const prereqEligibleSet = new Set(prereqEligibleCourses);
+
     // Separate out honours project selections: they **do** satisfy requirements but are not
     // scheduled like regular courses. We treat them as occupying a slot in the user's
     // requested course load, but we do not attempt to place them into time-based schedules.
-    const honoursSelected = unique.filter((code) => isHonoursProject(code));
+    // IMPORTANT: honours selections should only reduce the schedulable target if the student
+    // can actually take them (prereq-eligible). Otherwise they shouldn't "steal" a slot.
+    const honoursSelected = unique
+      .filter((code) => isHonoursProject(code))
+      .filter((code) => !completedSet.has(normalizeCourseCode(code)))
+      .filter((code) => prereqEligibleSet.has(code));
     // Selected schedulable courses (not honours, not completed, and present in schedules data).
     // In the normal case, these become "pinned" (forced into every schedule). If the user
     // selects more courses than the term target, we treat them as the initial candidate pool
@@ -1034,7 +1066,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
       return;
     }
 
-    const prereqEligibleSet = new Set(prereqEligibleCourses);
     const filters = {
       levels: levelBuckets,
       languageBuckets,
@@ -1081,7 +1112,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
         if (collectedSchedules.length >= targetUniqueSchedules) break;
         const attemptPool = [...base];
-        shuffleInPlace(attemptPool);
+        shuffleInPlace(attemptPool, rng);
         lastUsedPool = attemptPool;
         const batch = genSchedules(attemptPool, effectiveTarget, cacheVal, constraints);
         const fullBatch = batch.filter((s) => s.enrollments.length >= effectiveTarget);
@@ -1256,7 +1287,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
         // Shuffle each pool's candidates so we try different course combinations.
         for (const list of candidatesByRequirement.values()) {
-          shuffleInPlace(list);
+          shuffleInPlace(list, rng);
         }
 
         const chosenCodes = new Set<string>();
@@ -1288,7 +1319,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         }
 
         lastFilteredPool = optionalPool;
-        shuffleInPlace(lastFilteredPool);
+        shuffleInPlace(lastFilteredPool, rng);
 
         const batch =
           pinned.length === 0
