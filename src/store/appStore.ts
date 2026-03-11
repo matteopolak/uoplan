@@ -40,6 +40,10 @@ import {
 } from '../lib/stateEncode';
 import type { Term } from '../schemas/terms';
 import { createSeededRng, generateRandomSeed } from '../lib/seededRandom';
+import {
+  buildProfessorRatingsMap,
+  type ProfessorRatingsMap,
+} from '../lib/professorRatings';
 
 const validEnrollmentsByCourseCode = new Map<string, CourseEnrollment[]>();
 
@@ -84,10 +88,14 @@ export interface AppState {
   generationMinStartMinutes: number;
   generationMaxEndMinutes: number;
   generationAllowedDays: DayOfWeek[];
+  generationMinProfessorRating: number | null;
+  professorRatings: ProfessorRatingsMap | null;
   /** Seed used for deterministic randomization during schedule generation and shuffling. */
   generationSeed: number;
   /** When false, exclude component sections with status "Closed" from dropdowns, generation, and swap. */
   includeClosedComponents: boolean;
+
+  setGenerationMinProfessorRating: (rating: number | null) => void;
 }
 
 interface RecomputedState {
@@ -446,6 +454,7 @@ export interface AppActions {
   setGenerationMinStartMinutes: (minutes: number) => void;
   setGenerationMaxEndMinutes: (minutes: number) => void;
   setGenerationAllowedDays: (days: DayOfWeek[]) => void;
+  setGenerationMinProfessorRating: (rating: number | null) => void;
   setIncludeClosedComponents: (value: boolean) => void;
   generateSchedules: (options?: { appendFirstOnly?: boolean }) => void;
   setSelectedScheduleIndex: (idx: number) => void;
@@ -510,6 +519,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   generationAllowedDays: ['Mo', 'Tu', 'We', 'Th', 'Fr'],
   generationSeed: generateRandomSeed(),
   includeClosedComponents: false,
+  generationMinProfessorRating: null,
+  professorRatings: null,
 
   setIncludeClosedComponents: (value) => {
     validEnrollmentsByCourseCode.clear();
@@ -519,6 +530,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setGenerationMinStartMinutes: (minutes) => set({ generationMinStartMinutes: minutes }),
   setGenerationMaxEndMinutes: (minutes) => set({ generationMaxEndMinutes: minutes }),
   setGenerationAllowedDays: (days) => set({ generationAllowedDays: days }),
+  setGenerationMinProfessorRating: (rating) =>
+    set({ generationMinProfessorRating: rating == null ? null : Number(rating) }),
 
   setSelectedTermId: async (termId: string) => {
     set({ loading: true, error: null });
@@ -696,10 +709,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
   loadData: async () => {
     set({ loading: true, error: null });
     try {
-      const [catalogueRes, termsRes, indicesRes] = await Promise.all([
+      const [catalogueRes, termsRes, indicesRes, rmpRes] = await Promise.all([
         fetch('/data/catalogue.json'),
         fetch('/data/terms.json'),
         fetch('/data/indices.json').catch(() => null),
+        fetch('/data/ratemyprofessors.json').catch(() => null),
       ]);
       if (!catalogueRes.ok || !termsRes.ok) throw new Error('Failed to load data');
 
@@ -714,6 +728,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
       const parsedCatalogue = CatalogueSchema.parse(catalogue);
       const parsedTerms = TermsDataSchema.parse(termsJson);
+
+      let professorRatings: ProfessorRatingsMap | null = null;
+      if (rmpRes?.ok) {
+        try {
+          const rmpJson = await rmpRes.json();
+          professorRatings = buildProfessorRatingsMap(rmpJson);
+        } catch {
+          professorRatings = null;
+        }
+      }
 
       let indices: Indices | null = null;
       if (indicesRes?.ok) {
@@ -755,6 +779,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         indices,
         schedulesData: parsedSchedules,
         cache,
+        professorRatings,
         terms: parsedTerms.terms,
         selectedTermId: initialTermId,
         loading: false,
@@ -998,6 +1023,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       generationMinStartMinutes,
       generationMaxEndMinutes,
       generationAllowedDays,
+      generationMinProfessorRating,
+      professorRatings,
       generationSeed,
       includeClosedComponents,
     } = get();
@@ -1030,6 +1057,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       minStartMinutes: generationMinStartMinutes,
       maxEndMinutes: generationMaxEndMinutes,
       allowedDays: generationAllowedDays,
+      minProfessorRating: generationMinProfessorRating ?? undefined,
+      professorRatings: professorRatings ?? undefined,
     };
 
     function isHonoursProject(code: string): boolean {
@@ -1507,6 +1536,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       generationMinStartMinutes,
       generationMaxEndMinutes,
       generationAllowedDays,
+      generationMinProfessorRating,
+      professorRatings,
       includeClosedComponents,
     } = get();
     if (!cache || scheduleIndex >= generatedSchedules.length) return;
@@ -1522,6 +1553,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       minStartMinutes: generationMinStartMinutes,
       maxEndMinutes: generationMaxEndMinutes,
       allowedDays: generationAllowedDays,
+      minProfessorRating: generationMinProfessorRating ?? undefined,
+      professorRatings: professorRatings ?? undefined,
     };
     const combos = getValidSectionCombos(newSchedule, constraints);
     const others = schedule.enrollments.filter((_, i) => i !== enrollmentIndex);
@@ -1581,6 +1614,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       generationMinStartMinutes,
       generationMaxEndMinutes,
       generationAllowedDays,
+      generationMinProfessorRating,
+      professorRatings,
       includeClosedComponents,
     } = get();
     if (!cache || scheduleIndex >= generatedSchedules.length) {
@@ -1642,6 +1677,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       minStartMinutes: generationMinStartMinutes,
       maxEndMinutes: generationMaxEndMinutes,
       allowedDays: generationAllowedDays,
+      minProfessorRating: generationMinProfessorRating ?? undefined,
+      professorRatings: professorRatings ?? undefined,
     };
 
     function getValidEnrollmentsFor(code: string): CourseEnrollment[] {

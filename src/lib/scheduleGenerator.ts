@@ -1,5 +1,9 @@
 import type { CourseSchedule, ComponentSection, DayOfWeek } from '../schemas/schedules';
 import type { DataCache } from './dataCache';
+import {
+  isSectionAllowedByMinRating,
+  type ProfessorRatingsMap,
+} from './professorRatings';
 
 export interface TimeSlot {
   day: DayOfWeek;
@@ -25,6 +29,8 @@ export interface GenerationConstraints {
   minStartMinutes: number;
   maxEndMinutes: number;
   allowedDays: DayOfWeek[];
+  minProfessorRating?: number;
+  professorRatings?: ProfessorRatingsMap;
 }
 
 /** Time bounds are inclusive: a class starting at minStartMinutes or ending at maxEndMinutes is allowed. */
@@ -123,7 +129,15 @@ export function getValidSectionCombos(
   const componentKeys = Object.keys(schedule.components).sort();
   const sectionArrays = componentKeys.map((key) => {
     const sections = schedule.components[key] ?? [];
-    return sections.filter(sectionHasTimes);
+    return sections.filter((section) => {
+      if (!sectionHasTimes(section)) return false;
+      if (!constraints) return true;
+      return isSectionAllowedByMinRating({
+        instructors: section.instructors,
+        minRating: constraints.minProfessorRating,
+        professorRatings: constraints.professorRatings,
+      });
+    });
   });
 
   if (sectionArrays.some((arr) => arr.length === 0)) {

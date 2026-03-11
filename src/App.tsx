@@ -57,6 +57,9 @@ function App() {
     generationMinStartMinutes,
     generationMaxEndMinutes,
     generationAllowedDays,
+    generationMinProfessorRating,
+    setGenerationMinProfessorRating,
+    professorRatings,
     setGenerationMinStartMinutes,
     setGenerationMaxEndMinutes,
     setGenerationAllowedDays,
@@ -643,6 +646,7 @@ function App() {
             selectedIndex={selectedScheduleIndex}
             onSelectIndex={setSelectedScheduleIndex}
             cache={cache}
+            professorRatings={professorRatings}
             getSwapCandidates={getSwapCandidates}
             onSwap={swapCourseInSchedule}
           />
@@ -879,6 +883,8 @@ function App() {
                       onMaxEndMinutesChange={setGenerationMaxEndMinutes}
                       allowedDays={generationAllowedDays}
                       onAllowedDaysChange={setGenerationAllowedDays}
+                      minProfessorRating={generationMinProfessorRating}
+                      onMinProfessorRatingChange={setGenerationMinProfessorRating}
                       onGenerate={handleGenerate}
                       generating={generating}
                       error={generationError}
