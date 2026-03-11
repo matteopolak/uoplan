@@ -4,7 +4,9 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   define: {
-    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    __COMMIT_HASH__: JSON.stringify(
+      (process.env.CF_PAGES_COMMIT_SHA || 'dev').slice(0, 7)
+    ),
   },
   test: {
     globals: true,
