@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Box, Stack, Title, Alert, Loader, Text, Paper, Group, Button, Select, TextInput, Modal, Textarea } from '@mantine/core';
 import { AnimatePresence, motion } from 'framer-motion';
-import { IconCheck, IconRefresh, IconShare } from '@tabler/icons-react';
+import { useMediaQuery } from '@mantine/hooks';
+import { IconArrowLeft, IconCheck, IconMenu2, IconRefresh, IconShare, IconX } from '@tabler/icons-react';
 import { useAppStore } from './store/appStore';
 import { ProgramStep } from './components/ProgramStep';
 import { CompletedCoursesStep } from './components/CompletedCoursesStep';
@@ -73,7 +74,9 @@ function App() {
   const [timetableEndDate, setTimetableEndDate] = useState<string>('');
   const [shareCopied, setShareCopied] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const persistTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   useEffect(() => {
     loadData();
@@ -191,101 +194,137 @@ function App() {
     );
   }
 
-  const StepList = () => (
-    <Box>
-      <Text
-        size="xs"
-        fw={500}
-        mb={14}
-        style={{
-          textTransform: 'uppercase',
-          letterSpacing: '0.1em',
-          color: '#A6A7AB',
-        }}
-      >
-        Steps
-      </Text>
-      <Box style={{ position: 'relative' }}>
-        {STEPS.length > 1 && (
+  const StepList = () => {
+    const stepItem = (step: (typeof STEPS)[number], idx: number) => {
+      const isActive = idx === active;
+      const isComplete = idx < active;
+      return (
+        <Box
+          key={step.label}
+          style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: isMobile ? 'center' : 'flex-start',
+            gap: 10,
+            paddingBottom: !isMobile && idx < STEPS.length - 1 ? 16 : 0,
+            cursor: idx < active ? 'pointer' : 'default',
+            position: 'relative',
+            zIndex: 1,
+          }}
+          onClick={() => {
+            if (idx < active) setActive(idx);
+          }}
+        >
           <Box
             style={{
-              position: 'absolute',
-              left: 9,
-              top: 10,
-              bottom: 10,
-              width: 1,
-              backgroundColor: '#2C2E33',
-              zIndex: 0,
+              width: 20,
+              height: 20,
+              flexShrink: 0,
+              borderRadius: '50%',
+              border: `2px solid ${isActive ? '#B197FC' : isComplete ? '#2F9E44' : '#2C2E33'}`,
+              backgroundColor: isComplete ? '#2F9E44' : '#141517',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginTop: isMobile ? 0 : 1,
             }}
-          />
-        )}
-        <Stack gap={0}>
-          {STEPS.map((step, idx) => {
-            const isActive = idx === active;
-            const isComplete = idx < active;
-
-            return (
+          >
+            {isComplete && <IconCheck size={11} color="#fff" />}
+            {isActive && !isComplete && (
               <Box
-                key={step.label}
                 style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 10,
-                  paddingBottom: idx < STEPS.length - 1 ? 16 : 0,
-                  cursor: idx < active ? 'pointer' : 'default',
-                  position: 'relative',
-                  zIndex: 1,
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  backgroundColor: '#B197FC',
                 }}
-                onClick={() => {
-                  if (idx < active) setActive(idx);
+              />
+            )}
+          </Box>
+          <Group gap={6} wrap="nowrap" align="center" style={{ paddingTop: isMobile ? 4 : 1 }}>
+            <Text
+              size="xs"
+              fw={isActive ? 600 : 400}
+              style={{
+                color: isActive ? '#F8F9FA' : isComplete ? '#A6A7AB' : '#868E96',
+                lineHeight: 1.3,
+              }}
+            >
+              {step.label}
+            </Text>
+          </Group>
+        </Box>
+      );
+    };
+    if (isMobile) {
+      return (
+        <Box style={{ width: '100%' }}>
+          <Text
+            size="xs"
+            fw={500}
+            mb={10}
+            style={{
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              color: '#A6A7AB',
+            }}
+          >
+            Steps
+          </Text>
+          <Box style={{ position: 'relative', width: '100%' }}>
+            {STEPS.length > 1 && (
+              <Box
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  top: 10,
+                  height: 1,
+                  backgroundColor: '#2C2E33',
+                  zIndex: 0,
                 }}
-              >
-                <Box
-                  style={{
-                    width: 20,
-                    height: 20,
-                    flexShrink: 0,
-                    borderRadius: '50%',
-                  border: `2px solid ${isActive ? '#B197FC' : isComplete ? '#2F9E44' : '#2C2E33'}`,
-                  backgroundColor: isComplete ? '#2F9E44' : '#141517',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginTop: 1,
-                  }}
-                >
-                  {isComplete && <IconCheck size={11} color="#fff" />}
-                  {isActive && !isComplete && (
-                    <Box
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: '50%',
-                        backgroundColor: '#B197FC',
-                      }}
-                    />
-                  )}
-                </Box>
-
-                <Group gap={6} wrap="nowrap" align="center" style={{ paddingTop: 1 }}>
-                  <Text
-                    size="xs"
-                    fw={isActive ? 600 : 400}
-                    style={{
-                      color: isActive ? '#F8F9FA' : isComplete ? '#A6A7AB' : '#868E96',
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    {step.label}
-                  </Text>
-                </Group>
-              </Box>
-            );
-          })}
-        </Stack>
+              />
+            )}
+            <Group gap="md" wrap="nowrap" style={{ justifyContent: 'space-between', width: '100%', position: 'relative', zIndex: 1 }}>
+              {STEPS.map((step, idx) => stepItem(step, idx))}
+            </Group>
+          </Box>
+        </Box>
+      );
+    }
+    return (
+      <Box>
+        <Text
+          size="xs"
+          fw={500}
+          mb={14}
+          style={{
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            color: '#A6A7AB',
+          }}
+        >
+          Steps
+        </Text>
+        <Box style={{ position: 'relative' }}>
+          {STEPS.length > 1 && (
+            <Box
+              style={{
+                position: 'absolute',
+                left: 9,
+                top: 10,
+                bottom: 10,
+                width: 1,
+                backgroundColor: '#2C2E33',
+                zIndex: 0,
+              }}
+            />
+          )}
+          <Stack gap={0}>{STEPS.map((step, idx) => stepItem(step, idx))}</Stack>
+        </Box>
       </Box>
-    </Box>
-  );
+    );
+  };
 
   if (showCalendar && generatedSchedules.length > 0) {
     const scheduleOptions = generatedSchedules.map((_, i) => ({
@@ -309,6 +348,18 @@ function App() {
           boxSizing: 'border-box',
         }}
       >
+        {isMobile && sidebarOpen && (
+          <Box
+            aria-hidden
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              zIndex: 199,
+            }}
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
         <Box
           style={{
             width: 260,
@@ -319,8 +370,33 @@ function App() {
             display: 'flex',
             flexDirection: 'column',
             gap: 24,
+            ...(isMobile
+              ? {
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  height: '100vh',
+                  zIndex: 200,
+                  transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+                  transition: 'transform 0.2s ease',
+                  boxShadow: sidebarOpen ? '4px 0 24px rgba(0,0,0,0.3)' : 'none',
+                }
+              : {}),
           }}
         >
+          {isMobile && (
+            <Button
+              variant="subtle"
+              color="gray"
+              size="sm"
+              radius={0}
+              leftSection={<IconX size={18} />}
+              onClick={() => setSidebarOpen(false)}
+              style={{ border: 'none', alignSelf: 'flex-start', marginBottom: 8 }}
+            >
+              Close
+            </Button>
+          )}
           <Title
             order={1}
             style={{ fontFamily: '"DM Serif Display", serif', color: '#F8F9FA', marginBottom: 0 }}
@@ -501,8 +577,10 @@ function App() {
             minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
-            padding: 24,
-            maxWidth: '66.67%',
+            padding: isMobile ? 0 : 24,
+            paddingBottom: isMobile ? 72 : 24,
+            width: '100%',
+            maxWidth: 1200,
           }}
         >
           <CalendarView
@@ -514,6 +592,49 @@ function App() {
             onSwap={swapCourseInSchedule}
           />
         </Box>
+        {isMobile && (
+          <Box
+            component="nav"
+            style={{
+              position: 'fixed',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              display: 'flex',
+              gap: 0,
+              backgroundColor: '#1E1E20',
+              borderTop: '2px solid #2C2E33',
+              paddingBottom: 'env(safe-area-inset-bottom, 0)',
+              zIndex: 198,
+            }}
+          >
+            <Button
+              variant="subtle"
+              color="gray"
+              size="md"
+              radius={0}
+              style={{ flex: 1, border: 'none', height: 56 }}
+              leftSection={<IconMenu2 size={22} />}
+              onClick={() => setSidebarOpen(true)}
+            >
+              Menu
+            </Button>
+            <Button
+              variant="subtle"
+              color="gray"
+              size="md"
+              radius={0}
+              style={{ flex: 1, border: 'none', height: 56 }}
+              leftSection={<IconArrowLeft size={22} />}
+              onClick={() => {
+                setShowCalendar(false);
+                setActive(3);
+              }}
+            >
+              Back
+            </Button>
+          </Box>
+        )}
       </Box>
     );
   }
@@ -523,11 +644,13 @@ function App() {
       component="main"
       style={{
         minHeight: '100vh',
-        padding: '40px 24px 60px',
+        padding: isMobile ? '24px 16px 60px' : '40px 24px 60px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         gap: 24,
+        width: '100%',
+        boxSizing: 'border-box',
       }}
     >
       <Title
@@ -540,14 +663,21 @@ function App() {
       <Box
         style={{
           width: '100%',
-          maxWidth: 1320,
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 260px) minmax(0, 760px) minmax(0, 260px)',
+          maxWidth: 1200,
+          display: isMobile ? 'flex' : 'grid',
+          flexDirection: isMobile ? 'column' : undefined,
+          gridTemplateColumns: isMobile ? undefined : 'minmax(0, 260px) minmax(0, 1fr) minmax(0, 260px)',
           justifyContent: 'center',
+          gap: isMobile ? 20 : 0,
         }}
       >
         <Box
-          style={{ display: 'flex', justifyContent: 'flex-end', paddingRight: 40, paddingTop: 4 }}
+          style={{
+            display: 'flex',
+            justifyContent: isMobile ? 'flex-start' : 'flex-end',
+            paddingRight: isMobile ? 0 : 40,
+            paddingTop: 4,
+          }}
         >
           <StepList />
         </Box>
@@ -555,9 +685,10 @@ function App() {
         <Box style={{ minWidth: 0 }}>
           <Box
             style={{
-              border: '2px solid #2C2E33',
-              padding: 40,
               backgroundColor: '#1E1E20',
+              ...(isMobile
+                ? { border: 'none', padding: 16 }
+                : { border: '2px solid #2C2E33', padding: 40 }),
             }}
           >
             <AnimatePresence mode="wait">
@@ -703,7 +834,7 @@ function App() {
           </Box>
         </Box>
 
-        <Box />
+        {!isMobile && <Box />}
       </Box>
     </Box>
   );

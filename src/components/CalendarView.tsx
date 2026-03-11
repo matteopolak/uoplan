@@ -1,5 +1,6 @@
 import { useRef, useEffect, useMemo, useState } from 'react';
 import { Badge, Box, Group, Text, Modal, Stack, Button, Select } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -322,6 +323,7 @@ export function CalendarView({
 
   const fcEvents = events;
   const calendarRef = useRef<FullCalendar>(null);
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   // Keep ref stable; no imperative calendar calls currently needed.
   useEffect(() => {}, [selectedIndex, schedules.length]);
@@ -342,8 +344,9 @@ export function CalendarView({
           minHeight: 0,
           width: '100%',
           backgroundColor: '#1E1E20',
-          border: '2px solid #2C2E33',
-          padding: 12,
+          ...(isMobile
+            ? { border: 'none', padding: 0 }
+            : { border: '2px solid #2C2E33', padding: 12 }),
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
