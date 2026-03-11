@@ -78,6 +78,8 @@ export interface AppState {
   selectedScheduleIndex: number;
   generationError: string | null;
   unassignedCompletedCourses: string[];
+  /** Stack of swaps for undo (most recent at end). Each entry: schedule index, enrollment index, previous course code. */
+  swapHistory: Array<{ scheduleIndex: number; enrollmentIndex: number; previousCourseCode: string }>;
   generationMinStartMinutes: number;
   generationMaxEndMinutes: number;
   generationAllowedDays: DayOfWeek[];
@@ -442,8 +444,10 @@ export interface AppActions {
   swapCourseInSchedule: (
     scheduleIndex: number,
     enrollmentIndex: number,
-    newCourseCode: string
+    newCourseCode: string,
+    isUndo?: boolean
   ) => void;
+  undoLastSwap: () => void;
   getSwapCandidates: (
     scheduleIndex: number,
     enrollmentIndex: number
@@ -492,6 +496,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   selectedScheduleIndex: 0,
   generationError: null,
   unassignedCompletedCourses: [],
+  swapHistory: [],
   generationMinStartMinutes: 8 * 60 + 30, // 8:30
   generationMaxEndMinutes: 22 * 60, // 22:00
   generationAllowedDays: ['Mo', 'Tu', 'We', 'Th', 'Fr'],
@@ -926,6 +931,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       selectedScheduleIndex: 0,
       generationError: null,
       unassignedCompletedCourses: [],
+      swapHistory: [],
       generationSeed: generateRandomSeed(),
     });
     if (typeof window !== 'undefined') {
@@ -1403,6 +1409,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         chosenCourseToRequirementId: {},
         schedulePoolMaps: [],
         selectedScheduleIndex: 0,
+        swapHistory: [],
         generationError:
           'Not enough eligible courses match your filters and requirements to build a full schedule. Try relaxing filters or changing selections.',
       });
@@ -1429,6 +1436,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         swapPool: newSwapPool,
         schedulePoolMaps: newPoolMaps,
         selectedScheduleIndex: newSchedules.length - 1,
+        swapHistory: [],
         generationError: null,
       });
       return;
@@ -1448,6 +1456,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       chosenCourseToRequirementId: lastChosenFromPool,
       schedulePoolMaps: limitedPoolMaps,
       selectedScheduleIndex: 0,
+      swapHistory: [],
       generationError:
         limitedSchedules.length === 0
           ? 'No non-overlapping schedules could be generated with your selections.'
@@ -1457,7 +1466,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   setSelectedScheduleIndex: (idx) => set({ selectedScheduleIndex: idx }),
 
-  swapCourseInSchedule: (scheduleIndex, enrollmentIndex, newCourseCode) => {
+  swapCourseInSchedule: (scheduleIndex, enrollmentIndex, newCourseCode, isUndo = false) => {
     const {
       generatedSchedules,
       cache,
@@ -1506,10 +1515,22 @@ export const useAppStore = create<AppStore>((set, get) => ({
           chosenCourseToRequirementId:
             scheduleIndex === 0 ? nextMap : chosenCourseToRequirementId,
           schedulePoolMaps: nextPoolMaps,
+          ...(isUndo
+            ? {}
+            : { swapHistory: [...get().swapHistory, { scheduleIndex, enrollmentIndex, previousCourseCode: oldCode }] }),
         });
         return;
       }
     }
+  },
+
+  undoLastSwap: () => {
+    const { swapHistory } = get();
+    if (swapHistory.length === 0) return;
+    const last = swapHistory[swapHistory.length - 1];
+    const { scheduleIndex, enrollmentIndex, previousCourseCode } = last;
+    set({ swapHistory: swapHistory.slice(0, -1) });
+    get().swapCourseInSchedule(scheduleIndex, enrollmentIndex, previousCourseCode, true);
   },
 
   getSwapCandidates: (scheduleIndex, enrollmentIndex) => {
