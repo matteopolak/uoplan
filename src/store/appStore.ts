@@ -1014,6 +1014,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
           // itself is a concrete course requirement (type: 'course'), we keep the
           // honours course so the requirement tree can still reflect it properly.
           if (pool.type !== 'course' && isHonoursProject(code)) continue;
+          // Exclude courses with no valid section combos (e.g. empty times) so they
+          // are never picked and never produce a schedule with fewer real courses.
+          const sched = cacheVal.getSchedule(code);
+          if (sched && getValidSectionCombos(sched).length === 0) continue;
           candidates.push(code);
         }
         if (candidates.length > 0) {
