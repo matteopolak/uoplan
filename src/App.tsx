@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useMediaQuery } from '@mantine/hooks';
 import { IconArrowLeft, IconCheck, IconMenu2, IconRefresh, IconShare, IconX } from '@tabler/icons-react';
 import { useAppStore } from './store/appStore';
+import { TermStep } from './components/TermStep';
 import { ProgramStep } from './components/ProgramStep';
 import { CompletedCoursesStep } from './components/CompletedCoursesStep';
 import { RequirementsStep } from './components/RequirementsStep';
@@ -12,6 +13,7 @@ import { CalendarView } from './components/CalendarView';
 import { buildScheduleIcs, downloadTextFile } from './lib/ics';
 
 const STEPS = [
+  { label: 'Term', description: 'Choose term' },
   { label: 'Program', description: 'Choose your program' },
   { label: 'Completed', description: 'Mark completed courses' },
   { label: 'Requirements', description: 'Select courses' },
@@ -39,6 +41,8 @@ function App() {
     cache,
     loading,
     error,
+    terms,
+    selectedTermId,
     program,
     completedCourses,
     remainingRequirements,
@@ -57,6 +61,7 @@ function App() {
     generatedSchedules,
     selectedScheduleIndex,
     setProgram,
+    setSelectedTermId,
     setCompletedCourses,
     setSelectedForRequirement,
     setCoursesThisSemester,
@@ -66,7 +71,6 @@ function App() {
     swapCourseInSchedule,
     getSwapCandidates,
     generationError,
-    prereqEligibleCourses,
     filteredPrereqEligibleCourses,
     levelBuckets,
     languageBuckets,
@@ -111,6 +115,9 @@ function App() {
   }, [indices, getEncodedStateBase64]);
 
   const programs = catalogue?.programs ?? [];
+  const hasTerms = (terms?.length ?? 0) > 0;
+  const canProceedFromStep =
+    active !== 0 || (hasTerms && Boolean(selectedTermId) && Boolean(cache));
 
   const handleGenerate = () => {
     setGenerating(true);
@@ -760,6 +767,19 @@ function App() {
 
                 {active === 0 && (
                   <Stack gap="md">
+                    {terms && (
+                      <TermStep
+                        terms={terms}
+                        value={selectedTermId}
+                        onChange={(termId) => {
+                          setSelectedTermId(termId);
+                        }}
+                      />
+                    )}
+                  </Stack>
+                )}
+                {active === 1 && (
+                  <Stack gap="md">
                     <ProgramStep
                       programs={programs}
                       value={program?.url ?? null}
@@ -767,7 +787,7 @@ function App() {
                     />
                   </Stack>
                 )}
-                {active === 1 && (
+                {active === 2 && (
                   <Stack gap="md">
                     <CompletedCoursesStep
                       cache={cache}
@@ -778,7 +798,7 @@ function App() {
                     />
                   </Stack>
                 )}
-                {active === 2 && (
+                {active === 3 && (
                   <Stack gap="md">
                     <RequirementsStep
                       cache={cache}
@@ -801,7 +821,7 @@ function App() {
                     />
                   </Stack>
                 )}
-                {active === 3 && (
+                {active === 4 && (
                   <Stack gap="md">
                     <ScheduleCountStep
                       coursesThisSemester={coursesThisSemester}
@@ -835,7 +855,7 @@ function App() {
                     color="constructBlack"
                     radius={0}
                     onClick={() => setActive((current) => Math.min(STEPS.length - 1, current + 1))}
-                    disabled={active === STEPS.length - 1}
+                    disabled={active === STEPS.length - 1 || !canProceedFromStep}
                   >
                     Next
                   </Button>

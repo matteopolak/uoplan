@@ -334,10 +334,15 @@ function base64ToBytes(base64: string): Uint8Array | null {
 
 export function stateToShareUrl(
   encoded: Uint8Array,
-  baseUrl: string = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : ''
+  baseUrl: string = typeof window !== 'undefined'
+    ? `${window.location.origin}${window.location.pathname}`
+    : '',
+  termId?: string
 ): string {
   const q = baseUrl.includes('?') ? '&' : '?';
-  return `${baseUrl}${q}s=${encodeURIComponent(bytesToBase64(encoded))}`;
+  const params: string[] = [`s=${encodeURIComponent(bytesToBase64(encoded))}`];
+  if (termId) params.push(`t=${encodeURIComponent(termId)}`);
+  return `${baseUrl}${q}${params.join('&')}`;
 }
 
 export function parseStateFromUrl(search: string): Uint8Array | null {
