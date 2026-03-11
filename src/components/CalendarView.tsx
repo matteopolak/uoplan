@@ -26,13 +26,13 @@ interface CalendarViewProps {
 }
 
 const DAY_OFFSETS: Record<string, number> = {
-  Mo: 0,
-  Tu: 1,
-  We: 2,
-  Th: 3,
-  Fr: 4,
-  Sa: 5,
-  Su: 6,
+  Su: 0,
+  Mo: 1,
+  Tu: 2,
+  We: 3,
+  Th: 4,
+  Fr: 5,
+  Sa: 6,
 };
 
 const COLORS = [
@@ -287,7 +287,7 @@ export function CalendarView({
 
   const currentSchedule = schedules[selectedIndex] ?? schedules[0];
 
-  const referenceWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const referenceWeekStart = startOfWeek(new Date(), { weekStartsOn: 0 });
 
   const events: CalendarEvent[] = currentSchedule.enrollments.flatMap((enrollment, enrollIdx) => {
     const out: CalendarEvent[] = [];
@@ -358,7 +358,7 @@ export function CalendarView({
             plugins={[timeGridPlugin, interactionPlugin]}
             initialView="timeGridWeek"
             headerToolbar={false}
-            firstDay={1}
+            firstDay={0}
             weekends={true}
             allDaySlot={false}
             slotDuration="01:00:00"
