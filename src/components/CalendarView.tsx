@@ -341,12 +341,15 @@ export function CalendarView({
           flex: 1,
           minHeight: 0,
           width: '100%',
-          background: '#111113',
-          borderRadius: 'var(--mantine-radius-sm)',
-          padding: '0.5rem',
-          height: '100%',
+          backgroundColor: '#1E1E20',
+          border: '2px solid #2C2E33',
+          padding: 12,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
         }}
       >
+          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
           <FullCalendar
             ref={calendarRef}
             plugins={[timeGridPlugin, interactionPlugin]}
@@ -413,6 +416,7 @@ export function CalendarView({
               });
             }}
           />
+          </div>
       </div>
 
       <Modal
