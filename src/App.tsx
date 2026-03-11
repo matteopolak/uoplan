@@ -36,6 +36,12 @@ function App() {
     selectedPerRequirement,
     selectedOptionsPerRequirement,
     coursesThisSemester,
+    generationMinStartMinutes,
+    generationMaxEndMinutes,
+    generationAllowedDays,
+    setGenerationMinStartMinutes,
+    setGenerationMaxEndMinutes,
+    setGenerationAllowedDays,
     generatedSchedules,
     selectedScheduleIndex,
     setProgram,
@@ -61,6 +67,7 @@ function App() {
 
   const [active, setActive] = useState(0);
   const [generating, setGenerating] = useState(false);
+  const [generatingOneMore, setGeneratingOneMore] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [timetableStartDate, setTimetableStartDate] = useState<string>('');
   const [timetableEndDate, setTimetableEndDate] = useState<string>('');
@@ -374,6 +381,28 @@ function App() {
             size="md"
             radius="sm"
           />
+          <Button
+            variant="light"
+            color="violet"
+            size="sm"
+            radius="sm"
+            loading={generatingOneMore}
+            disabled={generatingOneMore}
+            onClick={() => {
+              setGeneratingOneMore(true);
+              setTimeout(() => {
+                generateSchedules({ appendFirstOnly: true });
+                setGeneratingOneMore(false);
+              }, 0);
+            }}
+          >
+            Generate new schedule
+          </Button>
+          {generationError && (
+            <Alert color="red" variant="light" radius="sm" py="xs">
+              {generationError}
+            </Alert>
+          )}
           <Stack gap="xs">
             <TextInput
               label="Start date"
@@ -410,7 +439,7 @@ function App() {
                 downloadTextFile(filename, ics, 'text/calendar;charset=utf-8');
               }}
             >
-              Download iCalendar (.ics)
+              Download ICS
             </Button>
             {!dateRangeOk && (
               <Text size="xs" c="dimmed">
@@ -636,6 +665,12 @@ function App() {
                       coursesThisSemester={coursesThisSemester}
                       onCoursesChange={setCoursesThisSemester}
                       selectedCount={uniqueSelected}
+                      minStartMinutes={generationMinStartMinutes}
+                      onMinStartMinutesChange={setGenerationMinStartMinutes}
+                      maxEndMinutes={generationMaxEndMinutes}
+                      onMaxEndMinutesChange={setGenerationMaxEndMinutes}
+                      allowedDays={generationAllowedDays}
+                      onAllowedDaysChange={setGenerationAllowedDays}
                       onGenerate={handleGenerate}
                       generating={generating}
                       error={generationError}

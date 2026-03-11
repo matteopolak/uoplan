@@ -21,6 +21,21 @@ export interface GeneratedSchedule {
   enrollments: CourseEnrollment[];
 }
 
+export interface GenerationConstraints {
+  minStartMinutes: number;
+  maxEndMinutes: number;
+  allowedDays: DayOfWeek[];
+}
+
+/** Time bounds are inclusive: a class starting at minStartMinutes or ending at maxEndMinutes is allowed. */
+function timeSlotSatisfiesConstraints(slot: TimeSlot, c: GenerationConstraints): boolean {
+  return (
+    c.allowedDays.includes(slot.day) &&
+    slot.startMinutes >= c.minStartMinutes &&
+    slot.endMinutes <= c.maxEndMinutes
+  );
+}
+
 function collectTimes(sections: ComponentSection[]): TimeSlot[] {
   const times: TimeSlot[] = [];
   for (const s of sections) {
@@ -101,7 +116,10 @@ function sectionHasTimes(section: ComponentSection): boolean {
   );
 }
 
-export function getValidSectionCombos(schedule: CourseSchedule): SectionCombo[] {
+export function getValidSectionCombos(
+  schedule: CourseSchedule,
+  constraints?: GenerationConstraints
+): SectionCombo[] {
   const componentKeys = Object.keys(schedule.components).sort();
   const sectionArrays = componentKeys.map((key) => {
     const sections = schedule.components[key] ?? [];
@@ -118,6 +136,12 @@ export function getValidSectionCombos(schedule: CourseSchedule): SectionCombo[] 
   for (const combo of allCombos) {
     const sections = combo as ComponentSection[];
     const times = collectTimes(sections);
+    if (
+      constraints &&
+      !times.every((t) => timeSlotSatisfiesConstraints(t, constraints))
+    ) {
+      continue;
+    }
     let hasOverlap = false;
     for (let i = 0; i < times.length; i++) {
       for (let j = i + 1; j < times.length; j++) {
@@ -170,7 +194,8 @@ function* combinations<T>(arr: T[], k: number): Generator<T[]> {
 export function generateSchedules(
   courseCodes: string[],
   targetCount: number,
-  cache: DataCache
+  cache: DataCache,
+  constraints?: GenerationConstraints
 ): GeneratedSchedule[] {
   const schedules: GeneratedSchedule[] = [];
   const coursesWithCombos: { code: string; combos: SectionCombo[] }[] = [];
@@ -178,7 +203,7 @@ export function generateSchedules(
   for (const code of courseCodes) {
     const schedule = cache.getSchedule(code);
     if (!schedule) continue;
-    const combos = getValidSectionCombos(schedule);
+    const combos = getValidSectionCombos(schedule, constraints);
     if (combos.length > 0) {
       coursesWithCombos.push({ code: schedule.courseCode, combos });
     }
@@ -231,7 +256,8 @@ export function generateSchedulesWithPinned(
   pinnedCourseCodes: string[],
   optionalCourseCodes: string[],
   targetCount: number,
-  cache: DataCache
+  cache: DataCache,
+  constraints?: GenerationConstraints
 ): GeneratedSchedule[] {
   if (pinnedCourseCodes.length > targetCount) {
     return [];
@@ -241,7 +267,7 @@ export function generateSchedulesWithPinned(
   for (const code of pinnedCourseCodes) {
     const schedule = cache.getSchedule(code);
     if (!schedule) return [];
-    const combos = getValidSectionCombos(schedule);
+    const combos = getValidSectionCombos(schedule, constraints);
     if (combos.length === 0) return [];
     pinned.push({ code: schedule.courseCode, combos });
   }
@@ -251,7 +277,7 @@ export function generateSchedulesWithPinned(
     if (pinnedCourseCodes.includes(code)) continue;
     const schedule = cache.getSchedule(code);
     if (!schedule) continue;
-    const combos = getValidSectionCombos(schedule);
+    const combos = getValidSectionCombos(schedule, constraints);
     if (combos.length > 0) {
       optional.push({ code: schedule.courseCode, combos });
     }
@@ -350,7 +376,7 @@ export function generateSchedulesWithPinned(
   }
 
   if (pinned.length === 0) {
-    return generateSchedules(optionalCourseCodes, targetCount, cache);
+    return generateSchedules(optionalCourseCodes, targetCount, cache, constraints);
   }
 
   dfsPinned(pinned, [], 0);
