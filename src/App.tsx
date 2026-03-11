@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Box, Stack, Title, Alert, Loader, Text, Paper, Group, Button, Select, TextInput, Modal, Textarea } from '@mantine/core';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMediaQuery } from '@mantine/hooks';
-import { IconArrowLeft, IconCheck, IconHelp, IconMenu2, IconRefresh, IconShare, IconX } from '@tabler/icons-react';
+import { IconArrowBackUp, IconArrowLeft, IconCheck, IconHelp, IconMenu2, IconRefresh, IconShare, IconX } from '@tabler/icons-react';
 import 'driver.js/dist/driver.css';
 import { runTour } from './tour';
 import { useAppStore } from './store/appStore';
@@ -71,7 +71,9 @@ function App() {
     generateSchedules,
     setSelectedScheduleIndex,
     swapCourseInSchedule,
+    undoLastSwap,
     getSwapCandidates,
+    swapHistory,
     generationError,
     filteredPrereqEligibleCourses,
     levelBuckets,
@@ -91,6 +93,7 @@ function App() {
   const [timetableEndDate, setTimetableEndDate] = useState<string>('');
   const [shareCopied, setShareCopied] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [resetModalOpen, setResetModalOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const persistTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -356,6 +359,39 @@ function App() {
     );
   };
 
+  const resetConfirmModal = (
+    <Modal
+      opened={resetModalOpen}
+      onClose={() => setResetModalOpen(false)}
+      title="Reset planner?"
+      size="sm"
+    >
+      <Stack gap="md">
+        <Text size="sm" c="dimmed">
+          This will clear your program, completed courses, requirement selections, and generated
+          schedules. You cannot undo this.
+        </Text>
+        <Group justify="flex-end" gap="xs">
+          <Button variant="default" onClick={() => setResetModalOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            color="red"
+            variant="filled"
+            onClick={() => {
+              resetToDefault();
+              setShowCalendar(false);
+              setActive(0);
+              setResetModalOpen(false);
+            }}
+          >
+            Reset
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  );
+
   if (showCalendar && generatedSchedules.length > 0) {
     const scheduleOptions = generatedSchedules.map((_, i) => ({
       value: String(i),
@@ -392,7 +428,7 @@ function App() {
         )}
         <Box
           style={{
-            width: 260,
+            width: 320,
             flexShrink: 0,
             padding: '24px 20px',
             borderRight: '2px solid #2C2E33',
@@ -400,6 +436,7 @@ function App() {
             display: 'flex',
             flexDirection: 'column',
             gap: 24,
+            overflowY: 'auto',
             ...(isMobile
               ? {
                   position: 'fixed',
@@ -436,49 +473,45 @@ function App() {
           <Text size="sm" style={{ color: '#ADB5BD', marginTop: -8 }}>
             Review your generated schedules. Click a block to swap courses.
           </Text>
-          <Button
-            variant="subtle"
-            color="gray"
-            size="sm"
-            radius={0}
-            onClick={() => {
-              setShowCalendar(false);
-              setActive(generateStepIndex);
-            }}
-            style={{ border: 'none', alignSelf: 'flex-start' }}
-          >
-            Back to setup
-          </Button>
+          {swapHistory.length > 0 && (
+            <Button
+              variant="light"
+              color="gray"
+              size="sm"
+              radius="sm"
+              leftSection={<IconArrowBackUp size={14} />}
+              onClick={() => undoLastSwap()}
+            >
+              {swapHistory.length === 1 ? 'Undo swap' : `Undo swap (${swapHistory.length})`}
+            </Button>
+          )}
           <Group gap="xs">
             {indices && (
               <Button
-                variant="subtle"
-                color="gray"
+                variant="filled"
+                color="dark"
                 size="sm"
-                radius={0}
+                radius="sm"
                 leftSection={<IconShare size={14} />}
                 onClick={() => setShareModalOpen(true)}
-                style={{ border: 'none', alignSelf: 'flex-start' }}
+                style={{ backgroundColor: '#141517' }}
               >
                 Share
               </Button>
             )}
             <Button
-              variant="subtle"
-              color="gray"
+              variant="filled"
+              color="dark"
               size="sm"
-              radius={0}
+              radius="sm"
               leftSection={<IconRefresh size={14} />}
-              onClick={() => {
-                resetToDefault();
-                setShowCalendar(false);
-                setActive(0);
-              }}
-              style={{ border: 'none', alignSelf: 'flex-start' }}
+              onClick={() => setResetModalOpen(true)}
+              style={{ backgroundColor: '#141517' }}
             >
               Reset
             </Button>
           </Group>
+          {resetConfirmModal}
           <Select
             label="Schedule"
             data={scheduleOptions}
@@ -509,58 +542,48 @@ function App() {
               {generationError}
             </Alert>
           )}
-          <Stack gap="xs">
-            <TextInput
-              label="Start date"
-              type="date"
-              value={timetableStartDate}
-              onChange={(e) => setTimetableStartDate(e.currentTarget.value)}
-              size="sm"
-              radius="sm"
-            />
-            <TextInput
-              label="End date"
-              type="date"
-              value={timetableEndDate}
-              onChange={(e) => setTimetableEndDate(e.currentTarget.value)}
-              size="sm"
-              radius="sm"
-            />
-            <Button
-              size="sm"
-              color="violet"
-              variant="filled"
-              radius={0}
-              style={{ border: '2px solid black' }}
-              disabled={!dateRangeOk}
-              onClick={() => {
-                const ics = buildScheduleIcs({
-                  schedule: currentSchedule,
-                  cache,
-                  startDate: timetableStartDate,
-                  endDate: timetableEndDate,
-                });
-                const idx = (selectedScheduleIndex ?? 0) + 1;
-                const filename = `uoplan-schedule-${idx}-${timetableStartDate}-to-${timetableEndDate}.ics`;
-                downloadTextFile(filename, ics, 'text/calendar;charset=utf-8');
-              }}
-            >
-              Download ICS
-            </Button>
-            {!dateRangeOk && (
-              <Text size="xs" c="dimmed">
-                Choose a valid date range to enable export.
-              </Text>
-            )}
-          </Stack>
+          <Button
+            size="sm"
+            color="violet"
+            variant="filled"
+            radius="sm"
+            disabled={!dateRangeOk}
+            onClick={() => {
+              const ics = buildScheduleIcs({
+                schedule: currentSchedule,
+                cache,
+                startDate: timetableStartDate,
+                endDate: timetableEndDate,
+              });
+              const idx = (selectedScheduleIndex ?? 0) + 1;
+              const filename = `uoplan-schedule-${idx}-${timetableStartDate}-to-${timetableEndDate}.ics`;
+              downloadTextFile(filename, ics, 'text/calendar;charset=utf-8');
+            }}
+          >
+            Download ICS
+          </Button>
           <Stack gap={0}>
             <Text size="sm" c="dimmed">
               {generatedSchedules.length} total · click a block to swap
             </Text>
             <Text size="xs" c="dimmed">
-              Showing {eventCount} meeting block{eventCount === 1 ? '' : 's'} this week
+              Showing {eventCount} course block{eventCount === 1 ? '' : 's'} this week
             </Text>
           </Stack>
+          <Box style={{ flex: 1, minHeight: 24 }} />
+          <Button
+            variant="filled"
+            color="dark"
+            size="sm"
+            radius="sm"
+            onClick={() => {
+              setShowCalendar(false);
+              setActive(generateStepIndex);
+            }}
+            style={{ backgroundColor: '#141517', alignSelf: 'stretch' }}
+          >
+            Back to setup
+          </Button>
           <Modal
             opened={shareModalOpen}
             onClose={() => setShareModalOpen(false)}
@@ -683,6 +706,7 @@ function App() {
         boxSizing: 'border-box',
       }}
     >
+      {resetConfirmModal}
       <Title
         order={1}
         style={{ fontFamily: '"DM Serif Display", serif', color: '#F8F9FA' }}
@@ -776,11 +800,7 @@ function App() {
                       color="gray"
                       size="xs"
                       leftSection={<IconRefresh size={14} />}
-                      onClick={() => {
-                        resetToDefault();
-                        setActive(0);
-                        setShowCalendar(false);
-                      }}
+                      onClick={() => setResetModalOpen(true)}
                     >
                       Reset
                     </Button>
