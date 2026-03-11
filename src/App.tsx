@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Box, Stack, Title, Alert, Loader, Text, Paper, Group, Button, Select, TextInput, Modal, Textarea } from '@mantine/core';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMediaQuery } from '@mantine/hooks';
-import { IconArrowLeft, IconCheck, IconMenu2, IconRefresh, IconShare, IconX } from '@tabler/icons-react';
+import { IconArrowLeft, IconCheck, IconHelp, IconMenu2, IconRefresh, IconShare, IconX } from '@tabler/icons-react';
+import 'driver.js/dist/driver.css';
+import { runTour } from './tour';
 import { useAppStore } from './store/appStore';
 import { TermStep } from './components/TermStep';
 import { ProgramStep } from './components/ProgramStep';
@@ -92,6 +94,10 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const persistTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMobile = useMediaQuery('(max-width: 768px)');
+  const generateStepIndex = Math.max(
+    0,
+    STEPS.findIndex((s) => s.label === 'Generate'),
+  );
 
   useEffect(() => {
     loadData();
@@ -101,7 +107,7 @@ function App() {
     if (!indices) return;
     const save = () => {
       const base64 = getEncodedStateBase64();
-      if (base64) localStorage.setItem('uschedule-state', base64);
+      if (base64) localStorage.setItem('uoplan-state', base64);
     };
     const scheduleSave = () => {
       if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
@@ -113,6 +119,12 @@ function App() {
       if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
     };
   }, [indices, getEncodedStateBase64]);
+
+  useEffect(() => {
+    if (loading || !indices || localStorage.getItem('uoplan-tour-done')) return;
+    const t = setTimeout(() => runTour(setActive), 400);
+    return () => clearTimeout(t);
+  }, [loading, indices]);
 
   const programs = catalogue?.programs ?? [];
   const hasTerms = (terms?.length ?? 0) > 0;
@@ -431,7 +443,7 @@ function App() {
             radius={0}
             onClick={() => {
               setShowCalendar(false);
-              setActive(3);
+              setActive(generateStepIndex);
             }}
             style={{ border: 'none', alignSelf: 'flex-start' }}
           >
@@ -529,7 +541,7 @@ function App() {
                   endDate: timetableEndDate,
                 });
                 const idx = (selectedScheduleIndex ?? 0) + 1;
-                const filename = `uschedule-schedule-${idx}-${timetableStartDate}-to-${timetableEndDate}.ics`;
+                const filename = `uoplan-schedule-${idx}-${timetableStartDate}-to-${timetableEndDate}.ics`;
                 downloadTextFile(filename, ics, 'text/calendar;charset=utf-8');
               }}
             >
@@ -646,7 +658,7 @@ function App() {
               leftSection={<IconArrowLeft size={22} />}
               onClick={() => {
                 setShowCalendar(false);
-                setActive(3);
+                setActive(generateStepIndex);
               }}
             >
               Back
@@ -733,6 +745,7 @@ function App() {
                   <Group gap="xs">
                     {indices && (
                       <Button
+                        data-tour="share"
                         variant="subtle"
                         color="gray"
                         size="xs"
@@ -749,6 +762,15 @@ function App() {
                         {shareCopied ? 'Link copied' : 'Share'}
                       </Button>
                     )}
+                    <Button
+                      variant="subtle"
+                      color="gray"
+                      size="xs"
+                      leftSection={<IconHelp size={14} />}
+                      onClick={() => runTour(setActive)}
+                    >
+                      Tour
+                    </Button>
                     <Button
                       variant="subtle"
                       color="gray"

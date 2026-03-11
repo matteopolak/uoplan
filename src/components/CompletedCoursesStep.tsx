@@ -35,6 +35,7 @@ export function CompletedCoursesStep({
   return (
     <Stack gap="md">
       <MultiSelect
+        data-tour="completed-courses"
         label="Courses you have completed or are currently taking"
         placeholder="Search by course code or title..."
         data={options}

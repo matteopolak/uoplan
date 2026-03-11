@@ -93,6 +93,7 @@ export function ProgramStep({ programs, value, onChange }: ProgramStepProps) {
   return (
     <Stack gap="md">
       <Select
+        data-tour="program-select"
         label="Select your program"
         placeholder="Search for your program..."
         data={data}
@@ -127,6 +128,7 @@ export function ProgramStep({ programs, value, onChange }: ProgramStepProps) {
         aria-label="Upload transcript PDF"
       />
       <Button
+        data-tour="transcript-upload"
         size="sm"
         color="violet"
         variant="filled"

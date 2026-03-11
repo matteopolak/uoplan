@@ -144,7 +144,7 @@ export function buildScheduleIcs(args: {
   const dtstamp = dtstampUtc();
 
   let out = '';
-  out += lines('BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//uschedule//EN', 'CALSCALE:GREGORIAN');
+  out += lines('BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//uoplan//EN', 'CALSCALE:GREGORIAN');
 
   for (const enrollment of schedule.enrollments) {
     const courseCode = enrollment.courseCode;
@@ -181,7 +181,7 @@ export function buildScheduleIcs(args: {
         const dtEnd = formatLocalDateTimeForIcs(firstDay, t.endMinutes);
         // Match reference format (UTC midnight on end date).
         const untilUtc = `${formatUtcDateForIcs(end)}T000000Z`;
-        const uid = `${courseCode}-${component}-${t.day}-${t.startMinutes}-${t.endMinutes}@uschedule`;
+        const uid = `${courseCode}-${component}-${t.day}-${t.startMinutes}-${t.endMinutes}@uoplan`;
 
         out += lines(
           'BEGIN:VEVENT',
