@@ -12,6 +12,7 @@ type CoursePrereqNode = {
   text?: string;
   credits?: number;
   disciplines?: string[];
+  programs?: string[];
   children?: CoursePrereqNode[];
 };
 
@@ -22,6 +23,7 @@ const CoursePrereqNodeSchema: z.ZodType<CoursePrereqNode> = z.lazy(() =>
     text: z.string().optional(),
     credits: z.number().optional(),
     disciplines: z.array(z.string()).optional(),
+    programs: z.array(z.string()).optional(),
     children: z.array(CoursePrereqNodeSchema).optional(),
   }),
 );
@@ -254,6 +256,31 @@ function parsePrereqClause(clause: string): CoursePrereqNode | undefined {
       inner = inner.slice(1, -1).trim();
       if (!inner) return undefined;
     }
+  }
+
+  // Detect "X or Y for students enrolled in A (P1) or B (P2) programs or Z for all other students"
+  const enrolledPattern =
+    /^(.*?)\s+for students enrolled in\s+(.*?)\s+programs?\s+or\s+(.*?)\s+for all other students$/i;
+  const enrolledMatch = inner.match(enrolledPattern);
+  if (enrolledMatch) {
+    const coursesText = enrolledMatch[1].trim();
+    const programsText = enrolledMatch[2].trim();
+    const fallbackText = enrolledMatch[3].trim();
+
+    const programs = extractDisciplines(programsText);
+    const conditionalBase = parsePrereqClause(coursesText);
+    const fallbackNode = parsePrereqClause(fallbackText);
+
+    if (!conditionalBase && !fallbackNode) return undefined;
+    if (!conditionalBase) return fallbackNode;
+    if (!fallbackNode) return { ...conditionalBase, programs };
+
+    const conditionalNode: CoursePrereqNode = { ...conditionalBase, programs };
+    return {
+      type: 'or_group',
+      text: inner,
+      children: [conditionalNode, fallbackNode],
+    };
   }
 
   const orRegex = /\s+(or|ou)\s+/i;

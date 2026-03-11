@@ -12,6 +12,7 @@ export interface PrereqContext {
   taken: TakenCourse[];
   totalCredits: number;
   disciplineCredits: Record<string, number>;
+  studentPrograms: string[];
 }
 
 function getDiscipline(code: string): string {
@@ -21,6 +22,7 @@ function getDiscipline(code: string): string {
 export function buildPrereqContext(
   completedCourseCodes: string[],
   cache: DataCache,
+  studentPrograms: string[] = [],
 ): PrereqContext {
   const taken: TakenCourse[] = [];
   let totalCredits = 0;
@@ -40,7 +42,7 @@ export function buildPrereqContext(
     }
   }
 
-  return { taken, totalCredits, disciplineCredits };
+  return { taken, totalCredits, disciplineCredits, studentPrograms };
 }
 
 function evaluateNonCourseRequirement(
@@ -68,6 +70,10 @@ function evaluateNonCourseRequirement(
 }
 
 export function meetsCoursePrereq(node: CoursePrereqNode, ctx: PrereqContext): boolean {
+  if (node.programs && node.programs.length > 0) {
+    const inProgram = node.programs.some((p) => ctx.studentPrograms.includes(p));
+    if (!inProgram) return false;
+  }
   switch (node.type) {
     case 'course': {
       if (!node.code) return true;

@@ -339,3 +339,38 @@ These are representative patterns currently seen in `public/data/catalogue.json`
 
 These patterns should be enough for another agent to wire the prerequisites into the requirements engine in a predictable way. If stricter semantics are needed for particular text-only `non_course` clauses, they can be handled via special cases keyed on `prereqText` or `non_course.text`.
 
+---
+
+### Program-filtered nodes (`programs` field)
+
+Any `CoursePrereqNode` can carry an optional `programs?: string[]` field. When present, the node only applies if the student is enrolled in one of the listed program codes.
+
+**Semantics:** if `programs` is set and the student's program is not in the list, the node evaluates to `false` — as if the prerequisite was not met. This is checked before the node's type-based logic runs.
+
+This is used to represent prerequisites of the form:
+> "X or Y for students enrolled in P1 or P2 programs or Z for all other students"
+
+which maps to an `or_group` whose first child has `programs` set:
+
+```json
+{
+  "type": "or_group",
+  "children": [
+    {
+      "type": "or_group",
+      "programs": ["CEG", "CSI", "CTI"],
+      "children": [
+        { "type": "course", "code": "GNG 1106" },
+        { "type": "course", "code": "ITI 1120" }
+      ]
+    },
+    { "type": "course", "code": "ITI 1120" }
+  ]
+}
+```
+
+- A student in CEG/CSI/CTI must have GNG 1106 **or** ITI 1120.
+- All other students (or students with no program set) fall through to the second `or_group` child and need ITI 1120.
+
+**`PrereqContext.studentPrograms`:** The evaluation context now includes `studentPrograms: string[]`. Populate this by extracting `(XXX)` codes from the student's selected program title (e.g. `"Honours BSc in Computer Science (CSI)"` → `["CSI"]`). The field defaults to `[]` if no program is selected, causing all program-filtered nodes to evaluate to `false` and the OR to fall through to the unfiltered alternatives.
+

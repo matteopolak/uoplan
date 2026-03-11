@@ -16,7 +16,7 @@ export function requirementIdsFromTree(nodes: RequirementWithStatus[]): string[]
   return out;
 }
 
-const VERSION = 3;
+const VERSION = 4;
 const MAX_U16 = 0xffff;
 const MAX_U32 = 0xffffffff;
 
@@ -35,6 +35,7 @@ export interface EncodeInput {
   requirementTreeWithStatus: RequirementWithStatus[];
   remainingRequirements: RemainingRequirement[];
   includeClosedComponents: boolean;
+  studentPrograms: string[];
 }
 
 export interface DecodedState {
@@ -48,7 +49,8 @@ export interface DecodedState {
   generationSeed: number;
   optionSelections: Array<{ reqIndex: number; optionIndex: number }>;
   courseSelections: Array<{ reqIndex: number; courseIndices: number[] }>;
-  includeClosedComponents?: boolean;
+  includeClosedComponents: boolean;
+  studentPrograms: string[];
 }
 
 export interface CatalogueLike {
@@ -142,7 +144,8 @@ export function encodeState(
         n += 2 + 2 + arr.length * 2;
       }
       return n;
-    })());
+    })()) +
+    (1 + input.studentPrograms.reduce((acc, p) => acc + 1 + p.length, 0));
 
   const buffer = new ArrayBuffer(Math.max(256, size));
   const view = new DataView(buffer);
@@ -197,6 +200,15 @@ export function encodeState(
     for (const idx of courseIndices) off = writeU16(view, off, idx);
   }
 
+  // Student programs: U8 count, then for each code: U8 byte-length + ASCII bytes.
+  off = writeU8(view, off, Math.min(255, input.studentPrograms.length));
+  for (const code of input.studentPrograms) {
+    off = writeU8(view, off, code.length);
+    for (let i = 0; i < code.length; i++) {
+      off = writeU8(view, off, code.charCodeAt(i));
+    }
+  }
+
   return new Uint8Array(buffer, 0, off);
 }
 
@@ -216,7 +228,7 @@ export function decodeState(
   if (buffer.length < 1) return { error: 'Invalid state: too short' };
   const { value: version, next: n0 } = readU8(view, off);
   off = n0;
-  if (version !== 1 && version !== 2 && version !== VERSION) {
+  if (version !== VERSION) {
     return { error: 'Invalid or unsupported state version' };
   }
 
@@ -282,19 +294,15 @@ export function decodeState(
   const { value: selectedScheduleIndex, next: n7 } = readU16(view, off);
   off = n7;
 
-  let generationSeed = 0;
-  let includeClosedComponents = true;
-  if (version >= 2) {
-    if (off + 4 > buffer.length) return { error: 'Invalid state: truncated' };
-    const { value: seed, next: nSeed } = readU32(view, off);
-    off = nSeed;
-    generationSeed = seed >>> 0;
-    if (version >= 3 && off + 1 <= buffer.length) {
-      const { value: incClosed, next: nInc } = readU8(view, off);
-      off = nInc;
-      includeClosedComponents = incClosed !== 0;
-    }
-  }
+  if (off + 4 > buffer.length) return { error: 'Invalid state: truncated' };
+  const { value: seed, next: nSeed } = readU32(view, off);
+  off = nSeed;
+  const generationSeed = seed >>> 0;
+
+  if (off + 1 > buffer.length) return { error: 'Invalid state: truncated' };
+  const { value: incClosed, next: nInc } = readU8(view, off);
+  off = nInc;
+  const includeClosedComponents = incClosed !== 0;
 
   if (off + 2 > buffer.length) return { error: 'Invalid state: truncated' };
   const { value: optCount, next: n8 } = readU16(view, off);
@@ -330,6 +338,24 @@ export function decodeState(
     courseSelections.push({ reqIndex, courseIndices });
   }
 
+  // Student programs (version 4+).
+  const studentPrograms: string[] = [];
+  if (off + 1 <= buffer.length) {
+    const { value: progCount, next: nPc } = readU8(view, off);
+    off = nPc;
+    for (let i = 0; i < progCount && off + 1 <= buffer.length; i++) {
+      const { value: codeLen, next: nCl } = readU8(view, off);
+      off = nCl;
+      let code = '';
+      for (let j = 0; j < codeLen && off + 1 <= buffer.length; j++) {
+        const { value: ch, next: nCh } = readU8(view, off);
+        off = nCh;
+        code += String.fromCharCode(ch);
+      }
+      if (code) studentPrograms.push(code);
+    }
+  }
+
   return {
     program,
     completedCourseCodes,
@@ -342,6 +368,7 @@ export function decodeState(
     optionSelections,
     courseSelections,
     includeClosedComponents,
+    studentPrograms,
   };
 }
 

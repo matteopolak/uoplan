@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo } from 'react';
-import { Select, Stack, Text, Button, Alert, Loader } from '@mantine/core';
+import { Select, MultiSelect, Stack, Text, Button, Alert, Loader } from '@mantine/core';
 import type { Program } from '../schemas/catalogue';
 import { useAppStore } from '../store/appStore';
 import {
@@ -14,7 +14,7 @@ interface ProgramStepProps {
 }
 
 export function ProgramStep({ programs, value, onChange }: ProgramStepProps) {
-  const { cache, completedCourses, setCompletedCourses } = useAppStore();
+  const { cache, completedCourses, setCompletedCourses, studentPrograms, setStudentPrograms } = useAppStore();
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [transcriptError, setTranscriptError] = useState<string | null>(null);
   const [transcriptFeedback, setTranscriptFeedback] = useState<{
@@ -46,6 +46,16 @@ export function ProgramStep({ programs, value, onChange }: ProgramStepProps) {
 
     return { uniquePrograms: unique, valueToIndex, data };
   }, [programs]);
+
+  const allDisciplineCodes = useMemo(() => {
+    if (!cache) return [];
+    const disciplines = new Set<string>();
+    for (const course of cache.getAllCourses()) {
+      const d = course.code.split(/\s+/)[0]?.toUpperCase();
+      if (d) disciplines.add(d);
+    }
+    return [...disciplines].sort();
+  }, [cache]);
 
   const selectedIndex = value !== null ? valueToIndex.get(value) ?? null : null;
   const selectValue = selectedIndex !== null ? `program-${selectedIndex}` : null;
@@ -112,6 +122,17 @@ export function ProgramStep({ programs, value, onChange }: ProgramStepProps) {
         nothingFoundMessage="No program found"
         size="md"
       />
+      {value && (
+        <MultiSelect
+          label="Your program disciplines"
+          description="Used to evaluate program-specific prerequisites. Auto-filled from your program's courses."
+          data={allDisciplineCodes}
+          value={studentPrograms}
+          onChange={setStudentPrograms}
+          searchable
+          size="md"
+        />
+      )}
       <Alert color="violet" variant="light" radius="sm">
         <Text size="sm" c="dimmed">
           Upload your unofficial transcript (PDF) to auto-fill completed courses and detect your

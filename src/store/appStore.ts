@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Program } from '../schemas/catalogue';
+import type { Program, ProgramRequirement } from '../schemas/catalogue';
 import type {
   RemainingRequirement,
   RequirementWithStatus,
@@ -62,6 +62,7 @@ export interface AppState {
   selectedTermId: string | null;
 
   program: Program | null;
+  studentPrograms: string[];
   completedCourses: string[];
   remainingRequirements: RemainingRequirement[];
   requirementTreeWithStatus: RequirementWithStatus[];
@@ -316,6 +317,23 @@ function getAutoSelectedForRequirements(
   return out;
 }
 
+/** Extract unique discipline codes (e.g. "CSI", "CEG") from all `type === 'course'` entries in a program's requirements. */
+export function getDisciplineCodesForProgram(program: Program | null): string[] {
+  if (!program) return [];
+  const disciplines = new Set<string>();
+  function walk(reqs: ProgramRequirement[]) {
+    for (const req of reqs) {
+      if (req.type === 'course' && req.code) {
+        const d = req.code.split(/\s+/)[0]?.toUpperCase();
+        if (d) disciplines.add(d);
+      }
+      if (req.options) walk(req.options);
+    }
+  }
+  walk(program.requirements);
+  return [...disciplines].sort();
+}
+
 function recomputeStateForProgram(
   program: Program | null,
   completedCourses: string[],
@@ -325,6 +343,7 @@ function recomputeStateForProgram(
   levelBuckets: CourseLevelBucket[],
   languageBuckets: CourseLanguageBucket[],
   includeClosedComponents: boolean,
+  studentPrograms: string[] = [],
 ): RecomputedState {
   if (!program || !cache) {
     return {
@@ -394,7 +413,7 @@ function recomputeStateForProgram(
     return { ...req, candidateCourses };
   });
 
-  const ctx = buildPrereqContext(completedCourses, cache);
+  const ctx = buildPrereqContext(completedCourses, cache, studentPrograms);
   const candidateSet = new Set<string>();
   for (const req of augmentedRemaining) {
     for (const code of req.candidateCourses) {
@@ -445,6 +464,7 @@ export interface AppActions {
   getShareUrl: () => string | null;
   getEncodedStateBase64: () => string | null;
   setProgram: (program: Program | null) => void;
+  setStudentPrograms: (programs: string[]) => void;
   setCompletedCourses: (courses: string[]) => void;
   addCompletedCourse: (code: string) => void;
   removeCompletedCourse: (code: string) => void;
@@ -494,6 +514,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   selectedTermId: null,
 
   program: null,
+  studentPrograms: [],
   completedCourses: [],
   remainingRequirements: [],
   requirementTreeWithStatus: [],
@@ -560,6 +581,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         s.levelBuckets,
         s.languageBuckets,
         s.includeClosedComponents,
+        s.studentPrograms,
       );
 
       set({
@@ -593,6 +615,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const { catalogue, indices, cache } = get();
     if (!catalogue || !cache || !indices) return;
 
+    const studentPrograms = decoded.studentPrograms;
     const firstPass = recomputeStateForProgram(
       decoded.program,
       decoded.completedCourseCodes,
@@ -602,6 +625,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       decoded.levelBuckets,
       decoded.languageBuckets,
       decoded.includeClosedComponents ?? true,
+      studentPrograms,
     );
     const orderedReqIds = requirementIdsFromTree(firstPass.requirementTreeWithStatus);
     const reqIndexToId = new Map<number, string>();
@@ -636,10 +660,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
       decoded.levelBuckets,
       decoded.languageBuckets,
       decoded.includeClosedComponents ?? true,
+      studentPrograms,
     );
 
     set({
       program: decoded.program,
+      studentPrograms,
       completedCourses: decoded.completedCourseCodes,
       levelBuckets: decoded.levelBuckets,
       languageBuckets: decoded.languageBuckets,
@@ -671,6 +697,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       requirementTreeWithStatus: s.requirementTreeWithStatus,
       remainingRequirements: s.remainingRequirements,
       includeClosedComponents: s.includeClosedComponents,
+      studentPrograms: s.studentPrograms,
     };
     return encodeStateToBase64(
       input,
@@ -696,6 +723,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       requirementTreeWithStatus: s.requirementTreeWithStatus,
       remainingRequirements: s.remainingRequirements,
       includeClosedComponents: s.includeClosedComponents,
+      studentPrograms: s.studentPrograms,
     };
     const bytes = encodeState(
       input,
@@ -829,7 +857,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   setProgram: (program) => {
-    set({ program });
+    const studentPrograms = getDisciplineCodesForProgram(program);
+    set({ program, studentPrograms });
     const { cache, completedCourses, levelBuckets, languageBuckets, includeClosedComponents } = get();
     const state = recomputeStateForProgram(
       program,
@@ -840,6 +869,33 @@ export const useAppStore = create<AppStore>((set, get) => ({
       levelBuckets,
       languageBuckets,
       includeClosedComponents,
+      studentPrograms,
+    );
+    set(state);
+  },
+
+  setStudentPrograms: (programs) => {
+    set({ studentPrograms: programs });
+    const {
+      program,
+      cache,
+      completedCourses,
+      selectedPerRequirement,
+      selectedOptionsPerRequirement,
+      levelBuckets,
+      languageBuckets,
+      includeClosedComponents,
+    } = get();
+    const state = recomputeStateForProgram(
+      program,
+      completedCourses,
+      cache,
+      selectedPerRequirement,
+      selectedOptionsPerRequirement,
+      levelBuckets,
+      languageBuckets,
+      includeClosedComponents,
+      programs,
     );
     set(state);
   },
@@ -854,6 +910,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       levelBuckets,
       languageBuckets,
       includeClosedComponents,
+      studentPrograms,
     } = get();
     const state = recomputeStateForProgram(
       program,
@@ -864,6 +921,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       levelBuckets,
       languageBuckets,
       includeClosedComponents,
+      studentPrograms,
     );
     set(state);
   },
@@ -890,6 +948,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       levelBuckets,
       languageBuckets,
       includeClosedComponents,
+      studentPrograms,
     } = get();
     const state = recomputeStateForProgram(
       program,
@@ -900,6 +959,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       levelBuckets,
       languageBuckets,
       includeClosedComponents,
+      studentPrograms,
     );
     set(state);
   },
@@ -914,6 +974,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       selectedOptionsPerRequirement,
       languageBuckets,
       includeClosedComponents,
+      studentPrograms,
     } = get();
     const state = recomputeStateForProgram(
       program,
@@ -924,6 +985,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       buckets,
       languageBuckets,
       includeClosedComponents,
+      studentPrograms,
     );
     set(state);
   },
@@ -938,6 +1000,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       selectedOptionsPerRequirement,
       levelBuckets,
       includeClosedComponents,
+      studentPrograms,
     } = get();
     const state = recomputeStateForProgram(
       program,
@@ -948,6 +1011,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       levelBuckets,
       buckets,
       includeClosedComponents,
+      studentPrograms,
     );
     set(state);
   },

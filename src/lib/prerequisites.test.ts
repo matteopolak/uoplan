@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import type { CoursePrereqNode } from '../schemas/catalogue';
+import type { Course, CoursePrereqNode } from '../schemas/catalogue';
 import type { DataCache } from './dataCache';
 import { buildPrereqContext, canTakeCourse, meetsCoursePrereq } from './prerequisites';
 import {
+  CourseFilters,
   courseMatchesFilters,
   getCourseLanguageBucket,
   getCourseLevelBucket,
@@ -16,7 +17,7 @@ function makeMockCache(courses: Array<{ code: string; credits: number; disciplin
   }
   return {
     getCourse(code: string) {
-      return map.get(code);
+      return map.get(code) as Course;
     },
     getSchedule: () => undefined as any,
     getCoursesByDiscipline: () => [],
@@ -112,6 +113,103 @@ describe('prerequisites evaluation', () => {
     expect(canTakeCourse('ADM 1340', cache, ctx)).toBe(true);
   });
 
+  it('program-filtered node passes when student is in a listed program', () => {
+    const node: CoursePrereqNode = {
+      type: 'course',
+      code: 'GNG 1106',
+      programs: ['CEG', 'CSI', 'CTI'],
+    };
+    const cache = makeMockCache([{ code: 'GNG 1106', credits: 3 }]);
+    const ctx = buildPrereqContext(['GNG 1106'], cache, ['CSI']);
+    expect(meetsCoursePrereq(node, ctx)).toBe(true);
+  });
+
+  it('program-filtered node fails when student is not in a listed program', () => {
+    const node: CoursePrereqNode = {
+      type: 'course',
+      code: 'GNG 1106',
+      programs: ['CEG', 'CSI', 'CTI'],
+    };
+    const cache = makeMockCache([{ code: 'GNG 1106', credits: 3 }]);
+    const ctx = buildPrereqContext(['GNG 1106'], cache, ['BIO']);
+    expect(meetsCoursePrereq(node, ctx)).toBe(false);
+  });
+
+  it('ITI 1121 AST: CEG student with GNG 1106 is eligible', () => {
+    // CEG student who has taken GNG 1106 — satisfies the program-filtered or_group
+    const iti1121: CoursePrereqNode = {
+      type: 'or_group',
+      children: [
+        {
+          type: 'or_group',
+          programs: ['CEG', 'CSI', 'CTI'],
+          children: [
+            { type: 'course', code: 'GNG 1106' },
+            { type: 'course', code: 'ITI 1120' },
+          ],
+        },
+        { type: 'course', code: 'ITI 1120' },
+      ],
+    };
+    const cache = makeMockCache([
+      { code: 'GNG 1106', credits: 3 },
+      { code: 'ITI 1120', credits: 3 },
+    ]);
+    const ctxCEGwithGNG = buildPrereqContext(['GNG 1106'], cache, ['CEG']);
+    expect(meetsCoursePrereq(iti1121, ctxCEGwithGNG)).toBe(true);
+  });
+
+  it('ITI 1121 AST: non-CEG/CSI/CTI student with only GNG 1106 is not eligible', () => {
+    const iti1121: CoursePrereqNode = {
+      type: 'or_group',
+      children: [
+        {
+          type: 'or_group',
+          programs: ['CEG', 'CSI', 'CTI'],
+          children: [
+            { type: 'course', code: 'GNG 1106' },
+            { type: 'course', code: 'ITI 1120' },
+          ],
+        },
+        { type: 'course', code: 'ITI 1120' },
+      ],
+    };
+    const cache = makeMockCache([
+      { code: 'GNG 1106', credits: 3 },
+      { code: 'ITI 1120', credits: 3 },
+    ]);
+    const ctxOtherWithGNG = buildPrereqContext(['GNG 1106'], cache, ['BIO']);
+    expect(meetsCoursePrereq(iti1121, ctxOtherWithGNG)).toBe(false);
+  });
+
+  it('ITI 1121 AST: any student with ITI 1120 is eligible', () => {
+    const iti1121: CoursePrereqNode = {
+      type: 'or_group',
+      children: [
+        {
+          type: 'or_group',
+          programs: ['CEG', 'CSI', 'CTI'],
+          children: [
+            { type: 'course', code: 'GNG 1106' },
+            { type: 'course', code: 'ITI 1120' },
+          ],
+        },
+        { type: 'course', code: 'ITI 1120' },
+      ],
+    };
+    const cache = makeMockCache([
+      { code: 'GNG 1106', credits: 3 },
+      { code: 'ITI 1120', credits: 3 },
+    ]);
+    // BIO student with ITI 1120 — satisfies the fallback course
+    const ctxOtherWithITI = buildPrereqContext(['ITI 1120'], cache, ['BIO']);
+    expect(meetsCoursePrereq(iti1121, ctxOtherWithITI)).toBe(true);
+
+    // No-program student with ITI 1120
+    const ctxNoProgramWithITI = buildPrereqContext(['ITI 1120'], cache);
+    expect(meetsCoursePrereq(iti1121, ctxNoProgramWithITI)).toBe(true);
+  });
+
   it('detects graduate-level courses correctly', () => {
     expect(isGraduateCourse('CRM 5101')).toBe(true);
     expect(isGraduateCourse('CRM5101')).toBe(true);
@@ -132,18 +230,18 @@ describe('prerequisites evaluation', () => {
 
   it('applies combined filters for graduate and language buckets', () => {
     const filtersNoGradAllLang = {
-      levels: ['undergrad'] as const,
-      languageBuckets: ['en', 'fr', 'other'] as const,
-    };
+      levels: ['undergrad'],
+      languageBuckets: ['en', 'fr', 'other'],
+    } satisfies CourseFilters;
     expect(courseMatchesFilters('CRM 1300', filtersNoGradAllLang)).toBe(true);
     expect(courseMatchesFilters('CRM 1700', filtersNoGradAllLang)).toBe(true);
     expect(courseMatchesFilters('CRM 1900', filtersNoGradAllLang)).toBe(true);
     expect(courseMatchesFilters('CRM 5101', filtersNoGradAllLang)).toBe(false);
 
     const filtersFrenchOnly = {
-      levels: ['undergrad', 'grad'] as const,
-      languageBuckets: ['fr'] as const,
-    };
+      levels: ['undergrad', 'grad'],
+      languageBuckets: ['fr'],
+    } satisfies CourseFilters;
     expect(courseMatchesFilters('CRM 1700', filtersFrenchOnly)).toBe(true);
     expect(courseMatchesFilters('CRM 1300', filtersFrenchOnly)).toBe(false);
     expect(courseMatchesFilters('CRM 1900', filtersFrenchOnly)).toBe(false);

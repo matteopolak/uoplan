@@ -6,6 +6,7 @@ export type CoursePrereqNode = {
   text?: string;
   credits?: number;
   disciplines?: string[];
+  programs?: string[];
   children?: CoursePrereqNode[];
 };
 
@@ -16,6 +17,7 @@ export const CoursePrereqNodeSchema: z.ZodType<CoursePrereqNode> = z.lazy(() =>
     text: z.string().optional(),
     credits: z.number().optional(),
     disciplines: z.array(z.string()).optional(),
+    programs: z.array(z.string()).optional(),
     children: z.array(CoursePrereqNodeSchema).optional(),
   }),
 );
