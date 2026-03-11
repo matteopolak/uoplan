@@ -37,7 +37,8 @@ This document summarizes how schedule generation works and how it now respects p
     - **Pinned courses**:
       - Flatten `selectedPerRequirement` and dedupe.
       - Filter to courses that have schedules and are not honours-project components.
-      - These are forced into every schedule and count toward `coursesThisSemester`.
+      - If the number of selected schedulable courses is **at most** the term target, these are forced into every schedule and count toward `coursesThisSemester`.
+      - If the number of selected schedulable courses **exceeds** the term target, selections are treated as the **initial candidate pool** (not all are forced into every schedule); schedules are generated from subsets of the selected courses, and only if none exist do we expand the pool with additional remaining-requirement candidates.
     - **Requirement pools**:
       - Convert each `RemainingRequirement` into a simple internal `RequirementPool`:
         - `requirementId`

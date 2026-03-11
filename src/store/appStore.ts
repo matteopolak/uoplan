@@ -959,9 +959,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
     // scheduled like regular courses. We treat them as occupying a slot in the user's
     // requested course load, but we do not attempt to place them into time-based schedules.
     const honoursSelected = unique.filter((code) => isHonoursProject(code));
-    // Pinned = selected courses that must appear in generated schedules. Exclude completed
-    // (already taken) so they don't count toward the semester target.
-    const pinned = unique.filter(
+    // Selected schedulable courses (not honours, not completed, and present in schedules data).
+    // In the normal case, these become "pinned" (forced into every schedule). If the user
+    // selects more courses than the term target, we treat them as the initial candidate pool
+    // instead (not all need to appear in every schedule).
+    const selectedSchedulable = unique.filter(
       (code) =>
         !isHonoursProject(code) &&
         !!cacheVal.getSchedule(code) &&
@@ -970,14 +972,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     const honoursCount = honoursSelected.length;
     const effectiveTarget = Math.max(0, coursesThisSemester - honoursCount);
-
-    if (pinned.length > effectiveTarget) {
-      set({
-        generationError:
-          'You selected more mandatory courses than your target per semester. Increase the target or deselect some courses.',
-      });
-      return;
-    }
+    const oversubscribedSelections = selectedSchedulable.length > effectiveTarget;
+    const pinned = oversubscribedSelections ? [] : selectedSchedulable;
 
     // Enforce that all active or/options groups with a requirementId have exactly one selected option.
     // A group is "active" if it lies on the branch of options chosen in its ancestor option groups.
@@ -1049,7 +1045,115 @@ export const useAppStore = create<AppStore>((set, get) => ({
     let lastChosenFromPool: Record<string, string> = {};
     let finalPoolMaps: Record<string, string>[] = [];
 
-    if (remainingNeeded > 0) {
+    function isEligibleCandidate(code: string, poolType?: string): boolean {
+      if (
+        !cacheVal.getSchedule(code) ||
+        pinned.includes(code) ||
+        completedSet.has(normalizeCourseCode(code)) ||
+        !prereqEligibleSet.has(code) ||
+        !courseMatchesFilters(code, filters)
+      ) {
+        return false;
+      }
+      // Exclude honours/research courses from automatic scheduling for most pools; they are
+      // handled separately as honours selections. However, when the pool itself is a concrete
+      // course requirement (type: 'course'), we keep the honours course so the requirement tree
+      // can still reflect it properly.
+      if (poolType !== 'course' && isHonoursProject(code)) return false;
+      // Exclude courses with no valid section combos (e.g. empty times) so they are never picked.
+      const sched = cacheVal.getSchedule(code);
+      if (sched && getValidSectionCombos(sched, constraints).length === 0) return false;
+      return true;
+    }
+
+    function collectUniqueSchedulesFromCandidatePool(
+      candidatePool: string[],
+      mapsForNonPoolCodes: Record<string, string> = {}
+    ): { schedules: GeneratedSchedule[]; poolMaps: Record<string, string>[]; usedPool: string[] } {
+      const maxAttempts = appendFirstOnly ? 100 : 300;
+      const targetUniqueSchedules = appendFirstOnly ? 1 : 25;
+      const seenCourseSets = new Set<string>();
+      const collectedSchedules: GeneratedSchedule[] = [];
+      const collectedPoolMaps: Record<string, string>[] = [];
+      let lastUsedPool: string[] = [];
+
+      const base = [...new Set(candidatePool)];
+      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        if (collectedSchedules.length >= targetUniqueSchedules) break;
+        const attemptPool = [...base];
+        shuffleInPlace(attemptPool);
+        lastUsedPool = attemptPool;
+        const batch = genSchedules(attemptPool, effectiveTarget, cacheVal, constraints);
+        const fullBatch = batch.filter((s) => s.enrollments.length >= effectiveTarget);
+        if (fullBatch.length === 0) continue;
+
+        const fingerprint = fullBatch[0].enrollments
+          .map((e) => e.courseCode)
+          .sort()
+          .join(',');
+        if (seenCourseSets.has(fingerprint)) continue;
+        seenCourseSets.add(fingerprint);
+        collectedSchedules.push(fullBatch[0]);
+        collectedPoolMaps.push(mapsForNonPoolCodes);
+      }
+
+      return {
+        schedules: collectedSchedules,
+        poolMaps: collectedPoolMaps,
+        usedPool: lastUsedPool,
+      };
+    }
+
+    if (oversubscribedSelections) {
+      const selectedOnlyPool = selectedSchedulable.filter((code) => isEligibleCandidate(code));
+
+      const baseAttempt = collectUniqueSchedulesFromCandidatePool(selectedOnlyPool, {});
+      filteredOptionalPool = baseAttempt.usedPool;
+      finalSchedules = baseAttempt.schedules;
+      finalPoolMaps = baseAttempt.poolMaps;
+      lastChosenFromPool = {};
+
+      // Fallback: if nothing works from selected courses alone, expand the pool with additional
+      // remaining-requirement candidates (including electives) and retry.
+      if (finalSchedules.length === 0) {
+        const allPools = buildRequirementPools(remainingRequirements);
+        const extraCandidates: string[] = [];
+        const selectedSet = new Set(selectedOnlyPool.map(normalizeCourseCode));
+        for (const pool of allPools) {
+          for (const code of pool.candidateCourses) {
+            if (selectedSet.has(normalizeCourseCode(code))) continue;
+            if (!isEligibleCandidate(code, pool.type)) continue;
+            // For elective-style pools, respect elective level buckets from the requirements page.
+            const isElectiveType =
+              pool.type === 'elective' ||
+              pool.type === 'free_elective' ||
+              pool.type === 'non_discipline_elective' ||
+              pool.type === 'faculty_elective';
+            if (electiveLevelBuckets.length > 0 && isElectiveType) {
+              const match = code.match(/\d{4}/);
+              if (match) {
+                const num = Number.parseInt(match[0], 10);
+                if (!Number.isNaN(num)) {
+                  const bucket = Math.floor(num / 1000) * 1000;
+                  if (!electiveLevelBuckets.includes(bucket)) {
+                    continue;
+                  }
+                }
+              }
+            }
+            extraCandidates.push(code);
+          }
+        }
+
+        const expandedPool = [...new Set([...selectedOnlyPool, ...extraCandidates])];
+        const expandedAttempt = collectUniqueSchedulesFromCandidatePool(expandedPool, {});
+        filteredOptionalPool = expandedAttempt.usedPool;
+        finalSchedules = expandedAttempt.schedules;
+        finalPoolMaps = expandedAttempt.poolMaps;
+      }
+    }
+
+    if (!oversubscribedSelections && remainingNeeded > 0) {
       const allPools = buildRequirementPools(remainingRequirements);
 
       // Adjust pool credits: subtract pinned (selected, not yet taken) and selected completed.
