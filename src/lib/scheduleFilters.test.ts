@@ -4,6 +4,7 @@ import {
 } from './scheduleFilters';
 import type { CourseSchedule } from '../schemas/schedules';
 import type { DataCache } from './dataCache';
+import { describe, it, expect } from 'vitest';
 
 function makeSchedule(components: CourseSchedule['components']): CourseSchedule {
   return {

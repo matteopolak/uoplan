@@ -1,5 +1,5 @@
-import { useState, MouseEvent } from 'react';
-import { Stack, MultiSelect, Text, Paper, Badge, Group, Box, Collapse, Radio, Alert, Switch } from '@mantine/core';
+import { useState, useContext, useEffect, useRef, createContext, MouseEvent } from 'react';
+import { Stack, MultiSelect, Text, Paper, Badge, Group, Box, Collapse, Radio, Alert, Switch, Button } from '@mantine/core';
 import { IconCheck, IconChevronDown } from '@tabler/icons-react';
 import { createCourseOptions } from './CourseSelect';
 import type { ComboboxItem } from '@mantine/core';
@@ -107,6 +107,35 @@ function simplifySingleChildChain(node: RequirementWithStatus): {
   }
 
   return { node: current, autoExpanded: changed };
+}
+
+const ForceExpandContext = createContext<number>(0);
+
+function findMissingSelections(
+  nodes: RequirementWithStatus[],
+  selectedOptionsPerRequirement: Record<string, number>,
+  activeBranch: boolean = true
+): RequirementWithStatus[] {
+  const result: RequirementWithStatus[] = [];
+  for (const node of nodes) {
+    if (!activeBranch || node.complete) continue;
+    const isOrGroup = node.type === 'or_group';
+    const isOptionsGroup = node.type === 'options_group';
+    if ((isOrGroup || isOptionsGroup) && node.options && node.requirementId != null) {
+      const selectedIdx = selectedOptionsPerRequirement[node.requirementId];
+      if (selectedIdx == null) {
+        result.push(node);
+      } else {
+        const selectedChild = node.options[selectedIdx];
+        if (selectedChild) {
+          result.push(...findMissingSelections([selectedChild], selectedOptionsPerRequirement, true));
+        }
+      }
+    } else if (node.options) {
+      result.push(...findMissingSelections(node.options, selectedOptionsPerRequirement, activeBranch));
+    }
+  }
+  return result;
 }
 
 /** Path of (requirementId, optionIndex) from root to this node so selecting a nested option can auto-select parents. */
@@ -218,6 +247,15 @@ function RequirementNode({
     if (!hasOptions) return;
     setOpened((o) => !o);
   };
+
+  const expandTrigger = useContext(ForceExpandContext);
+  const lastExpandTrigger = useRef(0);
+  useEffect(() => {
+    if (expandTrigger > lastExpandTrigger.current && hasOptions) {
+      lastExpandTrigger.current = expandTrigger;
+      setOpened(true);
+    }
+  }, [expandTrigger, hasOptions]);
 
   if (isSection) {
     return (
@@ -419,6 +457,7 @@ function RequirementNode({
         withBorder
         radius={0}
         mt="xs"
+        data-missing-selection={showError ? 'true' : undefined}
         style={{
           paddingLeft: depth * REQUIREMENT_INDENT_PX + REQUIREMENT_BASE_PADDING_PX,
           backgroundColor: opened ? 'var(--mantine-color-dark-6)' : 'var(--mantine-color-dark-8)',
@@ -551,6 +590,7 @@ function RequirementNode({
         withBorder
         radius={0}
         mt="xs"
+        data-missing-selection={showError ? 'true' : undefined}
         style={{
           paddingLeft: depth * REQUIREMENT_INDENT_PX + REQUIREMENT_BASE_PADDING_PX,
           backgroundColor: opened ? 'var(--mantine-color-dark-6)' : 'var(--mantine-color-dark-8)',
@@ -866,6 +906,7 @@ export function RequirementsStep({
   onIncludeClosedComponentsChange,
 }: RequirementsStepProps) {
   const [completedOpen, setCompletedOpen] = useState(false);
+  const [expandTrigger, setExpandTrigger] = useState(0);
   const completedSet = new Set(completedCourses);
   const prereqEligible = new Set(prereqEligibleCourses);
   const unassignedCompletedSet = new Set(unassignedCompletedCourses);
@@ -874,6 +915,7 @@ export function RequirementsStep({
   );
   const hasTree = requirementTreeWithStatus.length > 0;
   const incompleteNodes = requirementTreeWithStatus.filter((node) => !node.complete);
+  const missingSelections = findMissingSelections(incompleteNodes, selectedOptionsPerRequirement);
   const hasRemaining = incompleteNodes.length > 0;
   const hasCompleted = completedRequirementsList.length > 0;
   const totalRequirements = completedRequirementsList.length + remainingRequirements.length;
@@ -975,34 +1017,61 @@ export function RequirementsStep({
         &quot;or&quot; blocks to see which part your selection satisfies.
       </Text>
 
-      <Stack gap="md">
-        {hasRemaining ? (
-          incompleteNodes.map((node, idx) => (
-            <RequirementNode
-              key={getStableNodeKey(node, `root:${idx}`)}
-              node={node}
-              cache={cache}
-              completedCourses={completedSet}
-              selectedPerRequirement={selectedPerRequirement}
-              onSelect={onSelect}
-              selectedOptionsPerRequirement={selectedOptionsPerRequirement}
-              onSelectOption={onSelectOption}
-              activeBranch
-              prereqEligible={prereqEligible}
-              levelBuckets={levelBuckets}
-              languageBuckets={languageBuckets}
-              electiveLevelBuckets={electiveLevelBuckets}
-              unassignedCompletedSet={unassignedCompletedSet}
-              unassignedCompletedSetNormalized={unassignedCompletedSetNormalized}
-              includeClosedComponents={includeClosedComponents}
-            />
-          ))
-        ) : (
-          <Text size="sm" c="dimmed">
-            All requirements are currently satisfied by your completed courses.
-          </Text>
-        )}
-      </Stack>
+      {missingSelections.length > 0 && (
+        <Alert color="yellow" variant="light" radius={0} title="Option selection required">
+          <Group justify="space-between" align="center">
+            <Text size="sm">
+              {missingSelections.length} option group{missingSelections.length === 1 ? '' : 's'} require{missingSelections.length === 1 ? 's' : ''} a selection before generating schedules.
+            </Text>
+            <Button
+              size="xs"
+              variant="light"
+              color="yellow"
+              onClick={() => {
+                setExpandTrigger((n) => n + 1);
+                setTimeout(() => {
+                  document
+                    .querySelector('[data-missing-selection="true"]')
+                    ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 250);
+              }}
+            >
+              Jump to first problem
+            </Button>
+          </Group>
+        </Alert>
+      )}
+
+      <ForceExpandContext.Provider value={expandTrigger}>
+        <Stack gap="md">
+          {hasRemaining ? (
+            incompleteNodes.map((node, idx) => (
+              <RequirementNode
+                key={getStableNodeKey(node, `root:${idx}`)}
+                node={node}
+                cache={cache}
+                completedCourses={completedSet}
+                selectedPerRequirement={selectedPerRequirement}
+                onSelect={onSelect}
+                selectedOptionsPerRequirement={selectedOptionsPerRequirement}
+                onSelectOption={onSelectOption}
+                activeBranch
+                prereqEligible={prereqEligible}
+                levelBuckets={levelBuckets}
+                languageBuckets={languageBuckets}
+                electiveLevelBuckets={electiveLevelBuckets}
+                unassignedCompletedSet={unassignedCompletedSet}
+                unassignedCompletedSetNormalized={unassignedCompletedSetNormalized}
+                includeClosedComponents={includeClosedComponents}
+              />
+            ))
+          ) : (
+            <Text size="sm" c="dimmed">
+              All requirements are currently satisfied by your completed courses.
+            </Text>
+          )}
+        </Stack>
+      </ForceExpandContext.Provider>
 
       {hasCompleted && (
         <Paper
