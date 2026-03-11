@@ -12,6 +12,7 @@ import {
   getValidSectionCombos,
   getEnrollmentsForCourse,
   enrollmentsOverlap,
+  getFirstOverlapWith,
   type CourseEnrollment,
   type GeneratedSchedule,
 } from '../lib/scheduleGenerator';
@@ -62,6 +63,10 @@ export interface AppState {
   electiveLevelBuckets: number[];
   generatedSchedules: GeneratedSchedule[];
   swapPool: string[];
+  /** Which requirement pool each chosen course was picked from (for swap dropdown). */
+  chosenCourseToRequirementId: Record<string, string>;
+  /** Per-schedule pool map when we have multiple schedules. */
+  schedulePoolMaps: Record<string, string>[];
   selectedScheduleIndex: number;
   generationError: string | null;
   unassignedCompletedCourses: string[];
@@ -405,7 +410,15 @@ export interface AppActions {
     enrollmentIndex: number,
     newCourseCode: string
   ) => void;
-  getSwapCandidates: (scheduleIndex: number, enrollmentIndex: number) => string[];
+  getSwapCandidates: (
+    scheduleIndex: number,
+    enrollmentIndex: number
+  ) => {
+    candidates: string[];
+    poolCourses: string[];
+    requirementTitle?: string;
+    rejectedWithConflict: Array<{ code: string; conflictsWith: string }>;
+  };
   setLevelBuckets: (buckets: CourseLevelBucket[]) => void;
   setLanguageBuckets: (buckets: CourseLanguageBucket[]) => void;
   setElectiveLevelBuckets: (buckets: number[]) => void;
@@ -437,6 +450,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   electiveLevelBuckets: [1000, 2000],
   generatedSchedules: [],
   swapPool: [],
+  chosenCourseToRequirementId: {},
+  schedulePoolMaps: [],
   selectedScheduleIndex: 0,
   generationError: null,
   unassignedCompletedCourses: [],
@@ -774,6 +789,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       electiveLevelBuckets: [1000, 2000],
       generatedSchedules: [],
       swapPool: [],
+      chosenCourseToRequirementId: {},
+      schedulePoolMaps: [],
       selectedScheduleIndex: 0,
       generationError: null,
       unassignedCompletedCourses: [],
@@ -914,6 +931,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const remainingNeeded = effectiveTarget - pinned.length;
     let filteredOptionalPool: string[] = [];
     let finalSchedules: GeneratedSchedule[] = [];
+    let lastChosenFromPool: Record<string, string> = {};
+    let finalPoolMaps: Record<string, string>[] = [];
 
     if (remainingNeeded > 0) {
       const allPools = buildRequirementPools(remainingRequirements);
@@ -1002,18 +1021,24 @@ export const useAppStore = create<AppStore>((set, get) => ({
         }
       }
 
-      const maxAttempts = 20;
+      const maxAttempts = 300;
+      const targetUniqueSchedules = 25;
+      const seenCourseSets = new Set<string>();
+      const collectedSchedules: GeneratedSchedule[] = [];
+      const collectedPoolMaps: Record<string, string>[] = [];
       let lastChosenCodes: string[] = [];
       let lastFilteredPool: string[] = [];
-      let schedules: ReturnType<typeof genSchedules> = [];
 
       for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        if (collectedSchedules.length >= targetUniqueSchedules) break;
+
         // Shuffle each pool's candidates so we try different course combinations.
         for (const list of candidatesByRequirement.values()) {
           shuffleInPlace(list);
         }
 
         const chosenCodes = new Set<string>();
+        const chosenFromPool: Record<string, string> = {};
         for (const pool of pools) {
           let need = coursesPerPool.get(pool.requirementId) ?? 0;
           if (need <= 0) continue;
@@ -1026,6 +1051,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
             if (pinned.includes(code)) continue;
             if (isHonoursProject(code)) continue;
             chosenCodes.add(code);
+            chosenFromPool[code] = pool.requirementId;
             need -= 1;
             if (need <= 0) break;
           }
@@ -1043,18 +1069,29 @@ export const useAppStore = create<AppStore>((set, get) => ({
         lastFilteredPool = optionalPool;
         shuffleInPlace(lastFilteredPool);
 
-        schedules =
+        const batch =
           pinned.length === 0
             ? genSchedules(lastFilteredPool, effectiveTarget, cacheVal)
             : generateSchedulesWithPinned(pinned, lastFilteredPool, effectiveTarget, cacheVal);
 
-        if (schedules.length > 0) break;
+        const fullBatch = batch.filter(
+          (s) => s.enrollments.length >= effectiveTarget,
+        );
+        if (fullBatch.length === 0) continue;
+
+        const fingerprint = fullBatch[0].enrollments
+          .map((e) => e.courseCode)
+          .sort()
+          .join(',');
+        if (seenCourseSets.has(fingerprint)) continue;
+        seenCourseSets.add(fingerprint);
+        collectedSchedules.push(fullBatch[0]);
+        collectedPoolMaps.push(chosenFromPool);
       }
 
-      // Only use schedules that have the full number of courses (sum of planned per pool).
-      finalSchedules = schedules.filter(
-        (s) => s.enrollments.length >= effectiveTarget,
-      );
+      finalSchedules = collectedSchedules;
+      finalPoolMaps = collectedPoolMaps;
+      lastChosenFromPool = collectedPoolMaps[0] ?? {};
 
       // Debug logging (first attempt's chosen set or last if all failed).
       // eslint-disable-next-line no-console
@@ -1092,6 +1129,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         pinned.length === 0
           ? genSchedules([], effectiveTarget, cacheVal)
           : generateSchedulesWithPinned(pinned, [], effectiveTarget, cacheVal);
+      finalPoolMaps = finalSchedules.map(() => ({}));
     }
 
     // If we could not assemble enough eligible courses to hit the target, surface error.
@@ -1100,6 +1138,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       set({
         generatedSchedules: [],
         swapPool,
+        chosenCourseToRequirementId: {},
+        schedulePoolMaps: [],
         selectedScheduleIndex: 0,
         generationError:
           'Not enough eligible courses match your filters and requirements to build a full schedule. Try relaxing filters or changing selections.',
@@ -1108,11 +1148,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
 
     const swapPool = [...new Set([...pinned, ...filteredOptionalPool])];
-    const limitedSchedules = finalSchedules.slice(0, 10);
+    const limitedSchedules = finalSchedules.slice(0, 25);
+    const limitedPoolMaps = finalPoolMaps.slice(0, 25);
 
     set({
       generatedSchedules: limitedSchedules,
       swapPool,
+      chosenCourseToRequirementId: lastChosenFromPool,
+      schedulePoolMaps: limitedPoolMaps,
       selectedScheduleIndex: 0,
       generationError:
         limitedSchedules.length === 0
@@ -1124,7 +1167,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setSelectedScheduleIndex: (idx) => set({ selectedScheduleIndex: idx }),
 
   swapCourseInSchedule: (scheduleIndex, enrollmentIndex, newCourseCode) => {
-    const { generatedSchedules, cache } = get();
+    const { generatedSchedules, cache, chosenCourseToRequirementId, schedulePoolMaps } = get();
     if (!cache || scheduleIndex >= generatedSchedules.length) return;
 
     const schedule = generatedSchedules[scheduleIndex];
@@ -1145,31 +1188,92 @@ export const useAppStore = create<AppStore>((set, get) => ({
         newEnrollments[enrollmentIndex] = candidate;
         const newSchedules = [...generatedSchedules];
         newSchedules[scheduleIndex] = { enrollments: newEnrollments };
-        set({ generatedSchedules: newSchedules });
+        const oldCode = oldEnrollment.courseCode;
+        const poolMap = schedulePoolMaps[scheduleIndex] ?? chosenCourseToRequirementId;
+        const poolId = poolMap[oldCode];
+        const nextMap =
+          poolId != null ? { ...poolMap, [newCourseCode]: poolId } : poolMap;
+        const nextPoolMaps = [...schedulePoolMaps];
+        if (scheduleIndex < nextPoolMaps.length) {
+          nextPoolMaps[scheduleIndex] = nextMap;
+        }
+        set({
+          generatedSchedules: newSchedules,
+          chosenCourseToRequirementId:
+            scheduleIndex === 0 ? nextMap : chosenCourseToRequirementId,
+          schedulePoolMaps: nextPoolMaps,
+        });
         return;
       }
     }
   },
 
   getSwapCandidates: (scheduleIndex, enrollmentIndex) => {
+    const debug = typeof window !== 'undefined';
+    if (debug) {
+      // eslint-disable-next-line no-console
+      console.log('[swap] getSwapCandidates called', { scheduleIndex, enrollmentIndex });
+    }
     const {
       cache,
       generatedSchedules,
+      remainingRequirements,
+      chosenCourseToRequirementId,
+      schedulePoolMaps,
       completedCourses,
       prereqEligibleCourses,
-      filteredPrereqEligibleCourses,
       levelBuckets,
       languageBuckets,
       electiveLevelBuckets,
     } = get();
-    if (!cache || scheduleIndex >= generatedSchedules.length) return [];
+    if (!cache || scheduleIndex >= generatedSchedules.length) {
+      if (debug) console.log('[swap] Early return: no cache or bad index');
+      return { candidates: [], poolCourses: [], rejectedWithConflict: [] };
+    }
 
     const cacheVal = cache;
     const schedule = generatedSchedules[scheduleIndex];
     const enrollment = schedule.enrollments[enrollmentIndex];
-    if (!enrollment) return [];
+    if (!enrollment) {
+      if (debug) console.log('[swap] Early return: no enrollment at index');
+      return { candidates: [], poolCourses: [], rejectedWithConflict: [] };
+    }
 
     const oldCode = enrollment.courseCode;
+    if (debug) {
+      // eslint-disable-next-line no-console
+      console.log('[swap] Resolving pool for', oldCode);
+    }
+    // Use the pool this course was actually picked from (per-schedule when we have multiple).
+    const poolMap = schedulePoolMaps[scheduleIndex] ?? chosenCourseToRequirementId;
+    const requirementId = poolMap[oldCode];
+    const candidateSet = new Set<string>();
+    let poolRequirementType: string | undefined;
+    let requirementTitle: string | undefined;
+    if (requirementId) {
+      const req = remainingRequirements.find((r) => r.requirementId === requirementId);
+      if (req?.candidateCourses?.length) {
+        poolRequirementType = req.type;
+        requirementTitle = req.title;
+        for (const c of req.candidateCourses) candidateSet.add(c);
+      }
+    }
+    // Fallback: requirements that list this course (e.g. before we had tracking).
+    if (candidateSet.size === 0) {
+      const oldCodeNorm = normalizeCourseCode(oldCode);
+      for (const req of remainingRequirements) {
+        if (!req.candidateCourses?.length) continue;
+        const hasOld = req.candidateCourses.some((c) => normalizeCourseCode(c) === oldCodeNorm);
+        if (hasOld) {
+          for (const c of req.candidateCourses) candidateSet.add(c);
+        }
+      }
+    }
+    if (candidateSet.size === 0) {
+      const { filteredPrereqEligibleCourses } = get();
+      for (const c of filteredPrereqEligibleCourses) candidateSet.add(c);
+    }
+
     // Ignore conflicts with the swapped course and any duplicate blocks for same code.
     const others = schedule.enrollments.filter(
       (e, i) => i !== enrollmentIndex && e.courseCode !== oldCode
@@ -1183,7 +1287,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
 
     const prereqEligibleSet = new Set(prereqEligibleCourses);
-    const candidateSet = new Set<string>(filteredPrereqEligibleCourses);
 
     function getValidEnrollmentsFor(code: string): CourseEnrollment[] {
       const cached = validEnrollmentsByCourseCode.get(code);
@@ -1202,33 +1305,86 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const filters = { levels: levelBuckets, languageBuckets };
 
     const candidates: string[] = [];
+    const rejectedWithConflict: Array<{ code: string; conflictsWith: string }> = [];
     for (const code of candidateSet) {
-      if (!prereqEligibleSet.has(code)) continue;
+      if (!prereqEligibleSet.has(code)) {
+        if (debug) console.log('[swap] Skip', code, '— not prereq eligible');
+        continue;
+      }
       if (code === oldCode) continue;
-      if (completedCourses.includes(code)) continue;
-      if (alreadyInSchedule.has(code)) continue;
-      if (isHonoursProject(code)) continue;
-      if (!courseMatchesFilters(code, filters)) continue;
-      if (electiveLevelBuckets.length > 0) {
+      if (completedCourses.includes(code)) {
+        if (debug) console.log('[swap] Skip', code, '— already completed');
+        continue;
+      }
+      if (alreadyInSchedule.has(code)) {
+        if (debug) console.log('[swap] Skip', code, '— already in schedule');
+        continue;
+      }
+      if (isHonoursProject(code)) {
+        if (debug) console.log('[swap] Skip', code, '— honours project');
+        continue;
+      }
+      if (!courseMatchesFilters(code, filters)) {
+        if (debug) console.log('[swap] Skip', code, '— level/language filter');
+        continue;
+      }
+      // Only apply elective level bucket filter to generic electives (free, non-discipline, etc.).
+      // discipline_elective (e.g. CSI 4000-level) already enforces its own level via the requirement.
+      const isGenericElective =
+        poolRequirementType === 'free_elective' ||
+        poolRequirementType === 'non_discipline_elective' ||
+        poolRequirementType === 'faculty_elective' ||
+        poolRequirementType === 'elective';
+      if (isGenericElective && electiveLevelBuckets.length > 0) {
         const match = code.match(/\d{4}/);
         if (match) {
           const num = parseInt(match[0], 10);
           if (!Number.isNaN(num)) {
             const bucket = Math.floor(num / 1000) * 1000;
-            if (!electiveLevelBuckets.includes(bucket)) continue;
+            if (!electiveLevelBuckets.includes(bucket)) {
+              if (debug) console.log('[swap] Skip', code, '— elective level bucket', bucket, 'not in', electiveLevelBuckets);
+              continue;
+            }
           }
         }
       }
       const possibleEnrollments = getValidEnrollmentsFor(code);
-      if (possibleEnrollments.length === 0) continue;
+      if (possibleEnrollments.length === 0) {
+        if (debug) console.log('[swap] Skip', code, '— no valid section combos');
+        continue;
+      }
+      let added = false;
       for (const candidate of possibleEnrollments) {
         const conflicts = others.some((e) => enrollmentsOverlap(e, candidate));
         if (!conflicts) {
           candidates.push(code);
+          added = true;
           break;
         }
       }
+      if (!added && others.length > 0 && possibleEnrollments.length > 0) {
+        const conflict = getFirstOverlapWith(possibleEnrollments[0], others);
+        if (conflict) {
+          rejectedWithConflict.push({ code, conflictsWith: conflict.courseCode });
+          if (debug) {
+            // eslint-disable-next-line no-console
+            console.log(
+              '[swap] Rejected',
+              code,
+              '— conflicts with',
+              conflict.courseCode,
+              'at',
+              conflict.timeStr,
+            );
+          }
+        }
+      }
     }
-    return candidates;
+    const poolCourses = [...candidateSet];
+    if (typeof window !== 'undefined' && poolCourses.length > 0) {
+      // eslint-disable-next-line no-console
+      console.log('[swap] Pool for', oldCode, '(', requirementId ?? 'unknown', '):', poolCourses.length, 'courses', poolCourses.slice(0, 50).join(', '), poolCourses.length > 50 ? '…' : '');
+    }
+    return { candidates, poolCourses, requirementTitle, rejectedWithConflict };
   },
 }));
