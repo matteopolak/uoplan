@@ -82,6 +82,8 @@ function App() {
     setLevelBuckets,
     setLanguageBuckets,
     setElectiveLevelBuckets,
+    includeClosedComponents,
+    setIncludeClosedComponents,
     resetToDefault,
   } = useAppStore();
 
@@ -860,6 +862,8 @@ function App() {
                       onChangeLanguageBuckets={setLanguageBuckets}
                       electiveLevelBuckets={electiveLevelBuckets}
                       onChangeElectiveLevelBuckets={setElectiveLevelBuckets}
+                      includeClosedComponents={includeClosedComponents}
+                      onIncludeClosedComponentsChange={setIncludeClosedComponents}
                     />
                   </Stack>
                 )}

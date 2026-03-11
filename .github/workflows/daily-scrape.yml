@@ -38,6 +38,7 @@ jobs:
         run: |
           cp public/data/catalogue.json /tmp/catalogue_old.json
           cp public/data/terms.json /tmp/terms_old.json || true
+          cp public/data/ratemyprofessors.json /tmp/ratemyprofessors_old.json || true
           mkdir -p /tmp/schedules_old
           shopt -s nullglob
           for f in public/data/schedules.*.json; do
@@ -54,6 +55,9 @@ jobs:
       - name: Run schedule scraper
         run: pnpm run scrape:schedules
 
+      - name: Run RateMyProfessors scraper
+        run: pnpm run scrape:ratemyprofessors
+
       - name: Show JSON diffs (catalogue and schedules)
         run: |
           echo "::group::Diff catalogue.json"
@@ -61,6 +65,9 @@ jobs:
           echo "::endgroup::"
           echo "::group::Diff terms.json"
           diff -u /tmp/terms_old.json public/data/terms.json || true
+          echo "::endgroup::"
+          echo "::group::Diff ratemyprofessors.json"
+          diff -u /tmp/ratemyprofessors_old.json public/data/ratemyprofessors.json || true
           echo "::endgroup::"
           echo "::group::Diff schedules.*.json"
           shopt -s nullglob
@@ -78,7 +85,7 @@ jobs:
       - name: Check for data changes
         id: check_changes
         run: |
-          if git diff --quiet -- public/data/catalogue.json public/data/terms.json public/data/schedules.*.json; then
+          if git diff --quiet -- public/data/catalogue.json public/data/terms.json public/data/ratemyprofessors.json public/data/schedules.*.json; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -91,7 +98,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add public/data/catalogue.json public/data/terms.json public/data/schedules.*.json
+          git add public/data/catalogue.json public/data/terms.json public/data/ratemyprofessors.json public/data/schedules.*.json
           git commit -m "chore: update catalogue and schedules (daily scrape)"
           git push origin HEAD:main
 

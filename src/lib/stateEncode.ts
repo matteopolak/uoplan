@@ -16,7 +16,7 @@ export function requirementIdsFromTree(nodes: RequirementWithStatus[]): string[]
   return out;
 }
 
-const VERSION = 2;
+const VERSION = 3;
 const MAX_U16 = 0xffff;
 const MAX_U32 = 0xffffffff;
 
@@ -34,6 +34,7 @@ export interface EncodeInput {
   /** Full requirement tree; used to get stable ordering of all requirement IDs (including parents). */
   requirementTreeWithStatus: RequirementWithStatus[];
   remainingRequirements: RemainingRequirement[];
+  includeClosedComponents: boolean;
 }
 
 export interface DecodedState {
@@ -47,6 +48,7 @@ export interface DecodedState {
   generationSeed: number;
   optionSelections: Array<{ reqIndex: number; optionIndex: number }>;
   courseSelections: Array<{ reqIndex: number; courseIndices: number[] }>;
+  includeClosedComponents?: boolean;
 }
 
 export interface CatalogueLike {
@@ -132,7 +134,7 @@ export function encodeState(
     1 + input.levelBuckets.length +
     1 + input.languageBuckets.length +
     1 + input.electiveLevelBuckets.length * 2 +
-    1 + 2 + 4 +
+    1 + 2 + 4 + 1 +
     (2 + Object.keys(input.selectedOptionsPerRequirement).length * 4) +
     (2 + (() => {
       let n = 0;
@@ -165,6 +167,7 @@ export function encodeState(
   off = writeU8(view, off, Math.min(255, input.coursesThisSemester));
   off = writeU16(view, off, Math.min(MAX_U16, input.selectedScheduleIndex));
   off = writeU32(view, off, Math.min(MAX_U32, input.generationSeed >>> 0));
+  off = writeU8(view, off, input.includeClosedComponents ? 1 : 0);
 
   const optEntries = Object.entries(input.selectedOptionsPerRequirement)
     .map(([reqId, optionIndex]) => {
@@ -213,7 +216,7 @@ export function decodeState(
   if (buffer.length < 1) return { error: 'Invalid state: too short' };
   const { value: version, next: n0 } = readU8(view, off);
   off = n0;
-  if (version !== 1 && version !== VERSION) {
+  if (version !== 1 && version !== 2 && version !== VERSION) {
     return { error: 'Invalid or unsupported state version' };
   }
 
@@ -280,11 +283,17 @@ export function decodeState(
   off = n7;
 
   let generationSeed = 0;
+  let includeClosedComponents = true;
   if (version >= 2) {
     if (off + 4 > buffer.length) return { error: 'Invalid state: truncated' };
     const { value: seed, next: nSeed } = readU32(view, off);
     off = nSeed;
     generationSeed = seed >>> 0;
+    if (version >= 3 && off + 1 <= buffer.length) {
+      const { value: incClosed, next: nInc } = readU8(view, off);
+      off = nInc;
+      includeClosedComponents = incClosed !== 0;
+    }
   }
 
   if (off + 2 > buffer.length) return { error: 'Invalid state: truncated' };
@@ -332,6 +341,7 @@ export function decodeState(
     generationSeed,
     optionSelections,
     courseSelections,
+    includeClosedComponents,
   };
 }
 

@@ -454,11 +454,7 @@ async function fetchScheduleForCourse(
       if (scheduleFromCache) {
         return scheduleFromCache;
       }
-      
-      console.error(
-        `Cached HTML for ${course.subject} ${course.catalogNbr} exists at ${cachePath} but could not be parsed.`,
-      );
-      process.exit(1);
+
       return null;
     } catch (err) {
       console.error(
