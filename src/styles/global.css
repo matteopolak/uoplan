@@ -120,7 +120,7 @@ a {
   height: 100%;
 }
 
-.fc-uschedule-event {
+.fc-uoplan-event {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -134,7 +134,7 @@ a {
   overflow: hidden;
 }
 
-.fc-uschedule-event-body {
+.fc-uoplan-event-body {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -145,7 +145,7 @@ a {
   width: 100%;
 }
 
-.fc-uschedule-event-code {
+.fc-uoplan-event-code {
   display: block;
   font-weight: 600;
   color: #fff;
@@ -158,7 +158,7 @@ a {
   max-width: 100%;
 }
 
-.fc-uschedule-event-type {
+.fc-uoplan-event-type {
   font-size: 10px;
   color: rgba(255, 255, 255, 0.9);
   line-height: 1.2;
@@ -168,7 +168,7 @@ a {
   max-width: 100%;
 }
 
-.fc-uschedule-event-professor {
+.fc-uoplan-event-professor {
   font-size: 10px;
   color: rgba(255, 255, 255, 0.75);
   line-height: 1.2;

@@ -42,8 +42,8 @@ import { createSeededRng, generateRandomSeed } from '../lib/seededRandom';
 
 const validEnrollmentsByCourseCode = new Map<string, CourseEnrollment[]>();
 
-const LOCAL_STORAGE_KEY = 'uschedule-state';
-const TERM_LOCAL_STORAGE_KEY = 'uschedule-term';
+const LOCAL_STORAGE_KEY = 'uoplan-state';
+const TERM_LOCAL_STORAGE_KEY = 'uoplan-term';
 
 export interface AppState {
   catalogue: { courses: unknown[]; programs: Program[] } | null;

@@ -880,7 +880,7 @@ export function RequirementsStep({
     .sort();
 
   return (
-    <Stack gap="lg">
+    <Stack gap="lg" data-tour="requirements">
       {unassignedDisplay.length > 0 && (
         <Alert color="yellow" variant="light" radius={0} title="Action needed before generating schedules">
           <Text size="sm">
