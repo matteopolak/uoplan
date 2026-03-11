@@ -1,11 +1,12 @@
 import { useState, MouseEvent } from 'react';
-import { Stack, MultiSelect, Text, Paper, Badge, Group, Box, Collapse, Radio, Alert } from '@mantine/core';
+import { Stack, MultiSelect, Text, Paper, Badge, Group, Box, Collapse, Radio, Alert, Switch } from '@mantine/core';
 import { IconCheck, IconChevronDown } from '@tabler/icons-react';
 import { createCourseOptions } from './CourseSelect';
 import type { ComboboxItem } from '@mantine/core';
 import type { DataCache } from '../lib/dataCache';
 import { normalizeCourseCode } from '../lib/dataCache';
 import { courseMatchesFilters } from '../lib/courseFilters';
+import { getEffectiveSchedule } from '../lib/scheduleFilters';
 import type {
   RemainingRequirement,
   RequirementWithStatus,
@@ -42,6 +43,8 @@ interface RequirementsStepProps {
   onChangeLevelBuckets: (buckets: ('undergrad' | 'grad')[]) => void;
   onChangeLanguageBuckets: (buckets: ('en' | 'fr' | 'other')[]) => void;
   onChangeElectiveLevelBuckets: (buckets: number[]) => void;
+  includeClosedComponents: boolean;
+  onIncludeClosedComponentsChange: (value: boolean) => void;
 }
 
 function getSelectedCredits(cache: DataCache | null, courseCodes: string[]): number {
@@ -136,6 +139,7 @@ interface RequirementNodeProps {
   unassignedCompletedSet: Set<string>;
   /** Normalized form of unassigned completed (for dedupe/checkmark when option value is canonical). */
   unassignedCompletedSetNormalized: Set<string>;
+  includeClosedComponents: boolean;
 }
 
 function RequirementNode({
@@ -156,6 +160,7 @@ function RequirementNode({
   electiveLevelBuckets,
   unassignedCompletedSet,
   unassignedCompletedSetNormalized,
+  includeClosedComponents,
 }: RequirementNodeProps) {
   // If a parent (like an option) is responsible for selection UX, don't remove it,
   // but we still want to reduce *nested* single-child wrappers inside it.
@@ -260,8 +265,8 @@ function RequirementNode({
         // Non-completed courses must match current level/language filters
         if (!courseMatchesFilters(c, { levels: levelBuckets, languageBuckets })) return false;
 
-        // For this term, suggested courses must have a schedule
-        if (cache && !cache.getSchedule(c)) return false;
+        // For this term, suggested courses must have a schedule (respecting closed filter).
+        if (cache && !getEffectiveSchedule(cache, c, includeClosedComponents)) return false;
 
         // Elective-specific level bucket filtering (future courses only)
         if (isElectiveWithExclusions && electiveLevelBuckets.length > 0) {
@@ -501,6 +506,7 @@ function RequirementNode({
                     electiveLevelBuckets={electiveLevelBuckets}
                   unassignedCompletedSet={unassignedCompletedSet}
                   unassignedCompletedSetNormalized={unassignedCompletedSetNormalized}
+                    includeClosedComponents={includeClosedComponents}
                     radio={
                       node.requirementId != null && !node.complete
                         ? {
@@ -632,6 +638,7 @@ function RequirementNode({
                     electiveLevelBuckets={electiveLevelBuckets}
                   unassignedCompletedSet={unassignedCompletedSet}
                   unassignedCompletedSetNormalized={unassignedCompletedSetNormalized}
+                    includeClosedComponents={includeClosedComponents}
                     radio={
                       node.requirementId != null && !node.complete
                         ? {
@@ -725,8 +732,9 @@ function RequirementNode({
                 levelBuckets={levelBuckets}
                 languageBuckets={languageBuckets}
                 electiveLevelBuckets={electiveLevelBuckets}
-                  unassignedCompletedSet={unassignedCompletedSet}
-                  unassignedCompletedSetNormalized={unassignedCompletedSetNormalized}
+                unassignedCompletedSet={unassignedCompletedSet}
+                unassignedCompletedSetNormalized={unassignedCompletedSetNormalized}
+                includeClosedComponents={includeClosedComponents}
               />
             ))}
           </Stack>
@@ -825,6 +833,7 @@ function RequirementNode({
                   electiveLevelBuckets={electiveLevelBuckets}
                   unassignedCompletedSet={unassignedCompletedSet}
                   unassignedCompletedSetNormalized={unassignedCompletedSetNormalized}
+                  includeClosedComponents={includeClosedComponents}
                 />
               ))}
             </Stack>
@@ -853,6 +862,8 @@ export function RequirementsStep({
   onChangeLanguageBuckets,
   electiveLevelBuckets,
   onChangeElectiveLevelBuckets,
+  includeClosedComponents,
+  onIncludeClosedComponentsChange,
 }: RequirementsStepProps) {
   const [completedOpen, setCompletedOpen] = useState(false);
   const completedSet = new Set(completedCourses);
@@ -950,6 +961,12 @@ export function RequirementsStep({
               }
               clearable={false}
             />
+            <Switch
+              label="Include closed sections"
+              description="When off, courses with only closed sections are hidden and excluded from generation and swap."
+              checked={includeClosedComponents}
+              onChange={(e) => onIncludeClosedComponentsChange(e.currentTarget.checked)}
+            />
           </Group>
         </Stack>
       </Paper>
@@ -976,8 +993,9 @@ export function RequirementsStep({
               levelBuckets={levelBuckets}
               languageBuckets={languageBuckets}
               electiveLevelBuckets={electiveLevelBuckets}
-                  unassignedCompletedSet={unassignedCompletedSet}
-                  unassignedCompletedSetNormalized={unassignedCompletedSetNormalized}
+              unassignedCompletedSet={unassignedCompletedSet}
+              unassignedCompletedSetNormalized={unassignedCompletedSetNormalized}
+              includeClosedComponents={includeClosedComponents}
             />
           ))
         ) : (
