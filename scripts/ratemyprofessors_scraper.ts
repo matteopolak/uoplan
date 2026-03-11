@@ -158,7 +158,6 @@ async function main(): Promise<void> {
   const outPath = path.join(outDir, 'ratemyprofessors.json');
 
   const output = {
-    generatedAt: new Date().toISOString(),
     resultCount: allTeachers.length,
     professors: allTeachers,
   };

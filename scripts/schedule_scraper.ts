@@ -618,7 +618,7 @@ async function main(): Promise<void> {
 
   await fs.writeFile(
     'public/data/terms.json',
-    JSON.stringify({ generatedAt: new Date().toISOString(), terms }, null, 2),
+    JSON.stringify({ terms }, null, 2),
     'utf-8',
   );
   console.log(`Saved ${terms.length} term(s) to public/data/terms.json`);
@@ -661,7 +661,6 @@ async function main(): Promise<void> {
 
     const output = {
       termId: term.termId,
-      generatedAt: new Date().toISOString(),
       totalCourses: courses.length,
       totalWithSchedules: results.length,
       schedules: results,
