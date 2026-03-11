@@ -476,7 +476,7 @@ export interface AppActions {
   setGenerationAllowedDays: (days: DayOfWeek[]) => void;
   setGenerationMinProfessorRating: (rating: number | null) => void;
   setIncludeClosedComponents: (value: boolean) => void;
-  generateSchedules: (options?: { appendFirstOnly?: boolean }) => void;
+  generateSchedules: (options?: { appendFirstOnly?: boolean }) => Promise<void>;
   setSelectedScheduleIndex: (idx: number) => void;
   swapCourseInSchedule: (
     scheduleIndex: number,
@@ -1069,7 +1069,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   setCoursesThisSemester: (n) => set({ coursesThisSemester: n }),
 
-  generateSchedules: (options) => {
+  generateSchedules: async (options) => {
     const appendFirstOnly = options?.appendFirstOnly ?? false;
     const {
       cache,
@@ -1252,10 +1252,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
       return true;
     }
 
-    function collectUniqueSchedulesFromCandidatePool(
+    const yieldToMain = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
+
+    async function collectUniqueSchedulesFromCandidatePool(
       candidatePool: string[],
       mapsForNonPoolCodes: Record<string, string> = {}
-    ): { schedules: GeneratedSchedule[]; poolMaps: Record<string, string>[]; usedPool: string[] } {
+    ): Promise<{ schedules: GeneratedSchedule[]; poolMaps: Record<string, string>[]; usedPool: string[] }> {
       const maxAttempts = appendFirstOnly ? 100 : 300;
       const targetUniqueSchedules = appendFirstOnly ? 1 : 25;
       const seenCourseSets = new Set<string>();
@@ -1266,6 +1268,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       const base = [...new Set(candidatePool)];
       for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
         if (collectedSchedules.length >= targetUniqueSchedules) break;
+        if (attempt > 0 && attempt % 5 === 0) await yieldToMain();
         const attemptPool = [...base];
         shuffleInPlace(attemptPool, rng);
         lastUsedPool = attemptPool;
@@ -1293,7 +1296,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (oversubscribedSelections) {
       const selectedOnlyPool = selectedSchedulable.filter((code) => isEligibleCandidate(code));
 
-      const baseAttempt = collectUniqueSchedulesFromCandidatePool(selectedOnlyPool, {});
+      const baseAttempt = await collectUniqueSchedulesFromCandidatePool(selectedOnlyPool, {});
       filteredOptionalPool = baseAttempt.usedPool;
       finalSchedules = baseAttempt.schedules;
       finalPoolMaps = baseAttempt.poolMaps;
@@ -1332,7 +1335,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         }
 
         const expandedPool = [...new Set([...selectedOnlyPool, ...extraCandidates])];
-        const expandedAttempt = collectUniqueSchedulesFromCandidatePool(expandedPool, {});
+        const expandedAttempt = await collectUniqueSchedulesFromCandidatePool(expandedPool, {});
         filteredOptionalPool = expandedAttempt.usedPool;
         finalSchedules = expandedAttempt.schedules;
         finalPoolMaps = expandedAttempt.poolMaps;
@@ -1439,6 +1442,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
       for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
         if (collectedSchedules.length >= targetUniqueSchedules) break;
+        if (attempt > 0 && attempt % 5 === 0) await yieldToMain();
 
         // Shuffle each pool's candidates so we try different course combinations.
         for (const list of candidatesByRequirement.values()) {

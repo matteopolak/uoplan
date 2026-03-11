@@ -141,11 +141,10 @@ function App() {
 
   const handleGenerate = () => {
     setGenerating(true);
-    setTimeout(() => {
-      generateSchedules();
+    generateSchedules().then(() => {
       setGenerating(false);
       setShowCalendar(true);
-    }, 0);
+    });
   };
 
   const uniqueSelected = new Set(Object.values(selectedPerRequirement).flat()).size;
@@ -534,10 +533,9 @@ function App() {
             disabled={generatingOneMore}
             onClick={() => {
               setGeneratingOneMore(true);
-              setTimeout(() => {
-                generateSchedules({ appendFirstOnly: true });
+              generateSchedules({ appendFirstOnly: true }).then(() => {
                 setGeneratingOneMore(false);
-              }, 0);
+              });
             }}
           >
             Generate new schedule
