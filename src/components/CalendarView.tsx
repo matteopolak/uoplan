@@ -110,21 +110,21 @@ function EventStyleCard({
   const [r, g, b] = hex.replace('#', '').match(/.{2}/g)!.map((x) => parseInt(x, 16));
   return (
     <div
-      className="fc-uschedule-event"
+      className="fc-uoplan-event"
       style={{
         borderLeft: `4px solid ${hex}`,
         backgroundColor: `rgba(${r}, ${g}, ${b}, 0.38)`,
         padding: '10px 12px',
       }}
     >
-      <div className="fc-uschedule-event-body" style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span className="fc-uschedule-event-code" title={heading} style={{ fontWeight: 600 }}>
+      <div className="fc-uoplan-event-body" style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span className="fc-uoplan-event-code" title={heading} style={{ fontWeight: 600 }}>
           {heading}
         </span>
-        <span className="fc-uschedule-event-type" style={{ fontSize: '0.85em', opacity: 0.9 }}>
+        <span className="fc-uoplan-event-type" style={{ fontSize: '0.85em', opacity: 0.9 }}>
           {componentSection}
         </span>
-        <span className="fc-uschedule-event-professor" style={{ fontSize: '0.8em', opacity: 0.8 }}>
+        <span className="fc-uoplan-event-professor" style={{ fontSize: '0.8em', opacity: 0.8 }}>
           {professor}
         </span>
       </div>
@@ -391,22 +391,22 @@ export function CalendarView({
               const [r, g, b] = hex.replace('#', '').match(/.{2}/g)!.map((x) => parseInt(x, 16));
               return (
                 <div
-                  className="fc-uschedule-event"
+                  className="fc-uoplan-event"
                   style={{
                     cursor: 'pointer',
                     borderLeft: `4px solid ${hex}`,
                     backgroundColor: `rgba(${r}, ${g}, ${b}, 0.38)`,
                   }}
                 >
-                  <div className="fc-uschedule-event-body">
+                  <div className="fc-uoplan-event-body">
                     <span
-                      className="fc-uschedule-event-code"
+                      className="fc-uoplan-event-code"
                       title={heading}
                     >
                       {heading}
                     </span>
-                    <span className="fc-uschedule-event-type">{ext.componentSection}</span>
-                    <span className="fc-uschedule-event-professor">{ext.professor}</span>
+                    <span className="fc-uoplan-event-type">{ext.componentSection}</span>
+                    <span className="fc-uoplan-event-professor">{ext.professor}</span>
                   </div>
                 </div>
               );

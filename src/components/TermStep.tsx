@@ -11,7 +11,7 @@ export function TermStep({ terms, value, onChange }: TermStepProps) {
   const data = terms.map((t) => ({ value: t.termId, label: t.name }));
 
   return (
-    <Stack gap="md">
+    <Stack gap="md" data-tour="term-select">
       <Select
         label="Select your term"
         placeholder="Choose a term..."

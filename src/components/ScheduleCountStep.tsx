@@ -108,6 +108,7 @@ export function ScheduleCountStep({
         </Alert>
       )}
       <Button
+        data-tour="generate-schedules"
         size="sm"
         color="violet"
         variant="filled"
