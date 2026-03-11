@@ -37,7 +37,13 @@ jobs:
       - name: Backup existing JSON data
         run: |
           cp public/data/catalogue.json /tmp/catalogue_old.json
-          cp public/data/schedules.json /tmp/schedules_old.json
+          cp public/data/terms.json /tmp/terms_old.json || true
+          mkdir -p /tmp/schedules_old
+          shopt -s nullglob
+          for f in public/data/schedules.*.json; do
+            cp "$f" "/tmp/schedules_old/$(basename "$f")"
+          done
+          shopt -u nullglob
 
       - name: Clear scraper caches (no cache mode)
         run: rm -rf .cache
@@ -53,14 +59,26 @@ jobs:
           echo "::group::Diff catalogue.json"
           diff -u /tmp/catalogue_old.json public/data/catalogue.json || true
           echo "::endgroup::"
-          echo "::group::Diff schedules.json"
-          diff -u /tmp/schedules_old.json public/data/schedules.json || true
+          echo "::group::Diff terms.json"
+          diff -u /tmp/terms_old.json public/data/terms.json || true
+          echo "::endgroup::"
+          echo "::group::Diff schedules.*.json"
+          shopt -s nullglob
+          for f in public/data/schedules.*.json; do
+            old="/tmp/schedules_old/$(basename "$f")"
+            if [ -f "$old" ]; then
+              diff -u "$old" "$f" || true
+            else
+              echo "New file: $f"
+            fi
+          done
+          shopt -u nullglob
           echo "::endgroup::"
 
       - name: Check for data changes
         id: check_changes
         run: |
-          if git diff --quiet -- public/data/catalogue.json public/data/schedules.json; then
+          if git diff --quiet -- public/data/catalogue.json public/data/terms.json public/data/schedules.*.json; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -73,7 +91,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add public/data/catalogue.json public/data/schedules.json
+          git add public/data/catalogue.json public/data/terms.json public/data/schedules.*.json
           git commit -m "chore: update catalogue and schedules (daily scrape)"
           git push origin HEAD:main
 

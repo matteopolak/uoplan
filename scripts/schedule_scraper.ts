@@ -11,8 +11,7 @@ const HTML_CACHE_DIR = '.cache/course-search-html';
 const MAX_CONCURRENCY = 20;
 const USE_CACHE_ONLY = process.argv.includes('use-cache');
 
-// Default to the currently selected term on the search page (2026 Winter Term as of 2026-03-09)
-const DEFAULT_TERM_ID: string = process.env.UOTTAWA_TERM_ID || '2261';
+type Term = { termId: string; name: string };
 
 interface CatalogueCourse {
   code: string;
@@ -153,10 +152,6 @@ async function loadCatalogue(): Promise<ParsedCourseCode[]> {
 }
 
 async function createClient(): Promise<ClientInfo> {
-  if (USE_CACHE_ONLY) {
-    return { client: null!, icsid: null!, dataLang: null!, icStateNum: null! };
-  }
-
   const jar = new CookieJar();
   const client: Got = got.extend({
     cookieJar: jar,
@@ -182,6 +177,38 @@ async function createClient(): Promise<ClientInfo> {
 
   const preview = lastHtml.slice(0, 400).replace(/\s+/g, ' ');
   throw new Error(`Failed to find ICSID on initial class search page; first 400 chars: ${preview}`);
+}
+
+async function scrapeTerms(client: Got): Promise<Term[]> {
+  const res = await client.get(BASE_URL);
+  const html = res.body;
+  const $ = cheerio.load(html);
+  const select = $('#CLASS_SRCH_WRK2_STRM\\$35\\$');
+  if (select.length === 0) {
+    const preview = html.slice(0, 400).replace(/\s+/g, ' ');
+    throw new Error(
+      `Failed to find term dropdown (#CLASS_SRCH_WRK2_STRM$35$); first 400 chars: ${preview}`,
+    );
+  }
+
+  const terms: Term[] = [];
+  select.find('option').each((_, opt) => {
+    const termId = ($(opt).attr('value') ?? '').trim();
+    const name = $(opt).text().replace(/\s+/g, ' ').trim();
+    if (!termId) return; // skip blank option
+    if (!name) return;
+    terms.push({ termId, name });
+  });
+
+  // Deduplicate by termId while preserving order.
+  const seen = new Set<string>();
+  const unique: Term[] = [];
+  for (const t of terms) {
+    if (seen.has(t.termId)) continue;
+    seen.add(t.termId);
+    unique.push(t);
+  }
+  return unique;
 }
 
 function buildSearchBody(args: {
@@ -397,11 +424,12 @@ function parseScheduleHtml(
 async function fetchScheduleForCourse(
   clientInfo: ClientInfo,
   course: ParsedCourseCode,
+  termId: string,
 ): Promise<CourseSchedule | null> {
   const { client, dataLang } = clientInfo;
   const safeSubject = course.subject.replace(/[^A-Za-z0-9]+/g, '_');
   const safeCatalog = course.catalogNbr.replace(/[^A-Za-z0-9]+/g, '_');
-  const cacheFilename = `${safeSubject}-${safeCatalog}-${DEFAULT_TERM_ID}.html`;
+  const cacheFilename = `${safeSubject}-${safeCatalog}-${termId}.html`;
   const cachePath = path.join(HTML_CACHE_DIR, cacheFilename);
 
   if (USE_CACHE_ONLY) {
@@ -461,7 +489,7 @@ async function fetchScheduleForCourse(
       icStateNum: clientInfo.icStateNum,
       subject: course.subject,
       catalogNbr: course.catalogNbr,
-      termId: DEFAULT_TERM_ID,
+      termId,
     });
 
     const res = await client.post(BASE_URL, {
@@ -576,55 +604,79 @@ async function main(): Promise<void> {
   }
 
   console.log('Initializing PeopleSoft session...');
-  const clientInfos: ClientInfo[] = await Promise.all(Array.from({ length: MAX_CONCURRENCY }, createClient));
+  const clientCount = USE_CACHE_ONLY ? 1 : MAX_CONCURRENCY;
+  const clientInfos: ClientInfo[] = await Promise.all(
+    Array.from({ length: clientCount }, createClient),
+  );
+
+  console.log('Scraping available terms...');
+  let terms: Term[] = await scrapeTerms(clientInfos[0].client);
+
+  const onlyTermId = process.env.ONLY_TERM_ID;
+  if (onlyTermId) {
+    terms = terms.filter((t) => t.termId === onlyTermId);
+    if (terms.length === 0) {
+      throw new Error(`ONLY_TERM_ID=${onlyTermId} did not match any scraped term.`);
+    }
+  }
+
+  await fs.writeFile(
+    'public/data/terms.json',
+    JSON.stringify({ generatedAt: new Date().toISOString(), terms }, null, 2),
+    'utf-8',
+  );
+  console.log(`Saved ${terms.length} term(s) to public/data/terms.json`);
   
-  console.log(
-    `Initialized ${clientInfos.length} PeopleSoft session(s), starting schedule scraping...`,
-  );
+  console.log(`Initialized ${clientInfos.length} PeopleSoft session(s).`);
 
-  const limit = pLimit(MAX_CONCURRENCY);
-  const results: CourseSchedule[] = [];
-  let processed = 0;
+  for (const term of terms) {
+    console.log(`Starting schedule scrape for ${term.name} (${term.termId})...`);
+    const limit = pLimit(MAX_CONCURRENCY);
+    const results: CourseSchedule[] = [];
+    let processed = 0;
 
-  const tasks = courses.map((course, index) =>
-    limit(async () => {
-      const clientInfo = clientInfos[index % clientInfos.length];
-      try {
-        const schedule = await fetchScheduleForCourse(clientInfo, course);
-        if (schedule) {
-          results.push(schedule);
+    const tasks = courses.map((course, index) =>
+      limit(async () => {
+        const clientInfo = clientInfos[index % clientInfos.length];
+        try {
+          const schedule = await fetchScheduleForCourse(clientInfo, course, term.termId);
+          if (schedule) {
+            results.push(schedule);
+          }
+        } catch (err: any) {
+          console.error(
+            `Error fetching schedule for ${course.subject} ${course.catalogNbr} (${term.termId}):`,
+            err?.message || err,
+          );
+        } finally {
+          processed += 1;
+          if (processed % 50 === 0 || processed === courses.length) {
+            console.log(
+              `[${term.termId}] Processed ${processed}/${courses.length} courses...`,
+            );
+          }
         }
-      } catch (err: any) {
-        console.error(
-          `Error fetching schedule for ${course.subject} ${course.catalogNbr}:`,
-          err?.message || err,
-        );
-      } finally {
-        processed += 1;
-        if (processed % 50 === 0 || processed === courses.length) {
-          console.log(`Processed ${processed}/${courses.length} courses...`);
-        }
-      }
-    }),
-  );
+      }),
+    );
 
-  await Promise.all(tasks);
+    await Promise.all(tasks);
 
-  results.sort((a, b) => a.courseCode.localeCompare(b.courseCode));
+    results.sort((a, b) => a.courseCode.localeCompare(b.courseCode));
 
-  const output = {
-    termId: DEFAULT_TERM_ID,
-    generatedAt: new Date().toISOString(),
-    totalCourses: courses.length,
-    totalWithSchedules: results.length,
-    schedules: results,
-  };
+    const output = {
+      termId: term.termId,
+      generatedAt: new Date().toISOString(),
+      totalCourses: courses.length,
+      totalWithSchedules: results.length,
+      schedules: results,
+    };
 
-  const outPath = 'public/data/schedules.json';
-  await fs.writeFile(outPath, JSON.stringify(output, null, 2), 'utf-8');
-  console.log(
-    `Done. Saved schedules for ${results.length} courses (out of ${courses.length}) to schedules.json`,
-  );
+    const outPath = `public/data/schedules.${term.termId}.json`;
+    await fs.writeFile(outPath, JSON.stringify(output, null, 2), 'utf-8');
+    console.log(
+      `Done. Saved schedules for ${results.length} courses (out of ${courses.length}) to ${path.basename(outPath)}`,
+    );
+  }
 }
 
 main().catch(err => {

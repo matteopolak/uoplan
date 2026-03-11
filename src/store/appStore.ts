@@ -37,10 +37,12 @@ import {
   type DecodedState,
   type EncodeInput,
 } from '../lib/stateEncode';
+import type { Term } from '../schemas/terms';
 
 const validEnrollmentsByCourseCode = new Map<string, CourseEnrollment[]>();
 
 const LOCAL_STORAGE_KEY = 'uschedule-state';
+const TERM_LOCAL_STORAGE_KEY = 'uschedule-term';
 
 export interface AppState {
   catalogue: { courses: unknown[]; programs: Program[] } | null;
@@ -49,6 +51,9 @@ export interface AppState {
   cache: DataCache | null;
   loading: boolean;
   error: string | null;
+
+  terms: Term[] | null;
+  selectedTermId: string | null;
 
   program: Program | null;
   completedCourses: string[];
@@ -398,6 +403,7 @@ function recomputeStateForProgram(
 
 export interface AppActions {
   loadData: () => Promise<void>;
+  setSelectedTermId: (termId: string) => Promise<void>;
   loadEncodedState: (decoded: DecodedState) => void;
   getShareUrl: () => string | null;
   getEncodedStateBase64: () => string | null;
@@ -443,6 +449,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
   loading: false,
   error: null,
 
+  terms: null,
+  selectedTermId: null,
+
   program: null,
   completedCourses: [],
   remainingRequirements: [],
@@ -470,6 +479,61 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setGenerationMinStartMinutes: (minutes) => set({ generationMinStartMinutes: minutes }),
   setGenerationMaxEndMinutes: (minutes) => set({ generationMaxEndMinutes: minutes }),
   setGenerationAllowedDays: (days) => set({ generationAllowedDays: days }),
+
+  setSelectedTermId: async (termId: string) => {
+    set({ loading: true, error: null });
+    try {
+      const { catalogue } = get();
+      if (!catalogue) throw new Error('Catalogue not loaded');
+
+      const schedulesRes = await fetch(`/data/schedules.${termId}.json`);
+      if (!schedulesRes.ok) throw new Error('Failed to load schedules data');
+      const schedulesData = await schedulesRes.json();
+
+      const { buildDataCache } = await import('../lib/dataCache');
+      const { SchedulesDataSchema } = await import('../schemas/schedules');
+
+      const parsedSchedules = SchedulesDataSchema.parse(schedulesData);
+      const cache = buildDataCache(catalogue as any, parsedSchedules);
+
+      // Recompute derived state against the new schedules/cache (keeping existing selections).
+      const s = get();
+      const full = recomputeStateForProgram(
+        s.program,
+        s.completedCourses,
+        cache,
+        s.selectedPerRequirement,
+        s.selectedOptionsPerRequirement,
+        s.levelBuckets,
+        s.languageBuckets,
+      );
+
+      set({
+        selectedTermId: termId,
+        schedulesData: parsedSchedules,
+        cache,
+        generatedSchedules: [],
+        generationError: null,
+        selectedScheduleIndex: 0,
+        ...full,
+        loading: false,
+        error: null,
+      });
+
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(TERM_LOCAL_STORAGE_KEY, termId);
+        } catch {
+          // ignore
+        }
+      }
+    } catch (err) {
+      set({
+        loading: false,
+        error: err instanceof Error ? err.message : 'Failed to load data',
+      });
+    }
+  },
 
   loadEncodedState: (decoded) => {
     const { catalogue, indices, cache } = get();
@@ -577,30 +641,30 @@ export const useAppStore = create<AppStore>((set, get) => ({
       s.indices,
     );
     if (!bytes) return null;
-    return stateToShareUrl(bytes);
+    return stateToShareUrl(bytes, undefined, s.selectedTermId ?? undefined);
   },
 
   loadData: async () => {
     set({ loading: true, error: null });
     try {
-      const [catalogueRes, schedulesRes, indicesRes] = await Promise.all([
+      const [catalogueRes, termsRes, indicesRes] = await Promise.all([
         fetch('/data/catalogue.json'),
-        fetch('/data/schedules.json'),
+        fetch('/data/terms.json'),
         fetch('/data/indices.json').catch(() => null),
       ]);
-      if (!catalogueRes.ok || !schedulesRes.ok) throw new Error('Failed to load data');
+      if (!catalogueRes.ok || !termsRes.ok) throw new Error('Failed to load data');
 
       const catalogue = await catalogueRes.json();
-      const schedulesData = await schedulesRes.json();
+      const termsJson = await termsRes.json();
 
       const { buildDataCache } = await import('../lib/dataCache');
       const { CatalogueSchema } = await import('../schemas/catalogue');
       const { SchedulesDataSchema } = await import('../schemas/schedules');
       const { IndicesSchema } = await import('../schemas/indices');
+      const { TermsDataSchema } = await import('../schemas/terms');
 
       const parsedCatalogue = CatalogueSchema.parse(catalogue);
-      const parsedSchedules = SchedulesDataSchema.parse(schedulesData);
-      const cache = buildDataCache(parsedCatalogue, parsedSchedules);
+      const parsedTerms = TermsDataSchema.parse(termsJson);
 
       let indices: Indices | null = null;
       if (indicesRes?.ok) {
@@ -613,14 +677,48 @@ export const useAppStore = create<AppStore>((set, get) => ({
         };
       }
 
+      let initialTermId: string | null = null;
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const urlTerm = params.get('t');
+        if (urlTerm) initialTermId = urlTerm;
+        if (!initialTermId) {
+          try {
+            initialTermId = localStorage.getItem(TERM_LOCAL_STORAGE_KEY);
+          } catch {
+            // ignore
+          }
+        }
+      }
+      if (!initialTermId) {
+        initialTermId = parsedTerms.terms[0]?.termId ?? null;
+      }
+      if (!initialTermId) throw new Error('No terms available');
+
+      const schedulesRes = await fetch(`/data/schedules.${initialTermId}.json`);
+      if (!schedulesRes.ok) throw new Error('Failed to load schedules data');
+      const schedulesData = await schedulesRes.json();
+      const parsedSchedules = SchedulesDataSchema.parse(schedulesData);
+      const cache = buildDataCache(parsedCatalogue, parsedSchedules);
+
       set({
         catalogue: parsedCatalogue,
         indices,
         schedulesData: parsedSchedules,
         cache,
+        terms: parsedTerms.terms,
+        selectedTermId: initialTermId,
         loading: false,
         error: null,
       });
+
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(TERM_LOCAL_STORAGE_KEY, initialTermId);
+        } catch {
+          // ignore
+        }
+      }
 
       if (indices && typeof window !== 'undefined') {
         const catalogueLike = parsedCatalogue as {
@@ -637,6 +735,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
             get().loadEncodedState(decoded);
             const u = new URL(window.location.href);
             u.searchParams.delete('s');
+            u.searchParams.delete('t');
             window.history.replaceState({}, '', u.toString());
           }
         } else {
