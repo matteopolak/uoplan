@@ -137,7 +137,7 @@ export function getValidSectionCombos(schedule: CourseSchedule): SectionCombo[] 
     }
   }
 
-  return valid.length > 0 ? valid : [{}];
+  return valid;
 }
 
 export function getEnrollmentsForCourse(
