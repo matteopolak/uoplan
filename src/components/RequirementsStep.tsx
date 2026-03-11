@@ -1,5 +1,5 @@
 import { useState, MouseEvent } from 'react';
-import { Stack, MultiSelect, Text, Paper, Badge, Group, Box, Collapse, Radio } from '@mantine/core';
+import { Stack, MultiSelect, Text, Paper, Badge, Group, Box, Collapse, Radio, Alert } from '@mantine/core';
 import { IconCheck, IconChevronDown } from '@tabler/icons-react';
 import { createCourseOptions } from './CourseSelect';
 import type { ComboboxItem } from '@mantine/core';
@@ -14,6 +14,15 @@ import type {
 
 const REQUIREMENT_INDENT_PX = 12;
 const REQUIREMENT_BASE_PADDING_PX = 10;
+
+function getStableNodeKey(node: RequirementWithStatus, fallback: string): string {
+  // Prefer a real stable identifier if present.
+  if (node.requirementId) return `req:${node.requirementId}`;
+  // Otherwise build a reasonably-stable fingerprint (titles/codes/types generally don't change on selection).
+  const title = (node.title ?? '').trim();
+  const code = (node.code ?? '').trim();
+  return `node:${node.type}:${code}:${title}:${fallback}`;
+}
 
 interface RequirementsStepProps {
   cache: DataCache | null;
@@ -207,7 +216,7 @@ function RequirementNode({
 
   if (isSection) {
     return (
-      <Text key={title} fw={600} size="sm" c="dimmed" mt={depth > 0 ? 'md' : 0} mb="xs">
+      <Text fw={600} size="sm" c="dimmed" mt={depth > 0 ? 'md' : 0} mb="xs">
         {title}
       </Text>
     );
@@ -231,23 +240,41 @@ function RequirementNode({
       node.type === 'free_elective' ||
       node.type === 'non_discipline_elective') &&
     (node.excluded_disciplines?.length ?? 0) > 0;
+  const isCompletedCourse = (code: string): boolean => {
+    const norm = normalizeCourseCode(code);
+    const canonical = cache?.getCourse(norm)?.code ?? code;
+    return completedCourses.has(canonical) || completedCourses.has(norm);
+  };
   const filtered =
     node.candidateCourses
       // Include both completed (for assignment to this requirement) and not-yet-taken (for "want in schedule")
       ?.filter((c) => prereqEligible.has(c))
-      // Must match current level/language filters
-      .filter((c) => courseMatchesFilters(c, { levels: levelBuckets, languageBuckets }))
-      // Include courses with a schedule (for this term) or unassigned completed (no schedule needed when already taken)
-      .filter((c) => !cache || !!cache.getSchedule(c) || unassignedCompletedSet.has(c))
-      // Elective-specific level bucket filtering
+      // Completed courses should always be assignable:
+      // - never filtered by level/language or elective-level buckets
+      // - no schedule required (already taken)
       .filter((c) => {
-        if (!isElectiveWithExclusions || electiveLevelBuckets.length === 0) return true;
-        const match = c.match(/\d{4}/);
-        if (!match) return true;
-        const num = parseInt(match[0], 10);
-        if (Number.isNaN(num)) return true;
-        const bucket = Math.floor(num / 1000) * 1000;
-        return electiveLevelBuckets.includes(bucket);
+        if (isCompletedCourse(c) || unassignedCompletedSetNormalized.has(normalizeCourseCode(c))) {
+          return true;
+        }
+
+        // Non-completed courses must match current level/language filters
+        if (!courseMatchesFilters(c, { levels: levelBuckets, languageBuckets })) return false;
+
+        // For this term, suggested courses must have a schedule
+        if (cache && !cache.getSchedule(c)) return false;
+
+        // Elective-specific level bucket filtering (future courses only)
+        if (isElectiveWithExclusions && electiveLevelBuckets.length > 0) {
+          const match = c.match(/\d{4}/);
+          if (match) {
+            const num = parseInt(match[0], 10);
+            if (!Number.isNaN(num)) {
+              const bucket = Math.floor(num / 1000) * 1000;
+              if (!electiveLevelBuckets.includes(bucket)) return false;
+            }
+          }
+        }
+        return true;
       }) ?? [];
   // Canonicalize selected so pills match options (same course can appear with different spacing/casing)
   const selectedForDisplay = selected.map(
@@ -346,7 +373,6 @@ function RequirementNode({
   if (node.complete && node.satisfiedBy.length > 0 && !hasOptions) {
     return (
       <Paper
-        key={title}
         p="sm"
         withBorder
         radius={0}
@@ -384,7 +410,6 @@ function RequirementNode({
       : title;
     return (
       <Paper
-        key={groupLabel}
         p="sm"
         withBorder
         radius={0}
@@ -456,8 +481,9 @@ function RequirementNode({
                   ? [{ requirementId: node.requirementId, optionIndex: idx }]
                   : []),
               ];
+              const childKey = getStableNodeKey(opt, `${getStableNodeKey(node, 'parent')}:opt:${idx}`);
               return (
-                <Box key={idx}>
+                <Box key={childKey}>
                   <RequirementNode
                     node={opt}
                     cache={cache}
@@ -515,7 +541,6 @@ function RequirementNode({
 
     return (
       <Paper
-        key={title}
         p="sm"
         withBorder
         radius={0}
@@ -587,8 +612,9 @@ function RequirementNode({
                   ? [{ requirementId: node.requirementId, optionIndex: idx }]
                   : []),
               ];
+              const childKey = getStableNodeKey(opt, `${getStableNodeKey(node, 'parent')}:opt:${idx}`);
               return (
-                <Box key={idx}>
+                <Box key={childKey}>
                   <RequirementNode
                     node={opt}
                     cache={cache}
@@ -634,7 +660,6 @@ function RequirementNode({
   if (isAnd && hasOptions) {
     return (
       <Paper
-        key={title}
         p="sm"
         withBorder
         radius={0}
@@ -685,7 +710,7 @@ function RequirementNode({
           <Stack gap="xs">
             {node.options!.map((child, idx) => (
               <RequirementNode
-                key={idx}
+                key={getStableNodeKey(child, `${getStableNodeKey(node, 'parent')}:child:${idx}`)}
                 node={child}
                 cache={cache}
                 completedCourses={completedCourses}
@@ -717,7 +742,6 @@ function RequirementNode({
 
   return (
     <Paper
-      key={label}
       p="sm"
       withBorder
       radius={0}
@@ -784,7 +808,7 @@ function RequirementNode({
             <Stack gap="xs" pl="xs">
               {node.options!.map((child, idx) => (
                 <RequirementNode
-                  key={idx}
+                  key={getStableNodeKey(child, `${getStableNodeKey(node, 'parent')}:child:${idx}`)}
                   node={child}
                   cache={cache}
                   completedCourses={completedCourses}
@@ -851,8 +875,23 @@ export function RequirementsStep({
     );
   }
 
+  const unassignedDisplay = [...new Set(unassignedCompletedCourses)]
+    .map((c) => cache?.getCourse(normalizeCourseCode(c))?.code ?? c)
+    .sort();
+
   return (
     <Stack gap="lg">
+      {unassignedDisplay.length > 0 && (
+        <Alert color="yellow" variant="light" radius={0} title="Action needed before generating schedules">
+          <Text size="sm">
+            You have {unassignedDisplay.length} completed course{unassignedDisplay.length === 1 ? '' : 's'} not assigned to any requirement:{' '}
+            {unassignedDisplay.join(', ')}.
+          </Text>
+          <Text size="sm" mt={6}>
+            Assign each completed course to the requirement it satisfies.
+          </Text>
+        </Alert>
+      )}
       <Paper p="sm" withBorder radius={0}>
         <Stack gap="xs">
           <Group justify="space-between" align="center">
@@ -924,7 +963,7 @@ export function RequirementsStep({
         {hasRemaining ? (
           incompleteNodes.map((node, idx) => (
             <RequirementNode
-              key={idx}
+              key={getStableNodeKey(node, `root:${idx}`)}
               node={node}
               cache={cache}
               completedCourses={completedSet}
@@ -983,7 +1022,7 @@ export function RequirementsStep({
             <Stack gap={0} mt="sm">
               {completedRequirementsList.map((item, idx) => (
                 <Box
-                  key={idx}
+                  key={`${(item.title ?? '').trim()}:${item.satisfiedBy.slice().sort().join(',')}:${idx}`}
                   px="sm"
                   py={6}
                   style={{
