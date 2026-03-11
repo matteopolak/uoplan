@@ -344,8 +344,16 @@ function recomputeStateForProgram(
     }
   }
   const completedNormalized = new Set(completedCourses.map(normalizeCourseCode));
+  const isWorkTerm = (normCode: string): boolean => {
+    const course = cache.getCourse(normCode);
+    const component = course?.component?.trim().toLowerCase() ?? '';
+    return component.startsWith('stage / work term');
+  };
   const unassignedCompleted = [...completedNormalized].filter(
-    (norm) => !assignedFromExact.has(norm) && !assignedFromSelected.has(norm),
+    (norm) =>
+      !assignedFromExact.has(norm) &&
+      !assignedFromSelected.has(norm) &&
+      !isWorkTerm(norm),
   );
 
   // For group-style requirements, augment candidate list with unassigned completed (eligible) first.
@@ -947,6 +955,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       coursesThisSemester,
       completedCourses,
       prereqEligibleCourses,
+      unassignedCompletedCourses,
       levelBuckets,
       languageBuckets,
       electiveLevelBuckets,
@@ -957,6 +966,21 @@ export const useAppStore = create<AppStore>((set, get) => ({
     } = get();
     if (!cache) return;
     const cacheVal = cache;
+
+    const unassigned = [...new Set(unassignedCompletedCourses)].sort();
+    if (unassigned.length > 0) {
+      const previewLimit = 12;
+      const preview = unassigned.slice(0, previewLimit);
+      const suffix =
+        unassigned.length > previewLimit
+          ? ` (+${unassigned.length - previewLimit} more)`
+          : '';
+      set({
+        generationError: `Assign all completed courses to requirements before generating schedules. Unassigned: ${preview.join(', ')}${suffix}`,
+      });
+      return;
+    }
+
     // Deterministic randomness:
     // - Base seed comes from appState and is included in share links.
     // - When the user clicks "Generate new schedule" (appendFirstOnly), we salt the seed with

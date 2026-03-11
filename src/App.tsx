@@ -836,6 +836,8 @@ function App() {
                       onGenerate={handleGenerate}
                       generating={generating}
                       error={generationError}
+                      disableGenerate={unassignedCompletedCourses.length > 0}
+                      disableGenerateReason={`You still need to assign ${unassignedCompletedCourses.length} completed course${unassignedCompletedCourses.length === 1 ? '' : 's'} in Requirements before you can generate schedules.`}
                     />
                   </Stack>
                 )}

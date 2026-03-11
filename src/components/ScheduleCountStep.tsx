@@ -38,6 +38,8 @@ interface ScheduleCountStepProps {
   onGenerate: () => void;
   generating?: boolean;
   error?: string | null;
+  disableGenerate?: boolean;
+  disableGenerateReason?: string;
 }
 
 export function ScheduleCountStep({
@@ -53,6 +55,8 @@ export function ScheduleCountStep({
   onGenerate,
   generating = false,
   error,
+  disableGenerate = false,
+  disableGenerateReason,
 }: ScheduleCountStepProps) {
   const needMore = selectedCount < coursesThisSemester;
 
@@ -98,12 +102,18 @@ export function ScheduleCountStep({
           courses from your remaining requirements to fill your schedule.
         </Alert>
       )}
+      {disableGenerate && disableGenerateReason && (
+        <Alert color="yellow" variant="light" radius="sm">
+          {disableGenerateReason}
+        </Alert>
+      )}
       <Button
         size="sm"
         color="violet"
         variant="filled"
         onClick={onGenerate}
         loading={generating}
+        disabled={disableGenerate || generating}
         radius={0}
         style={{ border: '2px solid black' }}
       >
