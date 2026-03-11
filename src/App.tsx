@@ -657,7 +657,7 @@ function App() {
         order={1}
         style={{ fontFamily: '"DM Serif Display", serif', color: '#F8F9FA' }}
       >
-        uOttawa Course Selection
+        uoplan.party
       </Title>
 
       <Box
