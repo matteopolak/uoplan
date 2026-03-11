@@ -157,12 +157,14 @@ async function main(): Promise<void> {
   await fs.mkdir(outDir, { recursive: true });
   const outPath = path.join(outDir, 'ratemyprofessors.json');
 
+  allTeachers.sort((a, b) => a.name.localeCompare(b.name));
+
   const output = {
     resultCount: allTeachers.length,
     professors: allTeachers,
   };
 
-  await fs.writeFile(outPath, JSON.stringify(output, null, 2), 'utf-8');
+  await fs.writeFile(outPath, JSON.stringify(output), 'utf-8');
   console.log(`Saved ${allTeachers.length} professors to ${outPath}`);
 }
 

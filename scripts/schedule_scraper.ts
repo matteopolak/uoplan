@@ -616,9 +616,11 @@ async function main(): Promise<void> {
     }
   }
 
+  terms.sort((a, b) => a.termId.localeCompare(b.termId));
+
   await fs.writeFile(
     'public/data/terms.json',
-    JSON.stringify({ terms }, null, 2),
+    JSON.stringify({ terms }),
     'utf-8',
   );
   console.log(`Saved ${terms.length} term(s) to public/data/terms.json`);
@@ -667,7 +669,7 @@ async function main(): Promise<void> {
     };
 
     const outPath = `public/data/schedules.${term.termId}.json`;
-    await fs.writeFile(outPath, JSON.stringify(output, null, 2), 'utf-8');
+    await fs.writeFile(outPath, JSON.stringify(output), 'utf-8');
     console.log(
       `Done. Saved schedules for ${results.length} courses (out of ${courses.length}) to ${path.basename(outPath)}`,
     );
