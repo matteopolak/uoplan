@@ -1431,7 +1431,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       }
 
       const maxAttempts = appendFirstOnly ? 100 : 300;
-      const targetUniqueSchedules = appendFirstOnly ? 1 : 25;
+      const targetUniqueSchedules = appendFirstOnly ? 1 : 5;
       const seenCourseSets = new Set<string>();
       const collectedSchedules: GeneratedSchedule[] = [];
       const collectedPoolMaps: Record<string, string>[] = [];
