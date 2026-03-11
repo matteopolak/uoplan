@@ -30,6 +30,8 @@ const DAY_OFFSETS: Record<string, number> = {
   We: 2,
   Th: 3,
   Fr: 4,
+  Sa: 5,
+  Su: 6,
 };
 
 const COLORS = [
@@ -351,7 +353,7 @@ export function CalendarView({
             initialView="timeGridWeek"
             headerToolbar={false}
             firstDay={1}
-            weekends={false}
+            weekends={true}
             allDaySlot={false}
             slotDuration="01:00:00"
             slotMinTime="08:00:00"

@@ -15,7 +15,9 @@ import {
   getFirstOverlapWith,
   type CourseEnrollment,
   type GeneratedSchedule,
+  type GenerationConstraints,
 } from '../lib/scheduleGenerator';
+import type { DayOfWeek } from '../schemas/schedules';
 import type { DataCache } from '../lib/dataCache';
 import { normalizeCourseCode } from '../lib/dataCache';
 import { buildPrereqContext, canTakeCourse } from '../lib/prerequisites';
@@ -70,6 +72,9 @@ export interface AppState {
   selectedScheduleIndex: number;
   generationError: string | null;
   unassignedCompletedCourses: string[];
+  generationMinStartMinutes: number;
+  generationMaxEndMinutes: number;
+  generationAllowedDays: DayOfWeek[];
 }
 
 interface RecomputedState {
@@ -403,7 +408,10 @@ export interface AppActions {
   setSelectedForRequirement: (requirementId: string, courses: string[]) => void;
   setSelectedOptionForRequirement: (requirementId: string, optionIndex: number) => void;
   setCoursesThisSemester: (n: number) => void;
-  generateSchedules: () => void;
+  setGenerationMinStartMinutes: (minutes: number) => void;
+  setGenerationMaxEndMinutes: (minutes: number) => void;
+  setGenerationAllowedDays: (days: DayOfWeek[]) => void;
+  generateSchedules: (options?: { appendFirstOnly?: boolean }) => void;
   setSelectedScheduleIndex: (idx: number) => void;
   swapCourseInSchedule: (
     scheduleIndex: number,
@@ -455,6 +463,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
   selectedScheduleIndex: 0,
   generationError: null,
   unassignedCompletedCourses: [],
+  generationMinStartMinutes: 8 * 60 + 30, // 8:30
+  generationMaxEndMinutes: 22 * 60, // 22:00
+  generationAllowedDays: ['Mo', 'Tu', 'We', 'Th', 'Fr'],
+
+  setGenerationMinStartMinutes: (minutes) => set({ generationMinStartMinutes: minutes }),
+  setGenerationMaxEndMinutes: (minutes) => set({ generationMaxEndMinutes: minutes }),
+  setGenerationAllowedDays: (days) => set({ generationAllowedDays: days }),
 
   loadEncodedState: (decoded) => {
     const { catalogue, indices, cache } = get();
@@ -805,7 +820,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   setCoursesThisSemester: (n) => set({ coursesThisSemester: n }),
 
-  generateSchedules: () => {
+  generateSchedules: (options) => {
+    const appendFirstOnly = options?.appendFirstOnly ?? false;
     const {
       cache,
       remainingRequirements,
@@ -818,9 +834,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
       levelBuckets,
       languageBuckets,
       electiveLevelBuckets,
+      generationMinStartMinutes,
+      generationMaxEndMinutes,
+      generationAllowedDays,
     } = get();
     if (!cache) return;
     const cacheVal = cache;
+    const constraints: GenerationConstraints = {
+      minStartMinutes: generationMinStartMinutes,
+      maxEndMinutes: generationMaxEndMinutes,
+      allowedDays: generationAllowedDays,
+    };
 
     function isHonoursProject(code: string): boolean {
       const course = cacheVal.getCourse(code);
@@ -1009,7 +1033,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
           // Exclude courses with no valid section combos (e.g. empty times) so they
           // are never picked and never produce a schedule with fewer real courses.
           const sched = cacheVal.getSchedule(code);
-          if (sched && getValidSectionCombos(sched).length === 0) continue;
+          if (sched && getValidSectionCombos(sched, constraints).length === 0) continue;
           candidates.push(code);
         }
         if (candidates.length > 0) {
@@ -1017,8 +1041,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
         }
       }
 
-      const maxAttempts = 300;
-      const targetUniqueSchedules = 25;
+      const maxAttempts = appendFirstOnly ? 100 : 300;
+      const targetUniqueSchedules = appendFirstOnly ? 1 : 25;
       const seenCourseSets = new Set<string>();
       const collectedSchedules: GeneratedSchedule[] = [];
       const collectedPoolMaps: Record<string, string>[] = [];
@@ -1065,8 +1089,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
         const batch =
           pinned.length === 0
-            ? genSchedules(lastFilteredPool, effectiveTarget, cacheVal)
-            : generateSchedulesWithPinned(pinned, lastFilteredPool, effectiveTarget, cacheVal);
+            ? genSchedules(lastFilteredPool, effectiveTarget, cacheVal, constraints)
+            : generateSchedulesWithPinned(
+                pinned,
+                lastFilteredPool,
+                effectiveTarget,
+                cacheVal,
+                constraints
+              );
 
         const fullBatch = batch.filter(
           (s) => s.enrollments.length >= effectiveTarget,
@@ -1094,13 +1124,20 @@ export const useAppStore = create<AppStore>((set, get) => ({
       filteredOptionalPool = [];
       finalSchedules =
         pinned.length === 0
-          ? genSchedules([], effectiveTarget, cacheVal)
-          : generateSchedulesWithPinned(pinned, [], effectiveTarget, cacheVal);
+          ? genSchedules([], effectiveTarget, cacheVal, constraints)
+          : generateSchedulesWithPinned(pinned, [], effectiveTarget, cacheVal, constraints);
       finalPoolMaps = finalSchedules.map(() => ({}));
     }
 
     // If we could not assemble enough eligible courses to hit the target, surface error.
     if (filteredOptionalPool.length + pinned.length < effectiveTarget) {
+      if (appendFirstOnly) {
+        set({
+          generationError:
+            'Not enough eligible courses to generate another schedule. Try relaxing filters or changing selections.',
+        });
+        return;
+      }
       const swapPool = [...new Set([...pinned, ...filteredOptionalPool])];
       set({
         generatedSchedules: [],
@@ -1115,8 +1152,37 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
 
     const swapPool = [...new Set([...pinned, ...filteredOptionalPool])];
-    const limitedSchedules = finalSchedules.slice(0, 25);
-    const limitedPoolMaps = finalPoolMaps.slice(0, 25);
+    const limit = appendFirstOnly ? 1 : 25;
+    const limitedSchedules = finalSchedules.slice(0, limit);
+    const limitedPoolMaps = finalPoolMaps.slice(0, limit);
+
+    if (appendFirstOnly && limitedSchedules.length > 0) {
+      const current = get();
+      const newSchedules = [...current.generatedSchedules, limitedSchedules[0]];
+      const newPoolMaps = [...current.schedulePoolMaps, limitedPoolMaps[0]];
+      const newSwapPool = [
+        ...new Set([
+          ...current.swapPool,
+          ...limitedSchedules[0].enrollments.map((e) => e.courseCode),
+        ]),
+      ];
+      set({
+        generatedSchedules: newSchedules,
+        swapPool: newSwapPool,
+        schedulePoolMaps: newPoolMaps,
+        selectedScheduleIndex: newSchedules.length - 1,
+        generationError: null,
+      });
+      return;
+    }
+
+    if (appendFirstOnly && limitedSchedules.length === 0) {
+      set({
+        generationError:
+          'Could not generate another schedule after 100 attempts. Try different selections or filters.',
+      });
+      return;
+    }
 
     set({
       generatedSchedules: limitedSchedules,
@@ -1134,7 +1200,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setSelectedScheduleIndex: (idx) => set({ selectedScheduleIndex: idx }),
 
   swapCourseInSchedule: (scheduleIndex, enrollmentIndex, newCourseCode) => {
-    const { generatedSchedules, cache, chosenCourseToRequirementId, schedulePoolMaps } = get();
+    const {
+      generatedSchedules,
+      cache,
+      chosenCourseToRequirementId,
+      schedulePoolMaps,
+      generationMinStartMinutes,
+      generationMaxEndMinutes,
+      generationAllowedDays,
+    } = get();
     if (!cache || scheduleIndex >= generatedSchedules.length) return;
 
     const schedule = generatedSchedules[scheduleIndex];
@@ -1144,7 +1218,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const newSchedule = cache.getSchedule(newCourseCode);
     if (!newSchedule) return;
 
-    const combos = getValidSectionCombos(newSchedule);
+    const constraints: GenerationConstraints = {
+      minStartMinutes: generationMinStartMinutes,
+      maxEndMinutes: generationMaxEndMinutes,
+      allowedDays: generationAllowedDays,
+    };
+    const combos = getValidSectionCombos(newSchedule, constraints);
     const others = schedule.enrollments.filter((_, i) => i !== enrollmentIndex);
 
     for (const combo of combos) {
@@ -1187,6 +1266,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
       levelBuckets,
       languageBuckets,
       electiveLevelBuckets,
+      generationMinStartMinutes,
+      generationMaxEndMinutes,
+      generationAllowedDays,
     } = get();
     if (!cache || scheduleIndex >= generatedSchedules.length) {
       return { candidates: [], poolCourses: [], rejectedWithConflict: [] };
@@ -1243,6 +1325,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
 
     const prereqEligibleSet = new Set(prereqEligibleCourses);
+    const swapConstraints: GenerationConstraints = {
+      minStartMinutes: generationMinStartMinutes,
+      maxEndMinutes: generationMaxEndMinutes,
+      allowedDays: generationAllowedDays,
+    };
 
     function getValidEnrollmentsFor(code: string): CourseEnrollment[] {
       const cached = validEnrollmentsByCourseCode.get(code);
@@ -1252,7 +1339,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         validEnrollmentsByCourseCode.set(code, []);
         return [];
       }
-      const combos = getValidSectionCombos(sched);
+      const combos = getValidSectionCombos(sched, swapConstraints);
       const enrollments = combos.map((combo) => getEnrollmentsForCourse(sched, combo));
       validEnrollmentsByCourseCode.set(code, enrollments);
       return enrollments;
