@@ -137,11 +137,10 @@ function runRequirementPass(
 } {
   const result: RemainingRequirement[] = [];
   const tree: RequirementWithStatus[] = [];
-  let idCounter = 0;
   const pool = new Set(completedCourses.map(normalizeCourseCode));
 
-  function nextId(): string {
-    return `req-${idCounter++}`;
+  function reqId(path: string): string {
+    return `req-${path}`;
   }
 
   function takeFromPool(
@@ -186,7 +185,7 @@ function runRequirementPass(
 
   function process(
     req: ProgramRequirement,
-    _path: string,
+    path: string,
     opts: ProcessOptions = {}
   ): { result: ProcessResult; node: RequirementWithStatus } {
     const dryRun = opts.dryRun ?? false;
@@ -227,7 +226,7 @@ function runRequirementPass(
         }
         const course = cache.getCourse(code);
         const displayCode = course?.code ?? code;
-        const requirementId = forceRequirementId || !dryRun ? nextId() : undefined;
+        const requirementId = forceRequirementId || !dryRun ? reqId(path) : undefined;
         if (!dryRun) {
           result.push({
             requirementId: requirementId!,
@@ -263,8 +262,8 @@ function runRequirementPass(
         const allCoursesUsed: string[] = [];
         let allSatisfied = true;
         const childNodes: RequirementWithStatus[] = [];
-        for (const opt of req.options) {
-          const { result: r, node } = process(opt, '', opts);
+        for (let i = 0; i < req.options.length; i++) {
+          const { result: r, node } = process(req.options[i], `${path}-${i}`, opts);
           totalCredits += r.creditsUsed;
           allCoursesUsed.push(...r.coursesUsed);
           if (!r.satisfied) allSatisfied = false;
@@ -297,7 +296,7 @@ function runRequirementPass(
         // Do not consume from pool: always process options in dryRun so user assigns explicitly.
         for (let i = 0; i < req.options.length; i++) {
           const opt = req.options[i];
-          const { node } = process(opt, '', { ...opts, dryRun: true, forceRequirementId: true });
+          const { node } = process(opt, `${path}-${i}`, { ...opts, dryRun: true, forceRequirementId: true });
           orChildNodes.push(node);
           if (opt.type === 'course' && opt.code) {
             allCandidates.push(cache.getCourse(opt.code)?.code ?? opt.code);
@@ -312,16 +311,18 @@ function runRequirementPass(
           }
         }
 
-        if (allCandidates.length > 0 && !dryRun) {
-          const requirementId = nextId();
-          result.push({
-            requirementId,
-            type: 'or_group',
-            title: req.title,
-            candidateCourses: [...new Set(allCandidates)],
-            creditsNeeded: req.credits,
-            satisfiedBy: [],
-          });
+        if (allCandidates.length > 0) {
+          const requirementId = reqId(path);
+          if (!dryRun) {
+            result.push({
+              requirementId,
+              type: 'or_group',
+              title: req.title,
+              candidateCourses: [...new Set(allCandidates)],
+              creditsNeeded: req.credits,
+              satisfiedBy: [],
+            });
+          }
           return {
             result: { satisfied: false, creditsUsed: 0, coursesUsed: [] },
             node: {
@@ -357,7 +358,9 @@ function runRequirementPass(
           (o) =>
             o.type === 'discipline_elective' ||
             o.type === 'elective' ||
-            o.type === 'faculty_elective'
+            o.type === 'faculty_elective' ||
+            o.type === 'free_elective' ||
+            o.type === 'non_discipline_elective'
         );
         const electiveCandidates = electiveOptions.flatMap((o) =>
           resolveElectiveCandidates(cache, o, creditsNeeded)
@@ -368,10 +371,10 @@ function runRequirementPass(
         const coursesUsed: string[] = [];
         const remainingCredits = creditsNeeded;
 
-        const requirementId = forceRequirementId || !dryRun ? nextId() : undefined;
-        if (!dryRun) {
+        const requirementId = forceRequirementId || !dryRun ? reqId(path) : undefined;
+        if (!dryRun && requirementId) {
           result.push({
-            requirementId: requirementId!,
+            requirementId,
             type: 'group',
             title: req.title,
             candidateCourses: allCandidates,
@@ -380,7 +383,7 @@ function runRequirementPass(
             satisfiedBy: coursesUsed,
           });
         }
-        const childNodes = req.options?.map((o) => process(o, '', { dryRun: true }).node) ?? [];
+        const childNodes = req.options?.map((o, i) => process(o, `${path}-${i}`, { dryRun: true }).node) ?? [];
         return {
           result: { satisfied: false, creditsUsed: 0, coursesUsed },
           node: {
@@ -404,10 +407,10 @@ function runRequirementPass(
           };
         }
         // Do not consume from pool: process each option in dryRun so user assigns explicitly.
-        const requirementId = opts.dryRun ? undefined : nextId();
+        const requirementId = opts.dryRun ? undefined : reqId(path);
         const optNodes: RequirementWithStatus[] = [];
         for (let i = 0; i < req.options.length; i++) {
-          const { node } = process(req.options[i], '', { ...opts, dryRun: true });
+          const { node } = process(req.options[i], `${path}-${i}`, { ...opts, dryRun: true });
           optNodes.push(node);
         }
 
@@ -443,10 +446,10 @@ function runRequirementPass(
         const coursesUsed: string[] = [];
         const remaining = creditsNeeded;
 
-        const requirementId = forceRequirementId || !dryRun ? nextId() : undefined;
-        if (!dryRun) {
+        const requirementId = forceRequirementId || !dryRun ? reqId(path) : undefined;
+        if (!dryRun && requirementId) {
           result.push({
-            requirementId: requirementId!,
+            requirementId,
             type: 'pick',
             title: req.title,
             candidateCourses: unique,
@@ -454,7 +457,7 @@ function runRequirementPass(
             satisfiedBy: coursesUsed,
           });
         }
-        const childNodes = options.map((o) => process(o, '', { dryRun: true }).node);
+        const childNodes = options.map((o, i) => process(o, `${path}-${i}`, { dryRun: true }).node);
         return {
           result: { satisfied: false, creditsUsed: 0, coursesUsed },
           node: {
@@ -481,10 +484,10 @@ function runRequirementPass(
         const coursesUsed: string[] = [];
         const remaining = creditsNeeded;
 
-        const requirementId = forceRequirementId || !dryRun ? nextId() : undefined;
-        if (!dryRun) {
+        const requirementId = forceRequirementId || !dryRun ? reqId(path) : undefined;
+        if (!dryRun && requirementId) {
           result.push({
-            requirementId: requirementId!,
+            requirementId,
             type: req.type,
             title: req.title,
             candidateCourses: candidates,
@@ -514,8 +517,8 @@ function runRequirementPass(
     }
   }
 
-  for (const req of program.requirements) {
-    const { node } = process(req, 'root');
+  for (let i = 0; i < program.requirements.length; i++) {
+    const { node } = process(program.requirements[i], String(i));
     tree.push(node);
   }
 

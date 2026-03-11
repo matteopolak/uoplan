@@ -4,6 +4,7 @@ import { IconCheck, IconChevronDown } from '@tabler/icons-react';
 import { createCourseOptions } from './CourseSelect';
 import type { ComboboxItem } from '@mantine/core';
 import type { DataCache } from '../lib/dataCache';
+import { normalizeCourseCode } from '../lib/dataCache';
 import { courseMatchesFilters } from '../lib/courseFilters';
 import type {
   RemainingRequirement,
@@ -124,6 +125,8 @@ interface RequirementNodeProps {
   electiveLevelBuckets: number[];
   /** Course codes that are completed but not yet assigned to any requirement; show first in dropdown with checkmark. */
   unassignedCompletedSet: Set<string>;
+  /** Normalized form of unassigned completed (for dedupe/checkmark when option value is canonical). */
+  unassignedCompletedSetNormalized: Set<string>;
 }
 
 function RequirementNode({
@@ -143,6 +146,7 @@ function RequirementNode({
   languageBuckets,
   electiveLevelBuckets,
   unassignedCompletedSet,
+  unassignedCompletedSetNormalized,
 }: RequirementNodeProps) {
   // If a parent (like an option) is responsible for selection UX, don't remove it,
   // but we still want to reduce *nested* single-child wrappers inside it.
@@ -213,9 +217,12 @@ function RequirementNode({
     ? (selectedPerRequirement[node.requirementId] ?? [])
     : [];
   const selectedCreditsForComplete = getSelectedCredits(cache, selected);
+  const satisfiedBySelection =
+    node.requirementId != null && creditsNeeded > 0 && selectedCreditsForComplete >= creditsNeeded;
+  const allSelectedTaken =
+    selected.length > 0 && selected.every((c) => completedCourses.has(c));
   const showAsComplete =
-    (node.complete && node.satisfiedBy.length > 0) ||
-    (node.requirementId != null && creditsNeeded > 0 && selectedCreditsForComplete >= creditsNeeded);
+    (node.complete && node.satisfiedBy.length > 0) || satisfiedBySelection;
   const hasRequirementId = node.requirementId != null;
   const isElectiveWithExclusions =
     (node.type === 'discipline_elective' ||
@@ -224,15 +231,14 @@ function RequirementNode({
       node.type === 'free_elective' ||
       node.type === 'non_discipline_elective') &&
     (node.excluded_disciplines?.length ?? 0) > 0;
-  const available =
+  const filtered =
     node.candidateCourses
       // Include both completed (for assignment to this requirement) and not-yet-taken (for "want in schedule")
-      // Must be eligible based on prerequisites
       ?.filter((c) => prereqEligible.has(c))
       // Must match current level/language filters
       .filter((c) => courseMatchesFilters(c, { levels: levelBuckets, languageBuckets }))
-      // Only allow courses that have an actual schedule in the current term
-      .filter((c) => !cache || !!cache.getSchedule(c))
+      // Include courses with a schedule (for this term) or unassigned completed (no schedule needed when already taken)
+      .filter((c) => !cache || !!cache.getSchedule(c) || unassignedCompletedSet.has(c))
       // Elective-specific level bucket filtering
       .filter((c) => {
         if (!isElectiveWithExclusions || electiveLevelBuckets.length === 0) return true;
@@ -243,25 +249,54 @@ function RequirementNode({
         const bucket = Math.floor(num / 1000) * 1000;
         return electiveLevelBuckets.includes(bucket);
       }) ?? [];
+  // Canonicalize selected so pills match options (same course can appear with different spacing/casing)
+  const selectedForDisplay = selected.map(
+    (c) => cache?.getCourse(normalizeCourseCode(c))?.code ?? c,
+  );
+  // One entry per course (dedupe by normalized code), use canonical display code so no duplicate rows or glitchy selection
+  const normalizedSeen = new Set<string>();
+  const available: string[] = [];
+  for (const c of selectedForDisplay) {
+    const norm = normalizeCourseCode(c);
+    if (normalizedSeen.has(norm)) continue;
+    normalizedSeen.add(norm);
+    available.push(cache?.getCourse(norm)?.code ?? c);
+  }
+  for (const c of filtered) {
+    const norm = normalizeCourseCode(c);
+    if (normalizedSeen.has(norm)) continue;
+    normalizedSeen.add(norm);
+    available.push(cache?.getCourse(norm)?.code ?? c);
+  }
   const availableSorted = [...available].sort((a, b) => {
-    const aUn = unassignedCompletedSet.has(a);
-    const bUn = unassignedCompletedSet.has(b);
+    const aUn = unassignedCompletedSetNormalized.has(normalizeCourseCode(a));
+    const bUn = unassignedCompletedSetNormalized.has(normalizeCourseCode(b));
     if (aUn && !bUn) return -1;
     if (!aUn && bUn) return 1;
     return 0;
   });
   const options = createCourseOptions(availableSorted, cache);
-  const selectedCredits = getSelectedCredits(cache, selected);
+  if (typeof window !== 'undefined' && (window as unknown as { __REQ_DEBUG?: boolean }).__REQ_DEBUG && hasRequirementId) {
+    const inOptions = selectedForDisplay.every((c) => availableSorted.includes(c));
+    console.log('[req] dropdown', {
+      requirementId: node.requirementId,
+      selected: selected.length ? selected : undefined,
+      selectedForDisplay: selectedForDisplay.length ? selectedForDisplay : undefined,
+      availableCount: available.length,
+      selectedInAvailable: inOptions,
+    });
+  }
+  const selectedCredits = getSelectedCredits(cache, selectedForDisplay);
   const satisfiedByDisplay = [
     ...(node.satisfiedBy ?? []),
-    ...selected,
+    ...selectedForDisplay,
   ].filter(Boolean);
   const satisfiedByDisplayUnique = [...new Set(satisfiedByDisplay)];
   const creditsRemaining = Math.max(0, creditsNeeded - selectedCredits);
   const isOverSelected = creditsNeeded > 0 && selectedCredits > creditsNeeded;
 
   const multiSelectBlock =
-    hasRequirementId && !showAsComplete ? (
+    hasRequirementId ? (
       <Stack gap="xs" mt="xs">
         {satisfiedByDisplayUnique.length > 0 && (
           <Text size="xs" c="dimmed">
@@ -272,16 +307,16 @@ function RequirementNode({
           <Text size="xs" c={isOverSelected ? 'yellow' : 'dimmed'}>
             {isOverSelected
               ? `You have selected ${selectedCredits} credits, which is more than the ${creditsNeeded} credit${creditsNeeded !== 1 ? 's' : ''} required. Extra courses may not count toward this requirement.`
-              : selectedCredits > 0
-                ? `${selectedCredits} of ${creditsNeeded} credits selected — pick ${Math.ceil(creditsRemaining / 3)} more course${Math.ceil(creditsRemaining / 3) !== 1 ? 's' : ''}`
-                : `Select course(s) to fulfill this requirement (${creditsNeeded} credit${creditsNeeded !== 1 ? 's' : ''} total).`}
+                : selectedCredits > 0
+                ? `${selectedCredits} of ${creditsNeeded} credits selected — ${creditsRemaining > 0 ? `pick ${Math.ceil(creditsRemaining / 3)} more course${Math.ceil(creditsRemaining / 3) !== 1 ? 's' : ''}` : 'requirement satisfied'}`
+                : `Select course(s) to fulfill this requirement (${creditsRemaining} credit${creditsRemaining !== 1 ? 's' : ''} needed).`}
           </Text>
         )}
         <MultiSelect
           label="Courses for this requirement"
           placeholder="Search by course code or title..."
           data={options}
-          value={selected}
+          value={selectedForDisplay}
           onChange={(courses) => onSelect(node.requirementId!, courses)}
           onClick={(e) => e.stopPropagation()}
           searchable
@@ -291,7 +326,7 @@ function RequirementNode({
               cache?.getCourse(option.value)?.title
                 ? `${option.value} – ${cache.getCourse(option.value)?.title}`
                 : option.value;
-            if (unassignedCompletedSet.has(option.value)) {
+            if (unassignedCompletedSetNormalized.has(normalizeCourseCode(option.value))) {
               return (
                 <Group gap="xs" wrap="nowrap">
                   <IconCheck size={14} color="var(--mantine-color-green-6)" />
@@ -317,7 +352,8 @@ function RequirementNode({
       </Stack>
     ) : null;
 
-  if (showAsComplete && !hasOptions) {
+  // Only show compact read-only "Complete" card for tree-matched leaves (no requirementId, no dropdown).
+  if (node.complete && node.satisfiedBy.length > 0 && !hasOptions) {
     return (
       <Paper
         key={title}
@@ -447,7 +483,8 @@ function RequirementNode({
                     levelBuckets={levelBuckets}
                     languageBuckets={languageBuckets}
                     electiveLevelBuckets={electiveLevelBuckets}
-                    unassignedCompletedSet={unassignedCompletedSet}
+                  unassignedCompletedSet={unassignedCompletedSet}
+                  unassignedCompletedSetNormalized={unassignedCompletedSetNormalized}
                     radio={
                       node.requirementId != null && !node.complete
                         ? {
@@ -577,7 +614,8 @@ function RequirementNode({
                     levelBuckets={levelBuckets}
                     languageBuckets={languageBuckets}
                     electiveLevelBuckets={electiveLevelBuckets}
-                    unassignedCompletedSet={unassignedCompletedSet}
+                  unassignedCompletedSet={unassignedCompletedSet}
+                  unassignedCompletedSetNormalized={unassignedCompletedSetNormalized}
                     radio={
                       node.requirementId != null && !node.complete
                         ? {
@@ -672,7 +710,8 @@ function RequirementNode({
                 levelBuckets={levelBuckets}
                 languageBuckets={languageBuckets}
                 electiveLevelBuckets={electiveLevelBuckets}
-                unassignedCompletedSet={unassignedCompletedSet}
+                  unassignedCompletedSet={unassignedCompletedSet}
+                  unassignedCompletedSetNormalized={unassignedCompletedSetNormalized}
               />
             ))}
           </Stack>
@@ -683,7 +722,7 @@ function RequirementNode({
 
   const label =
     creditsNeeded > 0 && !showAsComplete
-      ? `${title} (${creditsNeeded} credit${creditsNeeded !== 1 ? 's' : ''})`
+      ? `${title} (${creditsRemaining} credit${creditsRemaining !== 1 ? 's' : ''} needed)`
       : title;
 
   return (
@@ -735,11 +774,15 @@ function RequirementNode({
               {label}
             </Text>
           </Group>
-          {showAsComplete ? (
+          {satisfiedBySelection && allSelectedTaken ? (
             <Badge color="green" variant="light" size="sm">
               Complete
             </Badge>
-          ) : hasRequirementId && creditsNeeded > 0 ? (
+          ) : satisfiedBySelection ? (
+            <Badge color="teal" variant="light" size="sm">
+              Satisfied
+            </Badge>
+          ) : hasRequirementId && creditsRemaining > 0 ? (
             <Badge color="blue" variant="light" size="sm">
               {creditsRemaining} credit{creditsRemaining !== 1 ? 's' : ''} needed
             </Badge>
@@ -767,6 +810,7 @@ function RequirementNode({
                   languageBuckets={languageBuckets}
                   electiveLevelBuckets={electiveLevelBuckets}
                   unassignedCompletedSet={unassignedCompletedSet}
+                  unassignedCompletedSetNormalized={unassignedCompletedSetNormalized}
                 />
               ))}
             </Stack>
@@ -800,6 +844,9 @@ export function RequirementsStep({
   const completedSet = new Set(completedCourses);
   const prereqEligible = new Set(prereqEligibleCourses);
   const unassignedCompletedSet = new Set(unassignedCompletedCourses);
+  const unassignedCompletedSetNormalized = new Set(
+    unassignedCompletedCourses.map((c) => normalizeCourseCode(c)),
+  );
   const hasTree = requirementTreeWithStatus.length > 0;
   const incompleteNodes = requirementTreeWithStatus.filter((node) => !node.complete);
   const hasRemaining = incompleteNodes.length > 0;
@@ -900,7 +947,8 @@ export function RequirementsStep({
               levelBuckets={levelBuckets}
               languageBuckets={languageBuckets}
               electiveLevelBuckets={electiveLevelBuckets}
-              unassignedCompletedSet={unassignedCompletedSet}
+                  unassignedCompletedSet={unassignedCompletedSet}
+                  unassignedCompletedSetNormalized={unassignedCompletedSetNormalized}
             />
           ))
         ) : (

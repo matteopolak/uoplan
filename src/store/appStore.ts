@@ -148,62 +148,80 @@ function buildRequirementPools(remaining: RemainingRequirement[]): RequirementPo
   return pools;
 }
 
-function averageCreditsForCodes(codes: string[], cache: DataCache): number {
-  if (codes.length === 0) return 3;
-  let total = 0;
-  let count = 0;
-  for (const code of codes) {
-    const course = cache.getCourse(code);
-    total += course?.credits ?? 3;
-    count += 1;
-  }
-  return count === 0 ? 3 : total / count;
-}
+/** Default credits per course when converting creditsNeeded to number of courses. */
+const DEFAULT_CREDITS_PER_COURSE = 3;
 
+/**
+ * Allocates remainingCourseSlots across pools so that each pool gets courses
+ * proportional to creditsNeeded (ceil(creditsNeeded / 3)), and the total
+ * equals remainingCourseSlots. Ensures we pick exactly that many courses total.
+ */
 function computeCoursesPerPool(
   pools: RequirementPool[],
   remainingCourseSlots: number,
-  cache: DataCache,
+  _cache: DataCache,
 ): Map<string, number> {
   const result = new Map<string, number>();
   if (remainingCourseSlots <= 0 || pools.length === 0) {
     return result;
   }
 
-  let totalPlanned = 0;
+  // Ideal courses per pool from creditsNeeded only (no redundant min/cap).
+  const ideal = new Map<string, number>();
+  let totalIdeal = 0;
   for (const pool of pools) {
-    const avgCredits = averageCreditsForCodes(pool.candidateCourses, cache) || 3;
-    const ideal = Math.ceil(pool.creditsNeeded / avgCredits);
-    const withMin = Math.max(pool.minCourses, ideal);
-    const clamped = Math.max(0, Math.min(withMin, remainingCourseSlots));
-    if (clamped > 0) {
-      result.set(pool.requirementId, clamped);
-      totalPlanned += clamped;
+    const need = Math.max(
+      pool.minCourses,
+      Math.ceil(pool.creditsNeeded / DEFAULT_CREDITS_PER_COURSE),
+    );
+    ideal.set(pool.requirementId, need);
+    totalIdeal += need;
+  }
+
+  if (totalIdeal === 0) return result;
+
+  if (totalIdeal <= remainingCourseSlots) {
+    // Give each pool its ideal; distribute the rest by most creditsNeeded first.
+    for (const pool of pools) {
+      result.set(pool.requirementId, ideal.get(pool.requirementId) ?? 0);
     }
-  }
-
-  if (totalPlanned === 0) {
-    return result;
-  }
-
-  while (totalPlanned > remainingCourseSlots) {
-    let maxKey: string | null = null;
-    let maxVal = 0;
-    for (const [reqId, count] of result.entries()) {
-      if (count > maxVal) {
-        maxVal = count;
-        maxKey = reqId;
+    let extra = remainingCourseSlots - totalIdeal;
+    const byCreditsDesc = [...pools].sort((a, b) => b.creditsNeeded - a.creditsNeeded);
+    for (const pool of byCreditsDesc) {
+      if (extra <= 0) break;
+      const cur = result.get(pool.requirementId) ?? 0;
+      result.set(pool.requirementId, cur + 1);
+      extra -= 1;
+    }
+  } else {
+    // Need to allocate exactly remainingCourseSlots; distribute by creditsNeeded proportion.
+    const totalCredits = pools.reduce((s, p) => s + p.creditsNeeded, 0);
+    if (totalCredits <= 0) return result;
+    const remainder: { reqId: string; frac: number }[] = [];
+    let allocated = 0;
+    for (const pool of pools) {
+      const frac = pool.creditsNeeded / totalCredits;
+      const n = Math.max(0, Math.floor(remainingCourseSlots * frac));
+      const cap = Math.min(n, ideal.get(pool.requirementId) ?? n);
+      result.set(pool.requirementId, cap);
+      allocated += cap;
+      remainder.push({
+        reqId: pool.requirementId,
+        frac: remainingCourseSlots * frac - Math.floor(remainingCourseSlots * frac),
+      });
+    }
+    // Assign remaining slots to pools with largest fractional remainder.
+    remainder.sort((a, b) => b.frac - a.frac);
+    let left = remainingCourseSlots - allocated;
+    for (const { reqId } of remainder) {
+      if (left <= 0) break;
+      const cur = result.get(reqId) ?? 0;
+      const cap = ideal.get(reqId) ?? cur + 1;
+      if (cur < cap) {
+        result.set(reqId, cur + 1);
+        left -= 1;
       }
     }
-    if (maxKey == null) break;
-    const current = result.get(maxKey) ?? 0;
-    const pool = pools.find((p) => p.requirementId === maxKey);
-    const minCourses = pool?.minCourses ?? 0;
-    if (current <= minCourses || current <= 0) {
-      break;
-    }
-    result.set(maxKey, current - 1);
-    totalPlanned -= 1;
   }
 
   return result;
@@ -228,23 +246,27 @@ function getAutoSelectedForRequirements(
   }
 
   const hasSchedule = (code: string) => !!cache.getSchedule(code);
-  const candidateSetByReq = new Map<string, Set<string>>();
+  const scheduledOnlyByReq = new Map<string, Set<string>>();
+  const allCandidatesByReq = new Map<string, Set<string>>();
 
   for (const req of remaining) {
-    const scheduledCandidates = req.candidateCourses.filter(hasSchedule);
-    candidateSetByReq.set(req.requirementId, new Set(scheduledCandidates));
+    const scheduled = req.candidateCourses.filter(hasSchedule);
+    scheduledOnlyByReq.set(req.requirementId, new Set(scheduled));
+    allCandidatesByReq.set(req.requirementId, new Set(req.candidateCourses));
   }
 
   const out: Record<string, string[]> = {};
   for (const req of remaining) {
-    const candidateSet = candidateSetByReq.get(req.requirementId)!;
-    const scheduledCandidates = Array.from(candidateSet);
+    const scheduledSet = scheduledOnlyByReq.get(req.requirementId)!;
+    const scheduledCandidates = Array.from(scheduledSet);
+    const allCandidatesSet = allCandidatesByReq.get(req.requirementId)!;
 
     if (scheduledCandidates.length === 1) {
       out[req.requirementId] = [scheduledCandidates[0]];
     } else {
       const prev = existing[req.requirementId] ?? [];
-      const valid = prev.filter((c) => candidateSet.has(c));
+      // Keep existing selection if each course is in the requirement's candidate list (including courses without schedule, e.g. completed)
+      const valid = prev.filter((c) => allCandidatesSet.has(c));
       if (valid.length) out[req.requirementId] = valid;
     }
   }
@@ -346,11 +368,17 @@ function recomputeStateForProgram(
     (norm) => cache.getCourse(norm)?.code ?? norm,
   );
 
+  // Preserve nested selections (e.g. or_group option req-2-0) that are not in remaining; merge with autoSelected
+  const selectedPerRequirement = {
+    ...existingSelectedPerRequirement,
+    ...autoSelected,
+  };
+
   return {
     remainingRequirements: augmentedRemaining,
     requirementTreeWithStatus: tree,
     completedRequirementsList: completedList,
-    selectedPerRequirement: autoSelected,
+    selectedPerRequirement,
     selectedOptionsPerRequirement: existingSelectedOptionsPerRequirement,
     prereqEligibleCourses,
     filteredPrereqEligibleCourses,
@@ -646,14 +674,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   setSelectedForRequirement: (requirementId, courses) => {
-    set((s) => ({
-      selectedPerRequirement: { ...s.selectedPerRequirement, [requirementId]: courses },
-    }));
+    const prev = get().selectedPerRequirement;
+    const selectedPerRequirementNext = { ...prev, [requirementId]: courses };
+    if (typeof window !== 'undefined' && (window as unknown as { __REQ_DEBUG?: boolean }).__REQ_DEBUG) {
+      console.log('[req] setSelectedForRequirement', { requirementId, courses, prevAtReq: prev[requirementId], nextAtReq: selectedPerRequirementNext[requirementId] });
+    }
     const {
       program,
       cache,
       completedCourses,
-      selectedPerRequirement,
       selectedOptionsPerRequirement,
       levelBuckets,
       languageBuckets,
@@ -662,11 +691,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
       program,
       completedCourses,
       cache,
-      selectedPerRequirement,
+      selectedPerRequirementNext,
       selectedOptionsPerRequirement,
       levelBuckets,
       languageBuckets,
     );
+    if (typeof window !== 'undefined' && (window as unknown as { __REQ_DEBUG?: boolean }).__REQ_DEBUG) {
+      console.log('[req] after recompute', { requirementId, stateAtReq: state.selectedPerRequirement[requirementId] });
+    }
     set(state);
   },
 
@@ -789,13 +821,19 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     const allSelected = Object.values(selectedPerRequirement).flat();
     const unique = [...new Set(allSelected)];
+    const completedSet = new Set(completedCourses.map(normalizeCourseCode));
 
     // Separate out honours project selections: they **do** satisfy requirements but are not
     // scheduled like regular courses. We treat them as occupying a slot in the user's
     // requested course load, but we do not attempt to place them into time-based schedules.
     const honoursSelected = unique.filter((code) => isHonoursProject(code));
+    // Pinned = selected courses that must appear in generated schedules. Exclude completed
+    // (already taken) so they don't count toward the semester target.
     const pinned = unique.filter(
-      (code) => !isHonoursProject(code) && !!cacheVal.getSchedule(code),
+      (code) =>
+        !isHonoursProject(code) &&
+        !!cacheVal.getSchedule(code) &&
+        !completedSet.has(normalizeCourseCode(code)),
     );
 
     const honoursCount = honoursSelected.length;
@@ -880,7 +918,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (remainingNeeded > 0) {
       const allPools = buildRequirementPools(remainingRequirements);
 
-      // Adjust pool credits to account for pinned courses that already satisfy them.
+      // Adjust pool credits: subtract pinned (selected, not yet taken) and selected completed.
       let pools: RequirementPool[] = allPools
         .map((pool) => {
           let pinnedCredits = 0;
@@ -889,7 +927,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
             const course = cacheVal.getCourse(code);
             pinnedCredits += course?.credits ?? 3;
           }
-          const remainingCredits = Math.max(0, pool.creditsNeeded - pinnedCredits);
+          const selectedForPool = selectedPerRequirement[pool.requirementId] ?? [];
+          let completedSelectedCredits = 0;
+          for (const code of selectedForPool) {
+            if (!completedSet.has(normalizeCourseCode(code))) continue;
+            const course = cacheVal.getCourse(code);
+            completedSelectedCredits += course?.credits ?? 3;
+          }
+          const remainingCredits = Math.max(
+            0,
+            pool.creditsNeeded - pinnedCredits - completedSelectedCredits,
+          );
           return { ...pool, creditsNeeded: remainingCredits };
         })
         .filter((pool) => pool.creditsNeeded > 0);
@@ -1003,7 +1051,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
         if (schedules.length > 0) break;
       }
 
-      finalSchedules = schedules;
+      // Only use schedules that have the full number of courses (sum of planned per pool).
+      finalSchedules = schedules.filter(
+        (s) => s.enrollments.length >= effectiveTarget,
+      );
 
       // Debug logging (first attempt's chosen set or last if all failed).
       // eslint-disable-next-line no-console
