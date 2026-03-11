@@ -109,7 +109,11 @@ function simplifySingleChildChain(node: RequirementWithStatus): {
   return { node: current, autoExpanded: changed };
 }
 
-const ForceExpandContext = createContext<number>(0);
+interface ExpandRegistry {
+  register(key: string, open: () => void): void;
+  unregister(key: string): void;
+}
+const ExpandRegistryContext = createContext<ExpandRegistry | null>(null);
 
 function findMissingSelections(
   nodes: RequirementWithStatus[],
@@ -138,10 +142,54 @@ function findMissingSelections(
   return result;
 }
 
+function findFirstMissingPath(
+  nodes: RequirementWithStatus[],
+  selectedOptionsPerRequirement: Record<string, number>,
+  makeNodeKey: (node: RequirementWithStatus, idx: number) => string,
+  ancestorKeys: string[] = []
+): string[] | null {
+  for (let idx = 0; idx < nodes.length; idx++) {
+    const node = nodes[idx];
+    if (node.complete || !node.options?.length) continue;
+    const nodeKey = makeNodeKey(node, idx);
+    const pathSoFar = [...ancestorKeys, nodeKey];
+    const isOrGroup = node.type === 'or_group';
+    const isOptionsGroup = node.type === 'options_group';
+    if ((isOrGroup || isOptionsGroup) && node.requirementId != null) {
+      const selectedIdx = selectedOptionsPerRequirement[node.requirementId];
+      if (selectedIdx == null) return pathSoFar;
+      const selectedChild = node.options[selectedIdx];
+      if (selectedChild) {
+        const parentKey = getStableNodeKey(node, 'parent');
+        const childKey = getStableNodeKey(selectedChild, `${parentKey}:opt:${selectedIdx}`);
+        const result = findFirstMissingPath(
+          [selectedChild],
+          selectedOptionsPerRequirement,
+          (_c, _i) => childKey,
+          pathSoFar
+        );
+        if (result) return result;
+      }
+    } else {
+      // 'and', 'pick', 'group', or other container — recurse into all children
+      const parentKey = getStableNodeKey(node, 'parent');
+      const result = findFirstMissingPath(
+        node.options,
+        selectedOptionsPerRequirement,
+        (child, i) => getStableNodeKey(child, `${parentKey}:child:${i}`),
+        pathSoFar
+      );
+      if (result) return result;
+    }
+  }
+  return null;
+}
+
 /** Path of (requirementId, optionIndex) from root to this node so selecting a nested option can auto-select parents. */
 type AncestorSelection = { requirementId: string; optionIndex: number };
 
 interface RequirementNodeProps {
+  nodeKey: string;
   node: RequirementWithStatus;
   cache: DataCache | null;
   completedCourses: Set<string>;
@@ -172,6 +220,7 @@ interface RequirementNodeProps {
 }
 
 function RequirementNode({
+  nodeKey,
   node: rawNode,
   cache,
   completedCourses,
@@ -248,14 +297,14 @@ function RequirementNode({
     setOpened((o) => !o);
   };
 
-  const expandTrigger = useContext(ForceExpandContext);
-  const lastExpandTrigger = useRef(0);
+  const registry = useContext(ExpandRegistryContext);
   useEffect(() => {
-    if (expandTrigger > lastExpandTrigger.current && hasOptions) {
-      lastExpandTrigger.current = expandTrigger;
-      setOpened(true);
-    }
-  }, [expandTrigger, hasOptions]);
+    if (!hasOptions || !registry) return;
+    registry.register(nodeKey, () => setOpened(true));
+    return () => registry.unregister(nodeKey);
+  // nodeKey and registry are stable for the lifetime of the component
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (isSection) {
     return (
@@ -529,6 +578,7 @@ function RequirementNode({
               return (
                 <Box key={childKey}>
                   <RequirementNode
+                    nodeKey={childKey}
                     node={opt}
                     cache={cache}
                     completedCourses={completedCourses}
@@ -662,6 +712,7 @@ function RequirementNode({
               return (
                 <Box key={childKey}>
                   <RequirementNode
+                    nodeKey={childKey}
                     node={opt}
                     cache={cache}
                     completedCourses={completedCourses}
@@ -755,28 +806,32 @@ function RequirementNode({
         )}
         <Collapse in={opened}>
           <Stack gap="xs">
-            {node.options!.map((child, idx) => (
-              <RequirementNode
-                key={getStableNodeKey(child, `${getStableNodeKey(node, 'parent')}:child:${idx}`)}
-                node={child}
-                cache={cache}
-                completedCourses={completedCourses}
-                selectedPerRequirement={selectedPerRequirement}
-                onSelect={onSelect}
-                selectedOptionsPerRequirement={selectedOptionsPerRequirement}
-                onSelectOption={onSelectOption}
-                ancestorSelections={ancestorSelections}
-                activeBranch={activeBranch}
-                depth={depth + 1}
-                prereqEligible={prereqEligible}
-                levelBuckets={levelBuckets}
-                languageBuckets={languageBuckets}
-                electiveLevelBuckets={electiveLevelBuckets}
-                unassignedCompletedSet={unassignedCompletedSet}
-                unassignedCompletedSetNormalized={unassignedCompletedSetNormalized}
-                includeClosedComponents={includeClosedComponents}
-              />
-            ))}
+            {node.options!.map((child, idx) => {
+              const childKey = getStableNodeKey(child, `${getStableNodeKey(node, 'parent')}:child:${idx}`);
+              return (
+                <RequirementNode
+                  key={childKey}
+                  nodeKey={childKey}
+                  node={child}
+                  cache={cache}
+                  completedCourses={completedCourses}
+                  selectedPerRequirement={selectedPerRequirement}
+                  onSelect={onSelect}
+                  selectedOptionsPerRequirement={selectedOptionsPerRequirement}
+                  onSelectOption={onSelectOption}
+                  ancestorSelections={ancestorSelections}
+                  activeBranch={activeBranch}
+                  depth={depth + 1}
+                  prereqEligible={prereqEligible}
+                  levelBuckets={levelBuckets}
+                  languageBuckets={languageBuckets}
+                  electiveLevelBuckets={electiveLevelBuckets}
+                  unassignedCompletedSet={unassignedCompletedSet}
+                  unassignedCompletedSetNormalized={unassignedCompletedSetNormalized}
+                  includeClosedComponents={includeClosedComponents}
+                />
+              );
+            })}
           </Stack>
         </Collapse>
       </Paper>
@@ -854,28 +909,32 @@ function RequirementNode({
         {hasOptions && (node.type === 'pick' || node.type === 'group') && (
           <Collapse in={opened}>
             <Stack gap="xs" pl="xs">
-              {node.options!.map((child, idx) => (
-                <RequirementNode
-                  key={getStableNodeKey(child, `${getStableNodeKey(node, 'parent')}:child:${idx}`)}
-                  node={child}
-                  cache={cache}
-                  completedCourses={completedCourses}
-                  selectedPerRequirement={selectedPerRequirement}
-                  onSelect={onSelect}
-                  selectedOptionsPerRequirement={selectedOptionsPerRequirement}
-                  onSelectOption={onSelectOption}
-                  ancestorSelections={ancestorSelections}
-                  activeBranch={activeBranch}
-                  depth={depth + 1}
-                  prereqEligible={prereqEligible}
-                  levelBuckets={levelBuckets}
-                  languageBuckets={languageBuckets}
-                  electiveLevelBuckets={electiveLevelBuckets}
-                  unassignedCompletedSet={unassignedCompletedSet}
-                  unassignedCompletedSetNormalized={unassignedCompletedSetNormalized}
-                  includeClosedComponents={includeClosedComponents}
-                />
-              ))}
+              {node.options!.map((child, idx) => {
+                const childKey = getStableNodeKey(child, `${getStableNodeKey(node, 'parent')}:child:${idx}`);
+                return (
+                  <RequirementNode
+                    key={childKey}
+                    nodeKey={childKey}
+                    node={child}
+                    cache={cache}
+                    completedCourses={completedCourses}
+                    selectedPerRequirement={selectedPerRequirement}
+                    onSelect={onSelect}
+                    selectedOptionsPerRequirement={selectedOptionsPerRequirement}
+                    onSelectOption={onSelectOption}
+                    ancestorSelections={ancestorSelections}
+                    activeBranch={activeBranch}
+                    depth={depth + 1}
+                    prereqEligible={prereqEligible}
+                    levelBuckets={levelBuckets}
+                    languageBuckets={languageBuckets}
+                    electiveLevelBuckets={electiveLevelBuckets}
+                    unassignedCompletedSet={unassignedCompletedSet}
+                    unassignedCompletedSetNormalized={unassignedCompletedSetNormalized}
+                    includeClosedComponents={includeClosedComponents}
+                  />
+                );
+              })}
             </Stack>
           </Collapse>
         )}
@@ -906,7 +965,14 @@ export function RequirementsStep({
   onIncludeClosedComponentsChange,
 }: RequirementsStepProps) {
   const [completedOpen, setCompletedOpen] = useState(false);
-  const [expandTrigger, setExpandTrigger] = useState(0);
+  const openFnsRef = useRef(new Map<string, () => void>());
+  const registryRef = useRef<ExpandRegistry>({
+    register(key, open) { openFnsRef.current.set(key, open); },
+    unregister(key) { openFnsRef.current.delete(key); },
+  });
+  const openByKeys = (keys: string[]) => {
+    for (const key of keys) openFnsRef.current.get(key)?.();
+  };
   const completedSet = new Set(completedCourses);
   const prereqEligible = new Set(prereqEligibleCourses);
   const unassignedCompletedSet = new Set(unassignedCompletedCourses);
@@ -1028,12 +1094,19 @@ export function RequirementsStep({
               variant="light"
               color="yellow"
               onClick={() => {
-                setExpandTrigger((n) => n + 1);
-                setTimeout(() => {
-                  document
-                    .querySelector('[data-missing-selection="true"]')
-                    ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 250);
+                const path = findFirstMissingPath(
+                  incompleteNodes,
+                  selectedOptionsPerRequirement,
+                  (node, idx) => getStableNodeKey(node, `root:${idx}`)
+                );
+                if (path) {
+                  openByKeys(path);
+                  setTimeout(() => {
+                    document
+                      .querySelector('[data-missing-selection="true"]')
+                      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }, 250);
+                }
               }}
             >
               Jump to first problem
@@ -1042,36 +1115,40 @@ export function RequirementsStep({
         </Alert>
       )}
 
-      <ForceExpandContext.Provider value={expandTrigger}>
+      <ExpandRegistryContext.Provider value={registryRef.current}>
         <Stack gap="md">
           {hasRemaining ? (
-            incompleteNodes.map((node, idx) => (
-              <RequirementNode
-                key={getStableNodeKey(node, `root:${idx}`)}
-                node={node}
-                cache={cache}
-                completedCourses={completedSet}
-                selectedPerRequirement={selectedPerRequirement}
-                onSelect={onSelect}
-                selectedOptionsPerRequirement={selectedOptionsPerRequirement}
-                onSelectOption={onSelectOption}
-                activeBranch
-                prereqEligible={prereqEligible}
-                levelBuckets={levelBuckets}
-                languageBuckets={languageBuckets}
-                electiveLevelBuckets={electiveLevelBuckets}
-                unassignedCompletedSet={unassignedCompletedSet}
-                unassignedCompletedSetNormalized={unassignedCompletedSetNormalized}
-                includeClosedComponents={includeClosedComponents}
-              />
-            ))
+            incompleteNodes.map((node, idx) => {
+              const nodeKey = getStableNodeKey(node, `root:${idx}`);
+              return (
+                <RequirementNode
+                  key={nodeKey}
+                  nodeKey={nodeKey}
+                  node={node}
+                  cache={cache}
+                  completedCourses={completedSet}
+                  selectedPerRequirement={selectedPerRequirement}
+                  onSelect={onSelect}
+                  selectedOptionsPerRequirement={selectedOptionsPerRequirement}
+                  onSelectOption={onSelectOption}
+                  activeBranch
+                  prereqEligible={prereqEligible}
+                  levelBuckets={levelBuckets}
+                  languageBuckets={languageBuckets}
+                  electiveLevelBuckets={electiveLevelBuckets}
+                  unassignedCompletedSet={unassignedCompletedSet}
+                  unassignedCompletedSetNormalized={unassignedCompletedSetNormalized}
+                  includeClosedComponents={includeClosedComponents}
+                />
+              );
+            })
           ) : (
             <Text size="sm" c="dimmed">
               All requirements are currently satisfied by your completed courses.
             </Text>
           )}
         </Stack>
-      </ForceExpandContext.Provider>
+      </ExpandRegistryContext.Provider>
 
       {hasCompleted && (
         <Paper
