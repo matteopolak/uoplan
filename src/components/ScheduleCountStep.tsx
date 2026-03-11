@@ -1,4 +1,4 @@
-import { Stack, NumberInput, Button, Alert, Group, MultiSelect, TextInput } from '@mantine/core';
+import { Stack, NumberInput, Button, Alert, Group, MultiSelect, TextInput, Select } from '@mantine/core';
 import type { DayOfWeek } from '../schemas/schedules';
 
 const DAY_OPTIONS: { value: DayOfWeek; label: string }[] = [
@@ -35,6 +35,8 @@ interface ScheduleCountStepProps {
   onMaxEndMinutesChange: (minutes: number) => void;
   allowedDays: DayOfWeek[];
   onAllowedDaysChange: (days: DayOfWeek[]) => void;
+  minProfessorRating: number | null;
+  onMinProfessorRatingChange: (rating: number | null) => void;
   onGenerate: () => void;
   generating?: boolean;
   error?: string | null;
@@ -52,6 +54,8 @@ export function ScheduleCountStep({
   onMaxEndMinutesChange,
   allowedDays,
   onAllowedDaysChange,
+  minProfessorRating,
+  onMinProfessorRatingChange,
   onGenerate,
   generating = false,
   error,
@@ -59,6 +63,14 @@ export function ScheduleCountStep({
   disableGenerateReason,
 }: ScheduleCountStepProps) {
   const needMore = selectedCount < coursesThisSemester;
+  const ratingOptions = [
+    { value: '2', label: '2.0+' },
+    { value: '2.5', label: '2.5+' },
+    { value: '3', label: '3.0+' },
+    { value: '3.5', label: '3.5+' },
+    { value: '4', label: '4.0+' },
+    { value: '4.5', label: '4.5+' },
+  ];
 
   return (
     <Stack gap="md">
@@ -89,6 +101,15 @@ export function ScheduleCountStep({
         data={DAY_OPTIONS}
         value={allowedDays}
         onChange={(values) => onAllowedDaysChange(values as DayOfWeek[])}
+        clearable
+      />
+      <Select
+        label="Minimum RateMyProfessors rating"
+        description="Professors without a rating are always allowed."
+        placeholder="No minimum"
+        data={ratingOptions}
+        value={minProfessorRating == null ? null : String(minProfessorRating)}
+        onChange={(v) => onMinProfessorRatingChange(v == null ? null : Number(v))}
         clearable
       />
       {error && (

@@ -913,7 +913,7 @@ export function RequirementsStep({
               Filters apply to suggested and searchable courses for this step.
             </Text>
           </Group>
-          <Group gap="md" align="flex-start">
+          <Group gap="md" align="flex-start" style={{ alignItems: 'center' }}>
             <MultiSelect
               label="Levels"
               data={[
@@ -963,7 +963,6 @@ export function RequirementsStep({
             />
             <Switch
               label="Include closed sections"
-              description="When off, courses with only closed sections are hidden and excluded from generation and swap."
               checked={includeClosedComponents}
               onChange={(e) => onIncludeClosedComponentsChange(e.currentTarget.checked)}
             />

@@ -7,12 +7,18 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { startOfWeek } from 'date-fns';
 import type { DataCache } from '../lib/dataCache';
 import type { CourseEnrollment, GeneratedSchedule } from '../lib/scheduleGenerator';
+import {
+  formatRatingsDisplay,
+  getRatingsForInstructors,
+  type ProfessorRatingsMap,
+} from '../lib/professorRatings';
 
 interface CalendarViewProps {
   schedules: GeneratedSchedule[];
   selectedIndex: number;
   onSelectIndex: (idx: number) => void;
   cache: DataCache | null;
+  professorRatings: ProfessorRatingsMap | null;
   getSwapCandidates: (
     scheduleIndex: number,
     enrollmentIndex: number
@@ -68,6 +74,28 @@ interface CalendarEvent {
   endMinutes: number;
   componentSection: string;
   professor: string;
+  professorRatingDisplay?: string | null;
+  professorRatingValue?: number | null;
+}
+
+function ratingToColor(rating: number): 'red' | 'orange' | 'yellow' | 'green' {
+  if (rating < 2.5) return 'red';
+  if (rating < 3.3) return 'orange';
+  if (rating < 4.0) return 'yellow';
+  return 'green';
+}
+
+function ratingColorToCssVar(color: 'red' | 'orange' | 'yellow' | 'green'): string {
+  switch (color) {
+    case 'red':
+      return 'var(--mantine-color-red-6)';
+    case 'orange':
+      return 'var(--mantine-color-orange-6)';
+    case 'yellow':
+      return 'var(--mantine-color-yellow-6)';
+    case 'green':
+      return 'var(--mantine-color-green-6)';
+  }
 }
 
 function addDays(date: Date, amount: number): Date {
@@ -89,10 +117,12 @@ function EventStyleCard({
   enrollment,
   enrollmentIndex,
   cache,
+  professorRatings,
 }: {
   enrollment: CourseEnrollment;
   enrollmentIndex: number;
   cache: DataCache | null;
+  professorRatings: ProfessorRatingsMap | null;
 }) {
   const courseTitle = cache?.getCourse(enrollment.courseCode)?.title ?? '';
   const heading = courseTitle
@@ -105,6 +135,14 @@ function EventStyleCard({
   const professor = firstEntry
     ? [...new Set(firstEntry[1].section.instructors ?? [])].filter(Boolean).join(', ') || '—'
     : '—';
+  const ratings = firstEntry
+    ? getRatingsForInstructors(firstEntry[1].section.instructors ?? [], professorRatings)
+    : [];
+  const ratingDisplay = formatRatingsDisplay(ratings);
+  const ratingValue =
+    ratings.length > 0
+      ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10
+      : null;
   const colorName = COLORS[enrollmentIndex % COLORS.length];
   const hex = COLOR_HEX[colorName];
   const [r, g, b] = hex.replace('#', '').match(/.{2}/g)!.map((x) => parseInt(x, 16));
@@ -124,8 +162,44 @@ function EventStyleCard({
         <span className="fc-uoplan-event-type" style={{ fontSize: '0.85em', opacity: 0.9 }}>
           {componentSection}
         </span>
-        <span className="fc-uoplan-event-professor" style={{ fontSize: '0.8em', opacity: 0.8 }}>
-          {professor}
+        <span
+          className="fc-uoplan-event-professor"
+          style={{
+            fontSize: '0.8em',
+            opacity: 0.85,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            flexWrap: 'nowrap',
+            minWidth: 0,
+            maxWidth: '100%',
+          }}
+        >
+          <span
+            style={{
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+            title={professor}
+          >
+            {professor}
+          </span>
+          {ratingDisplay && ratingValue != null && (
+            <Box
+              title={`RateMyProfessors: ${ratingDisplay}`}
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: 2,
+                backgroundColor: ratingColorToCssVar(ratingToColor(ratingValue)),
+                border: '1px solid rgba(0,0,0,0.45)',
+                boxShadow: '0 0 0 1px rgba(255,255,255,0.08) inset',
+                flexShrink: 0,
+              }}
+            />
+          )}
         </span>
       </div>
     </div>
@@ -137,6 +211,7 @@ export function CalendarView({
   selectedIndex,
   onSelectIndex: _onSelectIndex,
   cache,
+  professorRatings,
   getSwapCandidates,
   onSwap,
 }: CalendarViewProps) {
@@ -296,6 +371,12 @@ export function CalendarView({
       const sectionCode = section.sectionCode ?? section.section ?? '';
       const componentSection = `${comp} - ${sectionCode}`;
       const professor = [...new Set(section.instructors ?? [])].filter(Boolean).join(', ') || '—';
+      const ratings = getRatingsForInstructors(section.instructors ?? [], professorRatings);
+      const professorRatingDisplay = formatRatingsDisplay(ratings);
+      const professorRatingValue =
+        ratings.length > 0
+          ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10
+          : null;
       for (const t of section.times) {
         if (t.startMinutes >= t.endMinutes) continue;
         const offset = DAY_OFFSETS[t.day] ?? null;
@@ -314,6 +395,8 @@ export function CalendarView({
           endMinutes: t.endMinutes,
           componentSection,
           professor,
+          professorRatingDisplay,
+          professorRatingValue,
         } satisfies CalendarEvent);
         timeIdx += 1;
       }
@@ -406,7 +489,45 @@ export function CalendarView({
                       {heading}
                     </span>
                     <span className="fc-uoplan-event-type">{ext.componentSection}</span>
-                    <span className="fc-uoplan-event-professor">{ext.professor}</span>
+                    <span
+                      className="fc-uoplan-event-professor"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        flexWrap: 'nowrap',
+                        minWidth: 0,
+                        maxWidth: '100%',
+                      }}
+                    >
+                      <span
+                        style={{
+                          minWidth: 0,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                        title={ext.professor}
+                      >
+                        {ext.professor}
+                      </span>
+                      {ext.professorRatingDisplay && ext.professorRatingValue != null && (
+                        <Box
+                          title={`RateMyProfessors: ${ext.professorRatingDisplay}`}
+                          style={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: 2,
+                            backgroundColor: ratingColorToCssVar(
+                              ratingToColor(ext.professorRatingValue),
+                            ),
+                            border: '1px solid rgba(0,0,0,0.45)',
+                            boxShadow: '0 0 0 1px rgba(255,255,255,0.08) inset',
+                            flexShrink: 0,
+                          }}
+                        />
+                      )}
+                    </span>
                   </div>
                 </div>
               );
@@ -458,6 +579,7 @@ export function CalendarView({
                     enrollment={enrollment}
                     enrollmentIndex={swapModal.enrollmentIndex}
                     cache={cache}
+                    professorRatings={professorRatings}
                   />
                 ) : (
                   <Text size="sm" c="dimmed">
