@@ -162,13 +162,6 @@ export function CalendarView({
     setSwapQuery('');
     // Defer so modal can paint before doing heavier work.
     const t = window.setTimeout(() => {
-      if (typeof window !== 'undefined') {
-        // eslint-disable-next-line no-console
-        console.log('[swap] CalendarView: calling getSwapCandidates', {
-          selectedIndex,
-          enrollmentIndex: swapModal.enrollmentIndex,
-        });
-      }
       const next = getSwapCandidates(selectedIndex, swapModal.enrollmentIndex);
       setSwapResult(next);
       setLoadingSwapCandidates(false);
@@ -412,13 +405,6 @@ export function CalendarView({
             }}
             eventClick={(info) => {
               const ext = info.event.extendedProps as CalendarEvent;
-              if (typeof window !== 'undefined') {
-                // eslint-disable-next-line no-console
-                console.log('[swap] CalendarView: event clicked', {
-                  courseCode: ext.courseCode,
-                  enrollmentIndex: ext.enrollmentIndex,
-                });
-              }
               setSwapModal({
                 enrollmentIndex: ext.enrollmentIndex,
                 courseCode: ext.courseCode,

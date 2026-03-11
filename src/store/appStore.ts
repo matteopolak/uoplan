@@ -691,9 +691,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setSelectedForRequirement: (requirementId, courses) => {
     const prev = get().selectedPerRequirement;
     const selectedPerRequirementNext = { ...prev, [requirementId]: courses };
-    if (typeof window !== 'undefined' && (window as unknown as { __REQ_DEBUG?: boolean }).__REQ_DEBUG) {
-      console.log('[req] setSelectedForRequirement', { requirementId, courses, prevAtReq: prev[requirementId], nextAtReq: selectedPerRequirementNext[requirementId] });
-    }
     const {
       program,
       cache,
@@ -711,9 +708,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
       levelBuckets,
       languageBuckets,
     );
-    if (typeof window !== 'undefined' && (window as unknown as { __REQ_DEBUG?: boolean }).__REQ_DEBUG) {
-      console.log('[req] after recompute', { requirementId, stateAtReq: state.selectedPerRequirement[requirementId] });
-    }
     set(state);
   },
 
@@ -833,8 +827,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
       const component = course?.component?.trim().toLowerCase() ?? '';
       return component.startsWith('recherche / research');
     }
-
-    console.log({selectedPerRequirement});
 
     const allSelected = Object.values(selectedPerRequirement).flat();
     const unique = [...new Set(allSelected)];
@@ -1030,7 +1022,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
       const seenCourseSets = new Set<string>();
       const collectedSchedules: GeneratedSchedule[] = [];
       const collectedPoolMaps: Record<string, string>[] = [];
-      let lastChosenCodes: string[] = [];
       let lastFilteredPool: string[] = [];
 
       for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
@@ -1069,7 +1060,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
           break;
         }
 
-        lastChosenCodes = Array.from(chosenCodes);
         lastFilteredPool = optionalPool;
         shuffleInPlace(lastFilteredPool);
 
@@ -1096,33 +1086,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
       finalSchedules = collectedSchedules;
       finalPoolMaps = collectedPoolMaps;
       lastChosenFromPool = collectedPoolMaps[0] ?? {};
-
-      // Debug logging (first attempt's chosen set or last if all failed).
-      // eslint-disable-next-line no-console
-      console.log('generateSchedules pools snapshot', {
-        remainingNeeded,
-        pools: pools.map((p) => {
-          const meta = remainingRequirements.find((r) => r.requirementId === p.requirementId);
-          const poolCandidates = candidatesByRequirement.get(p.requirementId) ?? [];
-          return {
-            requirementId: p.requirementId,
-            type: p.type,
-            label: p.label,
-            title: meta?.title,
-            creditsNeeded: p.creditsNeeded,
-            minCourses: p.minCourses,
-            originalCreditsNeeded: meta?.creditsNeeded,
-            plannedCoursesThisTerm: coursesPerPool.get(p.requirementId) ?? 0,
-            candidateCount: poolCandidates.length,
-            sampleCandidates: poolCandidates.slice(0, 15),
-          };
-        }),
-        chosenCodes: lastChosenCodes,
-        pinned,
-        levelBuckets,
-        languageBuckets,
-        electiveLevelBuckets,
-      });
 
       filteredOptionalPool = lastFilteredPool;
     }
@@ -1213,11 +1176,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   getSwapCandidates: (scheduleIndex, enrollmentIndex) => {
-    const debug = typeof window !== 'undefined';
-    if (debug) {
-      // eslint-disable-next-line no-console
-      console.log('[swap] getSwapCandidates called', { scheduleIndex, enrollmentIndex });
-    }
     const {
       cache,
       generatedSchedules,
@@ -1231,7 +1189,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
       electiveLevelBuckets,
     } = get();
     if (!cache || scheduleIndex >= generatedSchedules.length) {
-      if (debug) console.log('[swap] Early return: no cache or bad index');
       return { candidates: [], poolCourses: [], rejectedWithConflict: [] };
     }
 
@@ -1239,15 +1196,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const schedule = generatedSchedules[scheduleIndex];
     const enrollment = schedule.enrollments[enrollmentIndex];
     if (!enrollment) {
-      if (debug) console.log('[swap] Early return: no enrollment at index');
       return { candidates: [], poolCourses: [], rejectedWithConflict: [] };
     }
 
     const oldCode = enrollment.courseCode;
-    if (debug) {
-      // eslint-disable-next-line no-console
-      console.log('[swap] Resolving pool for', oldCode);
-    }
     // Use the pool this course was actually picked from (per-schedule when we have multiple).
     const poolMap = schedulePoolMaps[scheduleIndex] ?? chosenCourseToRequirementId;
     const requirementId = poolMap[oldCode];
@@ -1312,24 +1264,19 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const rejectedWithConflict: Array<{ code: string; conflictsWith: string }> = [];
     for (const code of candidateSet) {
       if (!prereqEligibleSet.has(code)) {
-        if (debug) console.log('[swap] Skip', code, '— not prereq eligible');
         continue;
       }
       if (code === oldCode) continue;
       if (completedCourses.includes(code)) {
-        if (debug) console.log('[swap] Skip', code, '— already completed');
         continue;
       }
       if (alreadyInSchedule.has(code)) {
-        if (debug) console.log('[swap] Skip', code, '— already in schedule');
         continue;
       }
       if (isHonoursProject(code)) {
-        if (debug) console.log('[swap] Skip', code, '— honours project');
         continue;
       }
       if (!courseMatchesFilters(code, filters)) {
-        if (debug) console.log('[swap] Skip', code, '— level/language filter');
         continue;
       }
       // Only apply elective level bucket filter to generic electives (free, non-discipline, etc.).
@@ -1346,7 +1293,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
           if (!Number.isNaN(num)) {
             const bucket = Math.floor(num / 1000) * 1000;
             if (!electiveLevelBuckets.includes(bucket)) {
-              if (debug) console.log('[swap] Skip', code, '— elective level bucket', bucket, 'not in', electiveLevelBuckets);
               continue;
             }
           }
@@ -1354,7 +1300,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
       }
       const possibleEnrollments = getValidEnrollmentsFor(code);
       if (possibleEnrollments.length === 0) {
-        if (debug) console.log('[swap] Skip', code, '— no valid section combos');
         continue;
       }
       let added = false;
@@ -1370,25 +1315,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
         const conflict = getFirstOverlapWith(possibleEnrollments[0], others);
         if (conflict) {
           rejectedWithConflict.push({ code, conflictsWith: conflict.courseCode });
-          if (debug) {
-            // eslint-disable-next-line no-console
-            console.log(
-              '[swap] Rejected',
-              code,
-              '— conflicts with',
-              conflict.courseCode,
-              'at',
-              conflict.timeStr,
-            );
-          }
         }
       }
     }
     const poolCourses = [...candidateSet];
-    if (typeof window !== 'undefined' && poolCourses.length > 0) {
-      // eslint-disable-next-line no-console
-      console.log('[swap] Pool for', oldCode, '(', requirementId ?? 'unknown', '):', poolCourses.length, 'courses', poolCourses.slice(0, 50).join(', '), poolCourses.length > 50 ? '…' : '');
-    }
     return { candidates, poolCourses, requirementTitle, rejectedWithConflict };
   },
 }));

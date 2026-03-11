@@ -276,16 +276,6 @@ function RequirementNode({
     return 0;
   });
   const options = createCourseOptions(availableSorted, cache);
-  if (typeof window !== 'undefined' && (window as unknown as { __REQ_DEBUG?: boolean }).__REQ_DEBUG && hasRequirementId) {
-    const inOptions = selectedForDisplay.every((c) => availableSorted.includes(c));
-    console.log('[req] dropdown', {
-      requirementId: node.requirementId,
-      selected: selected.length ? selected : undefined,
-      selectedForDisplay: selectedForDisplay.length ? selectedForDisplay : undefined,
-      availableCount: available.length,
-      selectedInAvailable: inOptions,
-    });
-  }
   const selectedCredits = getSelectedCredits(cache, selectedForDisplay);
   const satisfiedByDisplay = [
     ...(node.satisfiedBy ?? []),
