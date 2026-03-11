@@ -910,11 +910,11 @@ async function main() {
   const mergedProgramUrls = [...existingProgramUrls, ...newProgramUrls];
 
   const indices = { courses: mergedCourseCodes, programs: mergedProgramUrls };
-  await fs.writeFile(indicesPath, JSON.stringify(indices, null, 2), 'utf-8');
+  await fs.writeFile(indicesPath, JSON.stringify(indices), 'utf-8');
 
   await fs.writeFile(
     path.join(dataDir, 'catalogue.json'),
-    JSON.stringify(catalogue, null, 2),
+    JSON.stringify(catalogue),
     'utf-8'
   );
   console.log(
