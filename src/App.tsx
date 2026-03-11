@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Box, Stack, Title, Alert, Loader, Text, Paper, Group, Button, Select, TextInput, Modal, Textarea } from '@mantine/core';
+import { Box, Stack, Title, Alert, Loader, Text, Paper, Group, Button, Select, TextInput, Modal, Textarea, Badge } from '@mantine/core';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMediaQuery } from '@mantine/hooks';
 import { IconArrowBackUp, IconArrowLeft, IconCheck, IconHelp, IconMenu2, IconRefresh, IconShare, IconX } from '@tabler/icons-react';
@@ -713,9 +713,12 @@ function App() {
       {resetConfirmModal}
       <Title
         order={1}
-        style={{ fontFamily: '"DM Serif Display", serif', color: '#F8F9FA' }}
+        style={{ fontFamily: '"DM Serif Display", serif', color: '#F8F9FA', display: 'flex', alignItems: 'baseline', gap: 4 }}
       >
         uoplan.party
+        <Badge color="blue" variant="light" size="sm">
+          Beta
+        </Badge>
       </Title>
 
       <Box
