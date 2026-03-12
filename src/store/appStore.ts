@@ -95,8 +95,14 @@ export interface AppState {
   generationSeed: number;
   /** When false, exclude component sections with status "Closed" from dropdowns, generation, and swap. */
   includeClosedComponents: boolean;
+  /** If true, enforce the 48-credit cap on 1000-level courses in generated schedules. */
+  generationLimitFirstYearCredits: boolean;
+  /** If true, generated schedules must have at most one gap per day, ≤ 90 minutes. */
+  generationCompressedSchedule: boolean;
 
   setGenerationMinProfessorRating: (rating: number | null) => void;
+  setGenerationLimitFirstYearCredits: (v: boolean) => void;
+  setGenerationCompressedSchedule: (v: boolean) => void;
 }
 
 interface RecomputedState {
@@ -542,6 +548,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   includeClosedComponents: false,
   generationMinProfessorRating: null,
   professorRatings: null,
+  generationLimitFirstYearCredits: false,
+  generationCompressedSchedule: false,
 
   setIncludeClosedComponents: (value) => {
     validEnrollmentsByCourseCode.clear();
@@ -553,6 +561,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setGenerationAllowedDays: (days) => set({ generationAllowedDays: days }),
   setGenerationMinProfessorRating: (rating) =>
     set({ generationMinProfessorRating: rating == null ? null : Number(rating) }),
+  setGenerationLimitFirstYearCredits: (v) => set({ generationLimitFirstYearCredits: v }),
+  setGenerationCompressedSchedule: (v) => set({ generationCompressedSchedule: v }),
 
   setSelectedTermId: async (termId: string) => {
     set({ loading: true, error: null });
@@ -1091,6 +1101,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       professorRatings,
       generationSeed,
       includeClosedComponents,
+      generationLimitFirstYearCredits,
+      generationCompressedSchedule,
     } = get();
     if (!cache) return;
     const cacheVal = cache;
@@ -1117,12 +1129,24 @@ export const useAppStore = create<AppStore>((set, get) => ({
     //   while the whole sequence remains reproducible from the same starting state.
     const existingScheduleCount = appendFirstOnly ? get().generatedSchedules.length : 0;
     const rng = createSeededRng(((generationSeed >>> 0) + existingScheduleCount) >>> 0);
+
+    const completedFirstYearCredits = completedCourses.reduce((sum, code) => {
+      const m = code.match(/\d{4}/);
+      if (!m || Number(m[0]) >= 2000) return sum;
+      const course = cacheVal.getCourse(code);
+      return sum + (course?.credits ?? 3);
+    }, 0);
+
     const constraints: GenerationConstraints = {
       minStartMinutes: generationMinStartMinutes,
       maxEndMinutes: generationMaxEndMinutes,
       allowedDays: generationAllowedDays,
       minProfessorRating: generationMinProfessorRating ?? undefined,
       professorRatings: professorRatings ?? undefined,
+      maxFirstYearCredits: generationLimitFirstYearCredits
+        ? Math.max(0, 48 - completedFirstYearCredits)
+        : undefined,
+      compressedSchedule: generationCompressedSchedule || undefined,
     };
 
     function isHonoursProject(code: string): boolean {

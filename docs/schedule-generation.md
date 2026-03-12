@@ -132,6 +132,38 @@ Together with the updated `helpsRequirements`, this ensures that:
 
 ---
 
+### Generation constraints
+
+The `GenerationConstraints` interface in `src/lib/scheduleGenerator.ts` collects all filters applied when building schedules. Currently supported:
+
+| Field | Type | Effect |
+|---|---|---|
+| `minStartMinutes` | `number` | Earliest allowed class start time (minutes since midnight) |
+| `maxEndMinutes` | `number` | Latest allowed class end time |
+| `allowedDays` | `DayOfWeek[]` | Only these days may have classes |
+| `minProfessorRating` | `number?` | Sections whose instructor's RMP rating is below this are excluded |
+| `maxFirstYearCredits` | `number?` | Max total credits from 1000-level courses in the schedule |
+| `compressedSchedule` | `boolean?` | Each day may have at most one gap; that gap must be ≤ 90 minutes |
+
+#### 1000-level credit cap (`maxFirstYearCredits`)
+
+UOttawa limits 1000-level courses to **48 credits** globally for all undergrad programs.
+
+- The Generate step computes `completedFirstYearCredits` (sum of credits of already-completed 1000-level courses) and `selectedFirstYearCredits` (1000-level credits from courses selected in RequirementsStep that haven't been completed yet).
+- If `completedFirstYearCredits + selectedFirstYearCredits > 48`, a yellow warning is shown.
+- A checkbox — **"Limit 1000-level courses to 48 credits"** — is always shown when the student has any 1000-level credits. When enabled, `maxFirstYearCredits = 48 - completedFirstYearCredits` is passed as a constraint.
+- The constraint is enforced in `generateSchedules` and `generateSchedulesWithPinned`: any candidate course combination whose 1000-level credits exceed the budget is skipped.
+
+#### Compressed schedule (`compressedSchedule`)
+
+When enabled, generated schedules must have **at most one gap per day**, and that gap must be **≤ 90 minutes**.
+
+- Enforced via `satisfiesCompressedConstraint()` in `scheduleGenerator.ts`.
+- Applied to the complete set of enrollments just before they would be added to the output, in both `generateSchedules` and `generateSchedulesWithPinned`.
+- Checkbox label in the UI: **"Compressed schedule"**; description: "At most one break per day, up to 90 minutes."
+
+---
+
 ### UI guidance for over-selection
 
 - **Location**: `RequirementsStep` in `src/components/RequirementsStep.tsx`.

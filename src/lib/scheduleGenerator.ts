@@ -31,6 +31,10 @@ export interface GenerationConstraints {
   allowedDays: DayOfWeek[];
   minProfessorRating?: number;
   professorRatings?: ProfessorRatingsMap;
+  /** Max credits from 1000-level courses allowed in the schedule (48 - already completed). */
+  maxFirstYearCredits?: number;
+  /** If true, each day may have at most one gap between classes, and that gap must be ≤ 90 minutes. */
+  compressedSchedule?: boolean;
 }
 
 /** Time bounds are inclusive: a class starting at minStartMinutes or ending at maxEndMinutes is allowed. */
@@ -191,6 +195,33 @@ export function getEnrollmentsForCourse(
   };
 }
 
+/** True if the schedule has at most one gap per day, and that gap is ≤ 90 minutes.
+ * Transitions of ≤ 10 minutes (e.g. 9:50→10:00) are treated as back-to-back and do not count as a gap. */
+function satisfiesCompressedConstraint(enrollments: CourseEnrollment[]): boolean {
+  const MAX_GAP = 90;
+  const TRANSITION_THRESHOLD = 10;
+  const slotsByDay = new Map<DayOfWeek, { start: number; end: number }[]>();
+  for (const e of enrollments) {
+    for (const t of e.times) {
+      if (!slotsByDay.has(t.day)) slotsByDay.set(t.day, []);
+      slotsByDay.get(t.day)!.push({ start: t.startMinutes, end: t.endMinutes });
+    }
+  }
+  for (const slots of slotsByDay.values()) {
+    if (slots.length < 2) continue;
+    slots.sort((a, b) => a.start - b.start);
+    let gaps = 0;
+    for (let i = 1; i < slots.length; i++) {
+      const gap = slots[i].start - slots[i - 1].end;
+      if (gap > TRANSITION_THRESHOLD) {
+        gaps++;
+        if (gaps > 1 || gap > MAX_GAP) return false;
+      }
+    }
+  }
+  return true;
+}
+
 const MAX_SCHEDULES = 150;
 
 function* combinations<T>(arr: T[], k: number): Generator<T[]> {
@@ -237,6 +268,9 @@ export function generateSchedules(
         const s = cache.getSchedule(code);
         return getEnrollmentsForCourse(s!, combo);
       });
+      if (constraints?.compressedSchedule && !satisfiesCompressedConstraint(enrollments)) {
+        return false;
+      }
       schedules.push({ enrollments });
       return schedules.length >= MAX_SCHEDULES;
     }
@@ -260,6 +294,14 @@ export function generateSchedules(
   }
 
   for (const combo of combinations(coursesWithCombos, targetCount)) {
+    if (constraints?.maxFirstYearCredits != null) {
+      const fyCredits = combo.reduce((sum, item) => {
+        const m = item.code.match(/\d{4}/);
+        if (!m || Number(m[0]) >= 2000) return sum;
+        return sum + (cache.getCourse(item.code)?.credits ?? 3);
+      }, 0);
+      if (fyCredits > constraints.maxFirstYearCredits) continue;
+    }
     if (findNonOverlappingCombos(combo, [], 0)) break;
   }
 
@@ -310,6 +352,9 @@ export function generateSchedulesWithPinned(
         const s = cache.getSchedule(code)!;
         return getEnrollmentsForCourse(s, combo);
       });
+      if (constraints?.compressedSchedule && !satisfiesCompressedConstraint(enrollments)) {
+        return;
+      }
       schedules.push({ enrollments });
       return;
     }
@@ -322,10 +367,21 @@ export function generateSchedulesWithPinned(
       // Only accept full schedules: we need exactly remainingSlots optional courses.
       if (selected.length === remainingSlots) {
         const all = [...chosenPinned, ...selected];
+        if (constraints?.maxFirstYearCredits != null) {
+          const fyCredits = all.reduce((sum, item) => {
+            const m = item.code.match(/\d{4}/);
+            if (!m || Number(m[0]) >= 2000) return sum;
+            return sum + (cache.getCourse(item.code)?.credits ?? 3);
+          }, 0);
+          if (fyCredits > constraints.maxFirstYearCredits) return false;
+        }
         const enrollments: CourseEnrollment[] = all.map(({ code, combo }) => {
           const s = cache.getSchedule(code)!;
           return getEnrollmentsForCourse(s, combo);
         });
+        if (constraints?.compressedSchedule && !satisfiesCompressedConstraint(enrollments)) {
+          return false;
+        }
         schedules.push({ enrollments });
         return schedules.length >= MAX_SCHEDULES;
       }
