@@ -114,11 +114,8 @@ jobs:
             if echo "$LAST_MSG" | grep -qF "$BOT_COAUTHOR"; then
               git commit --amend --no-edit
             else
-              git commit --amend -m "$LAST_MSG
-
-$BOT_COAUTHOR"
+              git commit --amend -m "${LAST_MSG}"$'\n\n'"${BOT_COAUTHOR}"
             fi
           fi
 
           git push --force-with-lease origin HEAD:main
-
