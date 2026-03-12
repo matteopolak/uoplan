@@ -99,6 +99,26 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add public/data/catalogue.json public/data/terms.json public/data/ratemyprofessors.json public/data/schedules.*.json
-          git commit -m "chore: update catalogue and schedules (daily scrape)"
-          git push origin HEAD:main
+
+          BOT_EMAIL="github-actions[bot]@users.noreply.github.com"
+          LAST_AUTHOR_EMAIL=$(git log -1 --format='%ae')
+
+          if [ "$LAST_AUTHOR_EMAIL" = "$BOT_EMAIL" ]; then
+            # Previous commit was from the bot — amend it in place
+            git commit --amend --no-edit
+          else
+            # Previous commit was from a human — amend but keep their authorship
+            # and credit the bot as a co-author
+            BOT_COAUTHOR="Co-Authored-By: github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+            LAST_MSG=$(git log -1 --format='%B')
+            if echo "$LAST_MSG" | grep -qF "$BOT_COAUTHOR"; then
+              git commit --amend --no-edit
+            else
+              git commit --amend -m "$LAST_MSG
+
+$BOT_COAUTHOR"
+            fi
+          fi
+
+          git push --force-with-lease origin HEAD:main
 
