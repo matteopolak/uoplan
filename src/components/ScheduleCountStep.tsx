@@ -1,4 +1,4 @@
-import { Stack, NumberInput, Button, Alert, Group, MultiSelect, TextInput, Select } from '@mantine/core';
+import { Stack, NumberInput, Button, Alert, Group, MultiSelect, TextInput, Select, Checkbox } from '@mantine/core';
 import type { DayOfWeek } from '../schemas/schedules';
 
 const DAY_OPTIONS: { value: DayOfWeek; label: string }[] = [
@@ -37,6 +37,14 @@ interface ScheduleCountStepProps {
   onAllowedDaysChange: (days: DayOfWeek[]) => void;
   minProfessorRating: number | null;
   onMinProfessorRatingChange: (rating: number | null) => void;
+  /** Total 1000-level credits (completed + selected this semester). */
+  totalFirstYearCredits: number;
+  /** True if totalFirstYearCredits > 48. */
+  warnFirstYearLimit: boolean;
+  limitFirstYearCredits: boolean;
+  onLimitFirstYearCreditsChange: (v: boolean) => void;
+  compressedSchedule: boolean;
+  onCompressedScheduleChange: (v: boolean) => void;
   onGenerate: () => void;
   generating?: boolean;
   error?: string | null;
@@ -56,6 +64,12 @@ export function ScheduleCountStep({
   onAllowedDaysChange,
   minProfessorRating,
   onMinProfessorRatingChange,
+  totalFirstYearCredits,
+  warnFirstYearLimit,
+  limitFirstYearCredits,
+  onLimitFirstYearCreditsChange,
+  compressedSchedule,
+  onCompressedScheduleChange,
   onGenerate,
   generating = false,
   error,
@@ -111,6 +125,26 @@ export function ScheduleCountStep({
         value={minProfessorRating == null ? null : String(minProfessorRating)}
         onChange={(v) => onMinProfessorRatingChange(v == null ? null : Number(v))}
         clearable
+      />
+      {warnFirstYearLimit && (
+        <Alert color="yellow" variant="light" radius="sm">
+          Your selected courses may push your total 1000-level credits to {totalFirstYearCredits}/48,
+          exceeding the undergraduate limit. Enable the option below to cap them at 48.
+        </Alert>
+      )}
+      {totalFirstYearCredits > 0 && (
+        <Checkbox
+          label="Limit 1000-level courses to 48 credits"
+          description={`You currently have ${totalFirstYearCredits} credit${totalFirstYearCredits === 1 ? '' : 's'} of 1000-level courses (completed + selected). The undergraduate limit is 48.`}
+          checked={limitFirstYearCredits}
+          onChange={(e) => onLimitFirstYearCreditsChange(e.currentTarget.checked)}
+        />
+      )}
+      <Checkbox
+        label="Compressed schedule"
+        description="At most one break per day, up to 90 minutes."
+        checked={compressedSchedule}
+        onChange={(e) => onCompressedScheduleChange(e.currentTarget.checked)}
       />
       {error && (
         <Alert color="red" variant="light" radius="sm">

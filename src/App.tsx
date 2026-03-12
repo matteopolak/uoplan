@@ -76,6 +76,10 @@ function App() {
     setElectiveLevelBuckets,
     includeClosedComponents,
     setIncludeClosedComponents,
+    generationLimitFirstYearCredits,
+    setGenerationLimitFirstYearCredits,
+    generationCompressedSchedule,
+    setGenerationCompressedSchedule,
     resetToDefault,
   } = useAppStore();
 
@@ -137,6 +141,23 @@ function App() {
   };
 
   const uniqueSelected = new Set(Object.values(selectedPerRequirement).flat()).size;
+
+  const completedFirstYearCredits = completedCourses.reduce((sum, code) => {
+    const m = code.match(/\d{4}/);
+    if (!m || Number(m[0]) >= 2000) return sum;
+    const course = cache?.getCourse(code);
+    return sum + (course?.credits ?? 3);
+  }, 0);
+  const selectedFirstYearCredits = [...new Set(Object.values(selectedPerRequirement).flat())]
+    .filter((code) => !completedCourses.includes(code))
+    .reduce((sum, code) => {
+      const m = code.match(/\d{4}/);
+      if (!m || Number(m[0]) >= 2000) return sum;
+      const course = cache?.getCourse(code);
+      return sum + (course?.credits ?? 3);
+    }, 0);
+  const totalFirstYearCredits = completedFirstYearCredits + selectedFirstYearCredits;
+  const warnFirstYearLimit = totalFirstYearCredits > 48;
 
   useEffect(() => {
     if (!showCalendar || generatedSchedules.length === 0) return;
@@ -875,6 +896,12 @@ function App() {
                       onAllowedDaysChange={setGenerationAllowedDays}
                       minProfessorRating={generationMinProfessorRating}
                       onMinProfessorRatingChange={setGenerationMinProfessorRating}
+                      totalFirstYearCredits={totalFirstYearCredits}
+                      warnFirstYearLimit={warnFirstYearLimit}
+                      limitFirstYearCredits={generationLimitFirstYearCredits}
+                      onLimitFirstYearCreditsChange={setGenerationLimitFirstYearCredits}
+                      compressedSchedule={generationCompressedSchedule}
+                      onCompressedScheduleChange={setGenerationCompressedSchedule}
                       onGenerate={handleGenerate}
                       generating={generating}
                       error={generationError}
