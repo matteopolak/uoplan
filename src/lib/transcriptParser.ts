@@ -1,4 +1,4 @@
-import { normalizeCourseCode } from './dataCache';
+import { normalizeCourseCode } from "./dataCache";
 
 /** Course code pattern: 3–4 letters + 4–5 digits, optional letter suffix (e.g. ADM 1100, ESL 2121) */
 const COURSE_CODE_REGEX = /([A-Z]{3,4})\s*(\d{4,5}[A-Z]?)/gi;
@@ -11,8 +11,8 @@ let workerInitialized = false;
 async function ensureWorker(): Promise<void> {
   if (workerInitialized) return;
   const [pdfjsLib, workerUrl] = await Promise.all([
-    import('pdfjs-dist'),
-    import('pdfjs-dist/build/pdf.worker.mjs?url').then((m) => m.default),
+    import("pdfjs-dist"),
+    import("pdfjs-dist/build/pdf.worker.mjs?url").then((m) => m.default),
   ]);
   if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
     pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
@@ -52,8 +52,8 @@ function extractCodesFromPositions(items: TextItemWithPosition[]): string[] {
 
   for (const row of byRow.values()) {
     row.sort((a, b) => a.x - b.x);
-    const category = row[0]?.str?.trim() ?? '';
-    const number = row[1]?.str?.trim() ?? '';
+    const category = row[0]?.str?.trim() ?? "";
+    const number = row[1]?.str?.trim() ?? "";
     const combined = `${category} ${number}`.trim();
     if (!combined) continue;
     const normalized = normalizeCourseCode(combined);
@@ -88,9 +88,11 @@ export interface TranscriptParseResult {
  * Uses first-two-columns table extraction when positions are available,
  * otherwise falls back to regex on full text.
  */
-export async function parseTranscriptPdf(arrayBuffer: ArrayBuffer): Promise<TranscriptParseResult> {
+export async function parseTranscriptPdf(
+  arrayBuffer: ArrayBuffer,
+): Promise<TranscriptParseResult> {
   await ensureWorker();
-  const pdfjsLib = await import('pdfjs-dist');
+  const pdfjsLib = await import("pdfjs-dist");
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   const numPages = pdf.numPages;
   const allCodes = new Set<string>();
@@ -103,8 +105,11 @@ export async function parseTranscriptPdf(arrayBuffer: ArrayBuffer): Promise<Tran
     const itemsWithPosition: TextItemWithPosition[] = [];
     let hasPosition = false;
 
-    for (const item of textContent.items as Array<{ str: string; transform?: number[] }>) {
-      const str = item.str ?? '';
+    for (const item of textContent.items as Array<{
+      str: string;
+      transform?: number[];
+    }>) {
+      const str = item.str ?? "";
       if (!str.trim()) continue;
       const transform = item.transform;
       if (transform && transform.length >= 6) {
@@ -121,13 +126,13 @@ export async function parseTranscriptPdf(arrayBuffer: ArrayBuffer): Promise<Tran
 
     const pageText = (textContent.items as unknown[])
       .map((it) => {
-        if (it && typeof it === 'object' && 'str' in it) {
+        if (it && typeof it === "object" && "str" in it) {
           const s = (it as { str?: unknown }).str;
-          return typeof s === 'string' ? s : '';
+          return typeof s === "string" ? s : "";
         }
-        return '';
+        return "";
       })
-      .join(' ');
+      .join(" ");
     textParts.push(pageText);
 
     if (hasPosition && itemsWithPosition.length > 0) {
@@ -141,7 +146,7 @@ export async function parseTranscriptPdf(arrayBuffer: ArrayBuffer): Promise<Tran
 
   return {
     courses: [...allCodes],
-    fullText: textParts.join('\n'),
+    fullText: textParts.join("\n"),
   };
 }
 
@@ -149,7 +154,9 @@ export async function parseTranscriptPdf(arrayBuffer: ArrayBuffer): Promise<Tran
 function levenshtein(a: string, b: string): number {
   const m = a.length;
   const n = b.length;
-  const d: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  const d: number[][] = Array.from({ length: m + 1 }, () =>
+    Array(n + 1).fill(0),
+  );
   for (let i = 0; i <= m; i++) d[i][0] = i;
   for (let j = 0; j <= n; j++) d[0][j] = j;
   for (let j = 1; j <= n; j++) {
@@ -158,7 +165,7 @@ function levenshtein(a: string, b: string): number {
       d[i][j] = Math.min(
         d[i - 1][j] + 1,
         d[i][j - 1] + 1,
-        d[i - 1][j - 1] + cost
+        d[i - 1][j - 1] + cost,
       );
     }
   }
@@ -189,7 +196,7 @@ function getLastSemesterSegment(transcriptText: string): string {
       lastHeaderIndex = i;
     }
   }
-  return lines.slice(lastHeaderIndex).join('\n');
+  return lines.slice(lastHeaderIndex).join("\n");
 }
 
 /**
@@ -198,21 +205,21 @@ function getLastSemesterSegment(transcriptText: string): string {
  * -> "Honours Bachelor of Science in Computer Science"
  */
 function extractProgramBetweenTermAndCourse(text: string): string | null {
-  const normalized = text.replace(/\s+/g, ' ').trim();
+  const normalized = text.replace(/\s+/g, " ").trim();
   const match = normalized.match(/Term\s+(.+?)\s+Course\b/i);
   if (!match) return null;
   const fragment = match[1]
-    .replace(/\s+/g, ' ')
+    .replace(/\s+/g, " ")
     .trim()
     // Only shorten "Bachelor(s) of X" when preceded by "Honours"
     // Replace with "B" + first two letters after "of" (e.g. "Honours Bachelor of Science" -> "Honours BSc")
     .replace(
       /\b(Honours)\s+(?:Bachelor(?:'s)?|Bachelors)\s+of\s+([A-Za-z]{2})[A-Za-z]*\b/gi,
       (_m, honours: string, two: string) =>
-        `${honours} B${two[0]?.toUpperCase() ?? ''}${two[1]?.toLowerCase() ?? ''}`
+        `${honours} B${two[0]?.toUpperCase() ?? ""}${two[1]?.toLowerCase() ?? ""}`,
     )
-    .replace(/\bin\b/gi, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(/\bin\b/gi, " ")
+    .replace(/\s+/g, " ")
     .trim();
   return fragment.length >= 5 ? fragment : null;
 }
@@ -232,8 +239,8 @@ function buildMultilineCandidates(text: string): string[] {
     for (let i = 0; i <= lines.length - w; i++) {
       const chunk = lines
         .slice(i, i + w)
-        .join(' ')
-        .replace(/\s+/g, ' ')
+        .join(" ")
+        .replace(/\s+/g, " ")
         .trim();
       if (chunk.length >= 5 && chunk.length <= 250) {
         candidates.push(chunk);
@@ -251,7 +258,7 @@ function buildMultilineCandidates(text: string): string[] {
  */
 export function findBestMatchingProgram<T extends { title: string }>(
   transcriptText: string,
-  programs: T[]
+  programs: T[],
 ): T | null {
   if (programs.length === 0 || !transcriptText.trim()) return null;
 
@@ -261,14 +268,14 @@ export function findBestMatchingProgram<T extends { title: string }>(
   // 1) Try strict extraction between "Term" and "Course" in the last semester segment.
   const fragment = extractProgramBetweenTermAndCourse(searchText);
   if (fragment) {
-    const fragLower = fragment.toLowerCase().replace(/\s+/g, ' ').trim();
+    const fragLower = fragment.toLowerCase().replace(/\s+/g, " ").trim();
     let bestProgramFromFragment: T | null = null;
     let bestFragmentScore = 0;
 
     for (const program of programs) {
       const title = program.title.trim();
       if (!title) continue;
-      const titleLower = title.toLowerCase().replace(/\s+/g, ' ').trim();
+      const titleLower = title.toLowerCase().replace(/\s+/g, " ").trim();
       const score = normalizedSimilarity(titleLower, fragLower);
 
       if (score > bestFragmentScore) {
@@ -304,7 +311,7 @@ export function findBestMatchingProgram<T extends { title: string }>(
       const windowLen = Math.min(title.length + 30, searchText.length);
       for (let i = 0; i <= searchText.length - windowLen; i += 3) {
         const raw = searchText.slice(i, i + windowLen);
-        const chunk = raw.replace(/\s+/g, ' ').trim();
+        const chunk = raw.replace(/\s+/g, " ").trim();
         if (chunk.length >= 5) {
           const sim = normalizedSimilarity(titleLower, chunk.toLowerCase());
           if (sim > score) score = sim;
