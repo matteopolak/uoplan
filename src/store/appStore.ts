@@ -1,11 +1,10 @@
-import { create } from 'zustand';
-import type { Program, ProgramRequirement } from '../schemas/catalogue';
+import { create } from "zustand";
+import { type Program, CatalogueSchema } from "../schemas/catalogue";
 import type {
   RemainingRequirement,
   RequirementWithStatus,
   CompletedRequirementItem,
-} from '../lib/requirements';
-import { computeRequirementsState } from '../lib/requirements';
+} from "../lib/requirements";
 import {
   generateSchedules as genSchedules,
   generateSchedulesWithPinned,
@@ -16,19 +15,25 @@ import {
   type CourseEnrollment,
   type GeneratedSchedule,
   type GenerationConstraints,
-} from '../lib/scheduleGenerator';
-import type { DayOfWeek } from '../schemas/schedules';
-import type { DataCache } from '../lib/dataCache';
-import { normalizeCourseCode } from '../lib/dataCache';
-import { getEffectiveSchedule, cacheWithClosedFilter } from '../lib/scheduleFilters';
-import { buildPrereqContext, canTakeCourse } from '../lib/prerequisites';
+} from "../lib/scheduleGenerator";
+import { type DayOfWeek, SchedulesDataSchema } from "../schemas/schedules";
+import {
+  buildDataCache,
+  normalizeCourseCode,
+  type DataCache,
+} from "../lib/dataCache";
+import {
+  getEffectiveSchedule,
+  cacheWithClosedFilter,
+} from "../lib/scheduleFilters";
 import {
   courseMatchesFilters,
   type CourseLanguageBucket,
   type CourseLevelBucket,
-} from '../lib/courseFilters';
-import type { Indices } from '../schemas/indices';
+} from "../lib/courseFilters";
+import { type Indices, IndicesSchema } from "../schemas/indices";
 import {
+  decodeState,
   decodeStateFromBase64,
   encodeState,
   encodeStateToBase64,
@@ -37,18 +42,28 @@ import {
   stateToShareUrl,
   type DecodedState,
   type EncodeInput,
-} from '../lib/stateEncode';
-import type { Term } from '../schemas/terms';
-import { createSeededRng, generateRandomSeed } from '../lib/seededRandom';
+} from "../lib/stateEncode";
+import { type Term, TermsDataSchema } from "../schemas/terms";
+import { createSeededRng, generateRandomSeed } from "../lib/seededRandom";
 import {
   buildProfessorRatingsMap,
   type ProfessorRatingsMap,
-} from '../lib/professorRatings';
+} from "../lib/professorRatings";
+import {
+  recomputeStateForProgram,
+  getDisciplineCodesForProgram,
+} from "./requirementCompute";
+import {
+  buildRequirementPools,
+  computeCoursesPerPool,
+  shuffleInPlace,
+  type RequirementPool,
+} from "./scheduleHelpers";
 
 const validEnrollmentsByCourseCode = new Map<string, CourseEnrollment[]>();
 
-const LOCAL_STORAGE_KEY = 'uoplan-state';
-const TERM_LOCAL_STORAGE_KEY = 'uoplan-term';
+const LOCAL_STORAGE_KEY = "uoplan-state";
+const TERM_LOCAL_STORAGE_KEY = "uoplan-term";
 
 export interface AppState {
   catalogue: { courses: unknown[]; programs: Program[] } | null;
@@ -85,7 +100,11 @@ export interface AppState {
   generationError: string | null;
   unassignedCompletedCourses: string[];
   /** Stack of swaps for undo (most recent at end). Each entry: schedule index, enrollment index, previous course code. */
-  swapHistory: Array<{ scheduleIndex: number; enrollmentIndex: number; previousCourseCode: string }>;
+  swapHistory: Array<{
+    scheduleIndex: number;
+    enrollmentIndex: number;
+    previousCourseCode: string;
+  }>;
   generationMinStartMinutes: number;
   generationMaxEndMinutes: number;
   generationAllowedDays: DayOfWeek[];
@@ -105,364 +124,6 @@ export interface AppState {
   setGenerationCompressedSchedule: (v: boolean) => void;
 }
 
-interface RecomputedState {
-  remainingRequirements: RemainingRequirement[];
-  requirementTreeWithStatus: RequirementWithStatus[];
-  completedRequirementsList: CompletedRequirementItem[];
-  selectedPerRequirement: Record<string, string[]>;
-  selectedOptionsPerRequirement: Record<string, number>;
-  prereqEligibleCourses: string[];
-  filteredPrereqEligibleCourses: string[];
-  unassignedCompletedCourses: string[];
-}
-
-type RequirementPool = {
-  requirementId: string;
-  type: RemainingRequirement['type'];
-  label: string;
-  candidateCourses: string[];
-  creditsNeeded: number;
-  minCourses: number;
-};
-
-/** Collect course codes that satisfy exact (course/or_course) requirements from the tree. */
-function collectAssignedFromExactRequirements(tree: RequirementWithStatus[]): Set<string> {
-  const assigned = new Set<string>();
-  function walk(nodes: RequirementWithStatus[]) {
-    for (const node of nodes) {
-      if (
-        (node.type === 'course' || node.type === 'or_course') &&
-        node.satisfiedBy?.length
-      ) {
-        for (const code of node.satisfiedBy) {
-          assigned.add(normalizeCourseCode(code));
-        }
-      }
-      if (node.options?.length) walk(node.options);
-    }
-  }
-  walk(tree);
-  return assigned;
-}
-
-const GROUP_STYLE_TYPES = [
-  'group',
-  'pick',
-  'or_group',
-  'discipline_elective',
-  'faculty_elective',
-  'free_elective',
-  'elective',
-  'non_discipline_elective',
-] as const;
-
-function buildRequirementPools(remaining: RemainingRequirement[]): RequirementPool[] {
-  const pools: RequirementPool[] = [];
-
-  for (const req of remaining) {
-    if (!req.requirementId || !req.candidateCourses?.length) continue;
-    const creditsNeeded = req.creditsNeeded ?? 0;
-    if (creditsNeeded <= 0) continue;
-
-    const uniqueCandidates = [...new Set(req.candidateCourses)];
-    if (uniqueCandidates.length === 0) continue;
-
-    const label = req.title ?? req.type ?? 'Requirement';
-    let minCourses = 0;
-    if (req.type === 'course' || req.type === 'or_course') {
-      minCourses = 1;
-    }
-
-    pools.push({
-      requirementId: req.requirementId,
-      type: req.type,
-      label,
-      candidateCourses: uniqueCandidates,
-      creditsNeeded,
-      minCourses,
-    });
-  }
-
-  return pools;
-}
-
-/** Default credits per course when converting creditsNeeded to number of courses. */
-const DEFAULT_CREDITS_PER_COURSE = 3;
-
-/**
- * Allocates remainingCourseSlots across pools so that each pool gets courses
- * proportional to creditsNeeded (ceil(creditsNeeded / 3)), and the total
- * equals remainingCourseSlots. Ensures we pick exactly that many courses total.
- */
-function computeCoursesPerPool(
-  pools: RequirementPool[],
-  remainingCourseSlots: number,
-  _cache: DataCache,
-): Map<string, number> {
-  const result = new Map<string, number>();
-  if (remainingCourseSlots <= 0 || pools.length === 0) {
-    return result;
-  }
-
-  // Ideal courses per pool from creditsNeeded only (no redundant min/cap).
-  const ideal = new Map<string, number>();
-  let totalIdeal = 0;
-  for (const pool of pools) {
-    const need = Math.max(
-      pool.minCourses,
-      Math.ceil(pool.creditsNeeded / DEFAULT_CREDITS_PER_COURSE),
-    );
-    ideal.set(pool.requirementId, need);
-    totalIdeal += need;
-  }
-
-  if (totalIdeal === 0) return result;
-
-  if (totalIdeal <= remainingCourseSlots) {
-    // Give each pool its ideal; distribute the rest by most creditsNeeded first.
-    for (const pool of pools) {
-      result.set(pool.requirementId, ideal.get(pool.requirementId) ?? 0);
-    }
-    let extra = remainingCourseSlots - totalIdeal;
-    const byCreditsDesc = [...pools].sort((a, b) => b.creditsNeeded - a.creditsNeeded);
-    for (const pool of byCreditsDesc) {
-      if (extra <= 0) break;
-      const cur = result.get(pool.requirementId) ?? 0;
-      result.set(pool.requirementId, cur + 1);
-      extra -= 1;
-    }
-  } else {
-    // Need to allocate exactly remainingCourseSlots; distribute by creditsNeeded proportion.
-    const totalCredits = pools.reduce((s, p) => s + p.creditsNeeded, 0);
-    if (totalCredits <= 0) return result;
-    const remainder: { reqId: string; frac: number }[] = [];
-    let allocated = 0;
-    for (const pool of pools) {
-      const frac = pool.creditsNeeded / totalCredits;
-      const n = Math.max(0, Math.floor(remainingCourseSlots * frac));
-      const cap = Math.min(n, ideal.get(pool.requirementId) ?? n);
-      result.set(pool.requirementId, cap);
-      allocated += cap;
-      remainder.push({
-        reqId: pool.requirementId,
-        frac: remainingCourseSlots * frac - Math.floor(remainingCourseSlots * frac),
-      });
-    }
-    // Assign remaining slots to pools with largest fractional remainder.
-    remainder.sort((a, b) => b.frac - a.frac);
-    let left = remainingCourseSlots - allocated;
-    for (const { reqId } of remainder) {
-      if (left <= 0) break;
-      const cur = result.get(reqId) ?? 0;
-      const cap = ideal.get(reqId) ?? cur + 1;
-      if (cur < cap) {
-        result.set(reqId, cur + 1);
-        left -= 1;
-      }
-    }
-  }
-
-  return result;
-}
-
-function shuffleInPlace<T>(arr: T[], rng: () => number): void {
-  for (let i = arr.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(rng() * (i + 1));
-    const tmp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = tmp;
-  }
-}
-
-function getAutoSelectedForRequirements(
-  remaining: RemainingRequirement[],
-  existing: Record<string, string[]>,
-  cache: DataCache | null,
-  includeClosedComponents: boolean,
-): Record<string, string[]> {
-  if (!cache) {
-    return {};
-  }
-
-  const hasSchedule = (code: string) =>
-    !!getEffectiveSchedule(cache, code, includeClosedComponents);
-  const isHonoursProject = (code: string): boolean => {
-    const course = cache.getCourse(code);
-    const component = course?.component?.trim().toLowerCase() ?? '';
-    return component.startsWith('recherche / research');
-  };
-  const scheduledOnlyByReq = new Map<string, Set<string>>();
-  const allCandidatesByReq = new Map<string, Set<string>>();
-
-  for (const req of remaining) {
-    const scheduled = req.candidateCourses.filter(hasSchedule);
-    scheduledOnlyByReq.set(req.requirementId, new Set(scheduled));
-    allCandidatesByReq.set(req.requirementId, new Set(req.candidateCourses));
-  }
-
-  const out: Record<string, string[]> = {};
-  for (const req of remaining) {
-    const scheduledSet = scheduledOnlyByReq.get(req.requirementId)!;
-    const scheduledCandidates = Array.from(scheduledSet);
-    const allCandidatesSet = allCandidatesByReq.get(req.requirementId)!;
-
-    if (scheduledCandidates.length === 1) {
-      // Avoid auto-selecting honours/research courses; users should opt in explicitly.
-      const only = scheduledCandidates[0];
-      if (!isHonoursProject(only)) {
-        out[req.requirementId] = [only];
-      }
-    } else {
-      const prev = existing[req.requirementId] ?? [];
-      // Keep existing selection if each course is in the requirement's candidate list (including courses without schedule, e.g. completed)
-      const valid = prev.filter((c) => allCandidatesSet.has(c));
-      if (valid.length) out[req.requirementId] = valid;
-    }
-  }
-
-  return out;
-}
-
-/** Extract unique discipline codes (e.g. "CSI", "CEG") from all `type === 'course'` entries in a program's requirements. */
-export function getDisciplineCodesForProgram(program: Program | null): string[] {
-  if (!program) return [];
-  const disciplines = new Set<string>();
-  function walk(reqs: ProgramRequirement[]) {
-    for (const req of reqs) {
-      if (req.type === 'course' && req.code) {
-        const d = req.code.split(/\s+/)[0]?.toUpperCase();
-        if (d) disciplines.add(d);
-      }
-      if (req.options) walk(req.options);
-    }
-  }
-  walk(program.requirements);
-  return [...disciplines].sort();
-}
-
-function recomputeStateForProgram(
-  program: Program | null,
-  completedCourses: string[],
-  cache: DataCache | null,
-  existingSelectedPerRequirement: Record<string, string[]>,
-  existingSelectedOptionsPerRequirement: Record<string, number>,
-  levelBuckets: CourseLevelBucket[],
-  languageBuckets: CourseLanguageBucket[],
-  includeClosedComponents: boolean,
-  studentPrograms: string[] = [],
-): RecomputedState {
-  if (!program || !cache) {
-    return {
-      remainingRequirements: [],
-      requirementTreeWithStatus: [],
-      completedRequirementsList: [],
-      selectedPerRequirement: {},
-      selectedOptionsPerRequirement: {},
-      prereqEligibleCourses: [],
-      filteredPrereqEligibleCourses: [],
-      unassignedCompletedCourses: [],
-    };
-  }
-
-  const { remaining, tree, completedList } = computeRequirementsState(
-    program,
-    completedCourses,
-    cache
-  );
-
-  const autoSelected = getAutoSelectedForRequirements(
-    remaining,
-    existingSelectedPerRequirement,
-    cache,
-    includeClosedComponents,
-  );
-
-  // Unassigned completed = completed minus (exact-match satisfied) minus (user-selected per requirement).
-  const assignedFromExact = collectAssignedFromExactRequirements(tree);
-  const assignedFromSelected = new Set<string>();
-  for (const codes of Object.values(existingSelectedPerRequirement)) {
-    for (const code of codes) {
-      assignedFromSelected.add(normalizeCourseCode(code));
-    }
-  }
-  const completedNormalized = new Set(completedCourses.map(normalizeCourseCode));
-  const isWorkTerm = (normCode: string): boolean => {
-    const course = cache.getCourse(normCode);
-    const component = course?.component?.trim().toLowerCase() ?? '';
-    return component.startsWith('stage / work term');
-  };
-  const unassignedCompleted = [...completedNormalized].filter(
-    (norm) =>
-      !assignedFromExact.has(norm) &&
-      !assignedFromSelected.has(norm) &&
-      !isWorkTerm(norm),
-  );
-
-  // For group-style requirements, augment candidate list with unassigned completed (eligible) first.
-  const augmentedRemaining = remaining.map((req) => {
-    if (
-      !req.candidateCourses?.length ||
-      !GROUP_STYLE_TYPES.includes(req.type as (typeof GROUP_STYLE_TYPES)[number])
-    ) {
-      return req;
-    }
-    const eligibleSet = new Set(req.candidateCourses.map(normalizeCourseCode));
-    const unassignedEligible = unassignedCompleted.filter((norm) =>
-      eligibleSet.has(norm),
-    );
-    const displayCodes = unassignedEligible.map(
-      (norm) => cache.getCourse(norm)?.code ?? norm,
-    );
-    const candidateCourses = [
-      ...new Set([...displayCodes, ...req.candidateCourses]),
-    ];
-    return { ...req, candidateCourses };
-  });
-
-  const ctx = buildPrereqContext(completedCourses, cache, studentPrograms);
-  const candidateSet = new Set<string>();
-  for (const req of augmentedRemaining) {
-    for (const code of req.candidateCourses) {
-      candidateSet.add(code);
-    }
-  }
-  for (const course of cache.getAllCourses()) {
-    candidateSet.add(course.code);
-  }
-  const prereqEligibleCourses: string[] = [];
-  for (const code of candidateSet) {
-    if (canTakeCourse(code, cache, ctx)) {
-      prereqEligibleCourses.push(code);
-    }
-  }
-
-  const filters = { levels: levelBuckets, languageBuckets };
-  const filteredPrereqEligibleCourses = prereqEligibleCourses.filter((code) =>
-    courseMatchesFilters(code, filters),
-  );
-
-  const unassignedCompletedCourses = unassignedCompleted.map(
-    (norm) => cache.getCourse(norm)?.code ?? norm,
-  );
-
-  // Preserve nested selections (e.g. or_group option req-2-0) that are not in remaining; merge with autoSelected
-  const selectedPerRequirement = {
-    ...existingSelectedPerRequirement,
-    ...autoSelected,
-  };
-
-  return {
-    remainingRequirements: augmentedRemaining,
-    requirementTreeWithStatus: tree,
-    completedRequirementsList: completedList,
-    selectedPerRequirement,
-    selectedOptionsPerRequirement: existingSelectedOptionsPerRequirement,
-    prereqEligibleCourses,
-    filteredPrereqEligibleCourses,
-    unassignedCompletedCourses,
-  };
-}
-
 export interface AppActions {
   loadData: () => Promise<void>;
   setSelectedTermId: (termId: string) => Promise<void>;
@@ -475,7 +136,10 @@ export interface AppActions {
   addCompletedCourse: (code: string) => void;
   removeCompletedCourse: (code: string) => void;
   setSelectedForRequirement: (requirementId: string, courses: string[]) => void;
-  setSelectedOptionForRequirement: (requirementId: string, optionIndex: number) => void;
+  setSelectedOptionForRequirement: (
+    requirementId: string,
+    optionIndex: number,
+  ) => void;
   setCoursesThisSemester: (n: number) => void;
   setGenerationMinStartMinutes: (minutes: number) => void;
   setGenerationMaxEndMinutes: (minutes: number) => void;
@@ -488,12 +152,12 @@ export interface AppActions {
     scheduleIndex: number,
     enrollmentIndex: number,
     newCourseCode: string,
-    isUndo?: boolean
+    isUndo?: boolean,
   ) => void;
   undoLastSwap: () => void;
   getSwapCandidates: (
     scheduleIndex: number,
-    enrollmentIndex: number
+    enrollmentIndex: number,
   ) => {
     candidates: string[];
     poolCourses: string[];
@@ -530,8 +194,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   coursesThisSemester: 5,
   prereqEligibleCourses: [],
   filteredPrereqEligibleCourses: [],
-  levelBuckets: ['undergrad'],
-  languageBuckets: ['en', 'other'],
+  levelBuckets: ["undergrad"],
+  languageBuckets: ["en", "other"],
   electiveLevelBuckets: [1000, 2000],
   generatedSchedules: [],
   swapPool: [],
@@ -543,12 +207,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
   swapHistory: [],
   generationMinStartMinutes: 8 * 60 + 30, // 8:30
   generationMaxEndMinutes: 22 * 60, // 22:00
-  generationAllowedDays: ['Mo', 'Tu', 'We', 'Th', 'Fr'],
+  generationAllowedDays: ["Mo", "Tu", "We", "Th", "Fr"],
   generationSeed: generateRandomSeed(),
   includeClosedComponents: false,
   generationMinProfessorRating: null,
   professorRatings: null,
-  generationLimitFirstYearCredits: false,
+  generationLimitFirstYearCredits: true,
   generationCompressedSchedule: false,
 
   setIncludeClosedComponents: (value) => {
@@ -556,26 +220,29 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ includeClosedComponents: value });
   },
 
-  setGenerationMinStartMinutes: (minutes) => set({ generationMinStartMinutes: minutes }),
-  setGenerationMaxEndMinutes: (minutes) => set({ generationMaxEndMinutes: minutes }),
+  setGenerationMinStartMinutes: (minutes) =>
+    set({ generationMinStartMinutes: minutes }),
+  setGenerationMaxEndMinutes: (minutes) =>
+    set({ generationMaxEndMinutes: minutes }),
   setGenerationAllowedDays: (days) => set({ generationAllowedDays: days }),
   setGenerationMinProfessorRating: (rating) =>
-    set({ generationMinProfessorRating: rating == null ? null : Number(rating) }),
-  setGenerationLimitFirstYearCredits: (v) => set({ generationLimitFirstYearCredits: v }),
-  setGenerationCompressedSchedule: (v) => set({ generationCompressedSchedule: v }),
+    set({
+      generationMinProfessorRating: rating == null ? null : Number(rating),
+    }),
+  setGenerationLimitFirstYearCredits: (v) =>
+    set({ generationLimitFirstYearCredits: v }),
+  setGenerationCompressedSchedule: (v) =>
+    set({ generationCompressedSchedule: v }),
 
   setSelectedTermId: async (termId: string) => {
     set({ loading: true, error: null });
     try {
       const { catalogue } = get();
-      if (!catalogue) throw new Error('Catalogue not loaded');
+      if (!catalogue) throw new Error("Catalogue not loaded");
 
       const schedulesRes = await fetch(`/data/schedules.${termId}.json`);
-      if (!schedulesRes.ok) throw new Error('Failed to load schedules data');
+      if (!schedulesRes.ok) throw new Error("Failed to load schedules data");
       const schedulesData = await schedulesRes.json();
-
-      const { buildDataCache } = await import('../lib/dataCache');
-      const { SchedulesDataSchema } = await import('../schemas/schedules');
 
       const parsedSchedules = SchedulesDataSchema.parse(schedulesData);
       const cache = buildDataCache(catalogue as any, parsedSchedules);
@@ -606,7 +273,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         error: null,
       });
 
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         try {
           localStorage.setItem(TERM_LOCAL_STORAGE_KEY, termId);
         } catch {
@@ -616,7 +283,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     } catch (err) {
       set({
         loading: false,
-        error: err instanceof Error ? err.message : 'Failed to load data',
+        error: err instanceof Error ? err.message : "Failed to load data",
       });
     }
   },
@@ -637,7 +304,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
       decoded.includeClosedComponents ?? true,
       studentPrograms,
     );
-    const orderedReqIds = requirementIdsFromTree(firstPass.requirementTreeWithStatus);
+    const orderedReqIds = requirementIdsFromTree(
+      firstPass.requirementTreeWithStatus,
+    );
     const reqIndexToId = new Map<number, string>();
     orderedReqIds.forEach((id, i) => reqIndexToId.set(i, id));
 
@@ -748,21 +417,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const [catalogueRes, termsRes, indicesRes, rmpRes] = await Promise.all([
-        fetch('/data/catalogue.json'),
-        fetch('/data/terms.json'),
-        fetch('/data/indices.json').catch(() => null),
-        fetch('/data/ratemyprofessors.json').catch(() => null),
+        fetch("/data/catalogue.json"),
+        fetch("/data/terms.json"),
+        fetch("/data/indices.json").catch(() => null),
+        fetch("/data/ratemyprofessors.json").catch(() => null),
       ]);
-      if (!catalogueRes.ok || !termsRes.ok) throw new Error('Failed to load data');
+      if (!catalogueRes.ok || !termsRes.ok)
+        throw new Error("Failed to load data");
 
       const catalogue = await catalogueRes.json();
       const termsJson = await termsRes.json();
-
-      const { buildDataCache } = await import('../lib/dataCache');
-      const { CatalogueSchema } = await import('../schemas/catalogue');
-      const { SchedulesDataSchema } = await import('../schemas/schedules');
-      const { IndicesSchema } = await import('../schemas/indices');
-      const { TermsDataSchema } = await import('../schemas/terms');
 
       const parsedCatalogue = CatalogueSchema.parse(catalogue);
       const parsedTerms = TermsDataSchema.parse(termsJson);
@@ -783,15 +447,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
         indices = IndicesSchema.parse(indicesJson);
       } else {
         indices = {
-          courses: (parsedCatalogue.courses as Array<{ code: string }>).map((c) => c.code),
+          courses: (parsedCatalogue.courses as Array<{ code: string }>).map(
+            (c) => c.code,
+          ),
           programs: parsedCatalogue.programs.map((p) => p.url),
         };
       }
 
       let initialTermId: string | null = null;
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);
-        const urlTerm = params.get('t');
+        const urlTerm = params.get("t");
         if (urlTerm) initialTermId = urlTerm;
         if (!initialTermId) {
           try {
@@ -804,10 +470,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       if (!initialTermId) {
         initialTermId = parsedTerms.terms[0]?.termId ?? null;
       }
-      if (!initialTermId) throw new Error('No terms available');
+      if (!initialTermId) throw new Error("No terms available");
 
       const schedulesRes = await fetch(`/data/schedules.${initialTermId}.json`);
-      if (!schedulesRes.ok) throw new Error('Failed to load schedules data');
+      if (!schedulesRes.ok) throw new Error("Failed to load schedules data");
       const schedulesData = await schedulesRes.json();
       const parsedSchedules = SchedulesDataSchema.parse(schedulesData);
       const cache = buildDataCache(parsedCatalogue, parsedSchedules);
@@ -824,7 +490,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         error: null,
       });
 
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         try {
           localStorage.setItem(TERM_LOCAL_STORAGE_KEY, initialTermId);
         } catch {
@@ -832,36 +498,39 @@ export const useAppStore = create<AppStore>((set, get) => ({
         }
       }
 
-      if (indices && typeof window !== 'undefined') {
+      if (indices && typeof window !== "undefined") {
         const catalogueLike = parsedCatalogue as {
           courses: Array<{ code: string }>;
           programs: Program[];
         };
         const urlBytes = parseStateFromUrl(window.location.search);
         if (urlBytes && urlBytes.length > 0) {
-          const { decodeState } = await import('../lib/stateEncode');
           const decoded = decodeState(urlBytes, catalogueLike, indices);
-          if ('error' in decoded) {
+          if ("error" in decoded) {
             set({ error: decoded.error });
           } else {
             get().loadEncodedState(decoded);
             const u = new URL(window.location.href);
-            u.searchParams.delete('s');
-            u.searchParams.delete('t');
-            window.history.replaceState({}, '', u.toString());
+            u.searchParams.delete("s");
+            u.searchParams.delete("t");
+            window.history.replaceState({}, "", u.toString());
           }
         } else {
           const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
           if (stored) {
-            const decoded = decodeStateFromBase64(stored, catalogueLike, indices);
-            if (!('error' in decoded)) get().loadEncodedState(decoded);
+            const decoded = decodeStateFromBase64(
+              stored,
+              catalogueLike,
+              indices,
+            );
+            if (!("error" in decoded)) get().loadEncodedState(decoded);
           }
         }
       }
     } catch (err) {
       set({
         loading: false,
-        error: err instanceof Error ? err.message : 'Failed to load data',
+        error: err instanceof Error ? err.message : "Failed to load data",
       });
     }
   },
@@ -869,7 +538,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setProgram: (program) => {
     const studentPrograms = getDisciplineCodesForProgram(program);
     set({ program, studentPrograms });
-    const { cache, completedCourses, levelBuckets, languageBuckets, includeClosedComponents } = get();
+    const {
+      cache,
+      completedCourses,
+      levelBuckets,
+      languageBuckets,
+      includeClosedComponents,
+    } = get();
     const state = recomputeStateForProgram(
       program,
       completedCourses,
@@ -1049,8 +724,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       coursesThisSemester: 5,
       prereqEligibleCourses: [],
       filteredPrereqEligibleCourses: [],
-      levelBuckets: ['undergrad'],
-      languageBuckets: ['en', 'other'],
+      levelBuckets: ["undergrad"],
+      languageBuckets: ["en", "other"],
       electiveLevelBuckets: [1000, 2000],
       generatedSchedules: [],
       swapPool: [],
@@ -1063,7 +738,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       generationSeed: generateRandomSeed(),
       includeClosedComponents: false,
     });
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
   },
@@ -1106,7 +781,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
     } = get();
     if (!cache) return;
     const cacheVal = cache;
-    const effectiveCache = cacheWithClosedFilter(cacheVal, includeClosedComponents);
+    const effectiveCache = cacheWithClosedFilter(
+      cacheVal,
+      includeClosedComponents,
+    );
 
     const unassigned = [...new Set(unassignedCompletedCourses)].sort();
     if (unassigned.length > 0) {
@@ -1115,9 +793,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
       const suffix =
         unassigned.length > previewLimit
           ? ` (+${unassigned.length - previewLimit} more)`
-          : '';
+          : "";
       set({
-        generationError: `Assign all completed courses to requirements before generating schedules. Unassigned: ${preview.join(', ')}${suffix}`,
+        generationError: `Assign all completed courses to requirements before generating schedules. Unassigned: ${preview.join(", ")}${suffix}`,
       });
       return;
     }
@@ -1127,8 +805,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
     // - When the user clicks "Generate new schedule" (appendFirstOnly), we salt the seed with
     //   the number of schedules already generated so each click yields a different schedule,
     //   while the whole sequence remains reproducible from the same starting state.
-    const existingScheduleCount = appendFirstOnly ? get().generatedSchedules.length : 0;
-    const rng = createSeededRng(((generationSeed >>> 0) + existingScheduleCount) >>> 0);
+    const existingScheduleCount = appendFirstOnly
+      ? get().generatedSchedules.length
+      : 0;
+    const rng = createSeededRng(
+      ((generationSeed >>> 0) + existingScheduleCount) >>> 0,
+    );
 
     const completedFirstYearCredits = completedCourses.reduce((sum, code) => {
       const m = code.match(/\d{4}/);
@@ -1151,8 +833,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     function isHonoursProject(code: string): boolean {
       const course = cacheVal.getCourse(code);
-      const component = course?.component?.trim().toLowerCase() ?? '';
-      return component.startsWith('recherche / research');
+      const component = course?.component?.trim().toLowerCase() ?? "";
+      return component.startsWith("recherche / research");
     }
 
     const allSelected = Object.values(selectedPerRequirement).flat();
@@ -1183,7 +865,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     const honoursCount = honoursSelected.length;
     const effectiveTarget = Math.max(0, coursesThisSemester - honoursCount);
-    const oversubscribedSelections = selectedSchedulable.length > effectiveTarget;
+    const oversubscribedSelections =
+      selectedSchedulable.length > effectiveTarget;
     const pinned = oversubscribedSelections ? [] : selectedSchedulable;
 
     // Enforce that all active or/options groups with a requirementId have exactly one selected option.
@@ -1194,7 +877,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       nodes: RequirementWithStatus[],
       parentRequirementId: string | undefined,
       parentSelectedIndex: number | undefined,
-      parentChildIndex: number | undefined
+      parentChildIndex: number | undefined,
     ): void {
       for (let idx = 0; idx < nodes.length; idx++) {
         const node = nodes[idx];
@@ -1209,7 +892,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         }
 
         if (
-          (node.type === 'or_group' || node.type === 'options_group') &&
+          (node.type === "or_group" || node.type === "options_group") &&
           node.requirementId &&
           !node.complete
         ) {
@@ -1222,13 +905,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
         if (node.options && node.options.length > 0) {
           const currentReqId = node.requirementId;
           const currentSelectedIndex =
-            currentReqId != null ? selectedOptionsPerRequirement[currentReqId] : undefined;
+            currentReqId != null
+              ? selectedOptionsPerRequirement[currentReqId]
+              : undefined;
           for (let childIdx = 0; childIdx < node.options.length; childIdx++) {
             walkNodes(
               [node.options[childIdx]],
               currentReqId ?? parentRequirementId,
               currentReqId != null ? currentSelectedIndex : parentSelectedIndex,
-              childIdx
+              childIdx,
             );
           }
         }
@@ -1240,7 +925,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (missingOptionGroups.length > 0) {
       set({
         generationError:
-          'Please choose exactly one option in each “or” block before generating schedules.',
+          "Please choose exactly one option in each “or” block before generating schedules.",
       });
       return;
     }
@@ -1256,7 +941,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
     let finalPoolMaps: Record<string, string>[] = [];
 
     function isEligibleCandidate(code: string, poolType?: string): boolean {
-      const sched = getEffectiveSchedule(cacheVal, code, includeClosedComponents);
+      const sched = getEffectiveSchedule(
+        cacheVal,
+        code,
+        includeClosedComponents,
+      );
       if (
         !sched ||
         pinned.includes(code) ||
@@ -1270,18 +959,23 @@ export const useAppStore = create<AppStore>((set, get) => ({
       // handled separately as honours selections. However, when the pool itself is a concrete
       // course requirement (type: 'course'), we keep the honours course so the requirement tree
       // can still reflect it properly.
-      if (poolType !== 'course' && isHonoursProject(code)) return false;
+      if (poolType !== "course" && isHonoursProject(code)) return false;
       // Exclude courses with no valid section combos (e.g. empty times) so they are never picked.
       if (getValidSectionCombos(sched, constraints).length === 0) return false;
       return true;
     }
 
-    const yieldToMain = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
+    const yieldToMain = (): Promise<void> =>
+      new Promise((resolve) => setTimeout(resolve, 0));
 
     async function collectUniqueSchedulesFromCandidatePool(
       candidatePool: string[],
-      mapsForNonPoolCodes: Record<string, string> = {}
-    ): Promise<{ schedules: GeneratedSchedule[]; poolMaps: Record<string, string>[]; usedPool: string[] }> {
+      mapsForNonPoolCodes: Record<string, string> = {},
+    ): Promise<{
+      schedules: GeneratedSchedule[];
+      poolMaps: Record<string, string>[];
+      usedPool: string[];
+    }> {
       const maxAttempts = appendFirstOnly ? 100 : 300;
       const targetUniqueSchedules = appendFirstOnly ? 1 : 25;
       const seenCourseSets = new Set<string>();
@@ -1296,14 +990,21 @@ export const useAppStore = create<AppStore>((set, get) => ({
         const attemptPool = [...base];
         shuffleInPlace(attemptPool, rng);
         lastUsedPool = attemptPool;
-        const batch = genSchedules(attemptPool, effectiveTarget, effectiveCache, constraints);
-        const fullBatch = batch.filter((s) => s.enrollments.length >= effectiveTarget);
+        const batch = genSchedules(
+          attemptPool,
+          effectiveTarget,
+          effectiveCache,
+          constraints,
+        );
+        const fullBatch = batch.filter(
+          (s) => s.enrollments.length >= effectiveTarget,
+        );
         if (fullBatch.length === 0) continue;
 
         const fingerprint = fullBatch[0].enrollments
           .map((e) => e.courseCode)
           .sort()
-          .join(',');
+          .join(",");
         if (seenCourseSets.has(fingerprint)) continue;
         seenCourseSets.add(fingerprint);
         collectedSchedules.push(fullBatch[0]);
@@ -1318,9 +1019,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
 
     if (oversubscribedSelections) {
-      const selectedOnlyPool = selectedSchedulable.filter((code) => isEligibleCandidate(code));
+      const selectedOnlyPool = selectedSchedulable.filter((code) =>
+        isEligibleCandidate(code),
+      );
 
-      const baseAttempt = await collectUniqueSchedulesFromCandidatePool(selectedOnlyPool, {});
+      const baseAttempt = await collectUniqueSchedulesFromCandidatePool(
+        selectedOnlyPool,
+        {},
+      );
       filteredOptionalPool = baseAttempt.usedPool;
       finalSchedules = baseAttempt.schedules;
       finalPoolMaps = baseAttempt.poolMaps;
@@ -1338,10 +1044,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
             if (!isEligibleCandidate(code, pool.type)) continue;
             // For elective-style pools, respect elective level buckets from the requirements page.
             const isElectiveType =
-              pool.type === 'elective' ||
-              pool.type === 'free_elective' ||
-              pool.type === 'non_discipline_elective' ||
-              pool.type === 'faculty_elective';
+              pool.type === "elective" ||
+              pool.type === "free_elective" ||
+              pool.type === "non_discipline_elective" ||
+              pool.type === "faculty_elective";
             if (electiveLevelBuckets.length > 0 && isElectiveType) {
               const match = code.match(/\d{4}/);
               if (match) {
@@ -1358,8 +1064,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
           }
         }
 
-        const expandedPool = [...new Set([...selectedOnlyPool, ...extraCandidates])];
-        const expandedAttempt = await collectUniqueSchedulesFromCandidatePool(expandedPool, {});
+        const expandedPool = [
+          ...new Set([...selectedOnlyPool, ...extraCandidates]),
+        ];
+        const expandedAttempt = await collectUniqueSchedulesFromCandidatePool(
+          expandedPool,
+          {},
+        );
         filteredOptionalPool = expandedAttempt.usedPool;
         finalSchedules = expandedAttempt.schedules;
         finalPoolMaps = expandedAttempt.poolMaps;
@@ -1378,7 +1089,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
             const course = cacheVal.getCourse(code);
             pinnedCredits += course?.credits ?? 3;
           }
-          const selectedForPool = selectedPerRequirement[pool.requirementId] ?? [];
+          const selectedForPool =
+            selectedPerRequirement[pool.requirementId] ?? [];
           let completedSelectedCredits = 0;
           for (const code of selectedForPool) {
             if (!completedSet.has(normalizeCourseCode(code))) continue;
@@ -1397,21 +1109,33 @@ export const useAppStore = create<AppStore>((set, get) => ({
       // (e.g. CSI 4900). Those requirements are satisfied via honoursSelected and
       // must not consume a slot in the schedule.
       pools = pools.filter((pool) => {
-        if (pool.type !== 'course' && pool.type !== 'or_course') return true;
+        if (pool.type !== "course" && pool.type !== "or_course") return true;
         const hasSchedulableNonHonours = pool.candidateCourses.some((code) => {
           if (isHonoursProject(code)) return false;
-          return !!getEffectiveSchedule(cacheVal, code, includeClosedComponents);
+          return !!getEffectiveSchedule(
+            cacheVal,
+            code,
+            includeClosedComponents,
+          );
         });
         return hasSchedulableNonHonours;
       });
 
-      const coursesPerPool = computeCoursesPerPool(pools, remainingNeeded, cacheVal);
+      const coursesPerPool = computeCoursesPerPool(
+        pools,
+        remainingNeeded,
+        cacheVal,
+      );
 
       const candidatesByRequirement = new Map<string, string[]>();
       for (const pool of pools) {
         const candidates: string[] = [];
         for (const code of pool.candidateCourses) {
-          const sched = getEffectiveSchedule(cacheVal, code, includeClosedComponents);
+          const sched = getEffectiveSchedule(
+            cacheVal,
+            code,
+            includeClosedComponents,
+          );
           if (
             !sched ||
             pinned.includes(code) ||
@@ -1426,10 +1150,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
           // NOTE: discipline_elective (like \"CSI 4000-level\") is NOT treated as a
           // generic elective for this purpose – it follows its own discipline rules.
           const isElectiveType =
-            pool.type === 'elective' ||
-            pool.type === 'free_elective' ||
-            pool.type === 'non_discipline_elective' ||
-            pool.type === 'faculty_elective';
+            pool.type === "elective" ||
+            pool.type === "free_elective" ||
+            pool.type === "non_discipline_elective" ||
+            pool.type === "faculty_elective";
           if (electiveLevelBuckets.length > 0 && isElectiveType) {
             const match = code.match(/\d{4}/);
             if (match) {
@@ -1446,7 +1170,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
           // they are handled separately as honours selections. However, when the pool
           // itself is a concrete course requirement (type: 'course'), we keep the
           // honours course so the requirement tree can still reflect it properly.
-          if (pool.type !== 'course' && isHonoursProject(code)) continue;
+          if (pool.type !== "course" && isHonoursProject(code)) continue;
           // Exclude courses with no valid section combos (e.g. empty times) so they
           // are never picked and never produce a schedule with fewer real courses.
           if (getValidSectionCombos(sched, constraints).length === 0) continue;
@@ -1478,7 +1202,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
         for (const pool of pools) {
           let need = coursesPerPool.get(pool.requirementId) ?? 0;
           if (need <= 0) continue;
-          const candidates = candidatesByRequirement.get(pool.requirementId) ?? [];
+          const candidates =
+            candidatesByRequirement.get(pool.requirementId) ?? [];
           if (candidates.length === 0) continue;
 
           for (const code of candidates) {
@@ -1506,13 +1231,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
         const batch =
           pinned.length === 0
-            ? genSchedules(lastFilteredPool, effectiveTarget, effectiveCache, constraints)
+            ? genSchedules(
+                lastFilteredPool,
+                effectiveTarget,
+                effectiveCache,
+                constraints,
+              )
             : generateSchedulesWithPinned(
                 pinned,
                 lastFilteredPool,
                 effectiveTarget,
                 effectiveCache,
-                constraints
+                constraints,
               );
 
         const fullBatch = batch.filter(
@@ -1523,7 +1253,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         const fingerprint = fullBatch[0].enrollments
           .map((e) => e.courseCode)
           .sort()
-          .join(',');
+          .join(",");
         if (seenCourseSets.has(fingerprint)) continue;
         seenCourseSets.add(fingerprint);
         collectedSchedules.push(fullBatch[0]);
@@ -1542,7 +1272,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
       finalSchedules =
         pinned.length === 0
           ? genSchedules([], effectiveTarget, effectiveCache, constraints)
-          : generateSchedulesWithPinned(pinned, [], effectiveTarget, effectiveCache, constraints);
+          : generateSchedulesWithPinned(
+              pinned,
+              [],
+              effectiveTarget,
+              effectiveCache,
+              constraints,
+            );
       finalPoolMaps = finalSchedules.map(() => ({}));
     }
 
@@ -1551,7 +1287,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       if (appendFirstOnly) {
         set({
           generationError:
-            'Not enough eligible courses to generate another schedule. Try relaxing filters or changing selections.',
+            "Not enough eligible courses to generate another schedule. Try relaxing filters or changing selections.",
         });
         return;
       }
@@ -1564,7 +1300,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         selectedScheduleIndex: 0,
         swapHistory: [],
         generationError:
-          'Not enough eligible courses match your filters and requirements to build a full schedule. Try relaxing filters or changing selections.',
+          "Not enough eligible courses match your filters and requirements to build a full schedule. Try relaxing filters or changing selections.",
       });
       return;
     }
@@ -1598,7 +1334,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (appendFirstOnly && limitedSchedules.length === 0) {
       set({
         generationError:
-          'Could not generate another schedule after 100 attempts. Try different selections or filters.',
+          "Could not generate another schedule after 100 attempts. Try different selections or filters.",
       });
       return;
     }
@@ -1612,14 +1348,19 @@ export const useAppStore = create<AppStore>((set, get) => ({
       swapHistory: [],
       generationError:
         limitedSchedules.length === 0
-          ? 'No non-overlapping schedules could be generated with your selections.'
+          ? "No non-overlapping schedules could be generated with your selections."
           : null,
     });
   },
 
   setSelectedScheduleIndex: (idx) => set({ selectedScheduleIndex: idx }),
 
-  swapCourseInSchedule: (scheduleIndex, enrollmentIndex, newCourseCode, isUndo = false) => {
+  swapCourseInSchedule: (
+    scheduleIndex,
+    enrollmentIndex,
+    newCourseCode,
+    isUndo = false,
+  ) => {
     const {
       generatedSchedules,
       cache,
@@ -1638,7 +1379,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const oldEnrollment = schedule.enrollments[enrollmentIndex];
     if (!oldEnrollment) return;
 
-    const newSchedule = getEffectiveSchedule(cache, newCourseCode, includeClosedComponents);
+    const newSchedule = getEffectiveSchedule(
+      cache,
+      newCourseCode,
+      includeClosedComponents,
+    );
     if (!newSchedule) return;
 
     const constraints: GenerationConstraints = {
@@ -1660,7 +1405,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
         const newSchedules = [...generatedSchedules];
         newSchedules[scheduleIndex] = { enrollments: newEnrollments };
         const oldCode = oldEnrollment.courseCode;
-        const poolMap = schedulePoolMaps[scheduleIndex] ?? chosenCourseToRequirementId;
+        const poolMap =
+          schedulePoolMaps[scheduleIndex] ?? chosenCourseToRequirementId;
         const poolId = poolMap[oldCode];
         const nextMap =
           poolId != null ? { ...poolMap, [newCourseCode]: poolId } : poolMap;
@@ -1675,7 +1421,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
           schedulePoolMaps: nextPoolMaps,
           ...(isUndo
             ? {}
-            : { swapHistory: [...get().swapHistory, { scheduleIndex, enrollmentIndex, previousCourseCode: oldCode }] }),
+            : {
+                swapHistory: [
+                  ...get().swapHistory,
+                  {
+                    scheduleIndex,
+                    enrollmentIndex,
+                    previousCourseCode: oldCode,
+                  },
+                ],
+              }),
         });
         return;
       }
@@ -1688,7 +1443,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const last = swapHistory[swapHistory.length - 1];
     const { scheduleIndex, enrollmentIndex, previousCourseCode } = last;
     set({ swapHistory: swapHistory.slice(0, -1) });
-    get().swapCourseInSchedule(scheduleIndex, enrollmentIndex, previousCourseCode, true);
+    get().swapCourseInSchedule(
+      scheduleIndex,
+      enrollmentIndex,
+      previousCourseCode,
+      true,
+    );
   },
 
   getSwapCandidates: (scheduleIndex, enrollmentIndex) => {
@@ -1723,13 +1483,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     const oldCode = enrollment.courseCode;
     // Use the pool this course was actually picked from (per-schedule when we have multiple).
-    const poolMap = schedulePoolMaps[scheduleIndex] ?? chosenCourseToRequirementId;
+    const poolMap =
+      schedulePoolMaps[scheduleIndex] ?? chosenCourseToRequirementId;
     const requirementId = poolMap[oldCode];
     const candidateSet = new Set<string>();
     let poolRequirementType: string | undefined;
     let requirementTitle: string | undefined;
     if (requirementId) {
-      const req = remainingRequirements.find((r) => r.requirementId === requirementId);
+      const req = remainingRequirements.find(
+        (r) => r.requirementId === requirementId,
+      );
       if (req?.candidateCourses?.length) {
         poolRequirementType = req.type;
         requirementTitle = req.title;
@@ -1741,7 +1504,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
       const oldCodeNorm = normalizeCourseCode(oldCode);
       for (const req of remainingRequirements) {
         if (!req.candidateCourses?.length) continue;
-        const hasOld = req.candidateCourses.some((c) => normalizeCourseCode(c) === oldCodeNorm);
+        const hasOld = req.candidateCourses.some(
+          (c) => normalizeCourseCode(c) === oldCodeNorm,
+        );
         if (hasOld) {
           for (const c of req.candidateCourses) candidateSet.add(c);
         }
@@ -1754,14 +1519,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     // Ignore conflicts with the swapped course and any duplicate blocks for same code.
     const others = schedule.enrollments.filter(
-      (e, i) => i !== enrollmentIndex && e.courseCode !== oldCode
+      (e, i) => i !== enrollmentIndex && e.courseCode !== oldCode,
     );
-    const alreadyInSchedule = new Set(schedule.enrollments.map((e) => e.courseCode));
+    const alreadyInSchedule = new Set(
+      schedule.enrollments.map((e) => e.courseCode),
+    );
 
     function isHonoursProject(code: string): boolean {
       const course = cacheVal.getCourse(code);
-      const component = course?.component?.trim().toLowerCase() ?? '';
-      return component.startsWith('recherche / research');
+      const component = course?.component?.trim().toLowerCase() ?? "";
+      return component.startsWith("recherche / research");
     }
 
     const prereqEligibleSet = new Set(prereqEligibleCourses);
@@ -1777,13 +1544,19 @@ export const useAppStore = create<AppStore>((set, get) => ({
       const cacheKey = `${code}:${includeClosedComponents}`;
       const cached = validEnrollmentsByCourseCode.get(cacheKey);
       if (cached) return cached;
-      const sched = getEffectiveSchedule(cacheVal, code, includeClosedComponents);
+      const sched = getEffectiveSchedule(
+        cacheVal,
+        code,
+        includeClosedComponents,
+      );
       if (!sched) {
         validEnrollmentsByCourseCode.set(cacheKey, []);
         return [];
       }
       const combos = getValidSectionCombos(sched, swapConstraints);
-      const enrollments = combos.map((combo) => getEnrollmentsForCourse(sched, combo));
+      const enrollments = combos.map((combo) =>
+        getEnrollmentsForCourse(sched, combo),
+      );
       validEnrollmentsByCourseCode.set(cacheKey, enrollments);
       return enrollments;
     }
@@ -1791,7 +1564,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const filters = { levels: levelBuckets, languageBuckets };
 
     const candidates: string[] = [];
-    const rejectedWithConflict: Array<{ code: string; conflictsWith: string }> = [];
+    const rejectedWithConflict: Array<{ code: string; conflictsWith: string }> =
+      [];
     for (const code of candidateSet) {
       if (!prereqEligibleSet.has(code)) {
         continue;
@@ -1812,10 +1586,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       // Only apply elective level bucket filter to generic electives (free, non-discipline, etc.).
       // discipline_elective (e.g. CSI 4000-level) already enforces its own level via the requirement.
       const isGenericElective =
-        poolRequirementType === 'free_elective' ||
-        poolRequirementType === 'non_discipline_elective' ||
-        poolRequirementType === 'faculty_elective' ||
-        poolRequirementType === 'elective';
+        poolRequirementType === "free_elective" ||
+        poolRequirementType === "non_discipline_elective" ||
+        poolRequirementType === "faculty_elective" ||
+        poolRequirementType === "elective";
       if (isGenericElective && electiveLevelBuckets.length > 0) {
         const match = code.match(/\d{4}/);
         if (match) {
@@ -1844,7 +1618,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       if (!added && others.length > 0 && possibleEnrollments.length > 0) {
         const conflict = getFirstOverlapWith(possibleEnrollments[0], others);
         if (conflict) {
-          rejectedWithConflict.push({ code, conflictsWith: conflict.courseCode });
+          rejectedWithConflict.push({
+            code,
+            conflictsWith: conflict.courseCode,
+          });
         }
       }
     }
