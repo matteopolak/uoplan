@@ -14,7 +14,18 @@ interface ProgramStepProps {
 }
 
 export function ProgramStep({ programs, value, onChange }: ProgramStepProps) {
-  const { cache, completedCourses, setCompletedCourses, studentPrograms, setStudentPrograms } = useAppStore();
+  const {
+    cache,
+    completedCourses,
+    setCompletedCourses,
+    studentPrograms,
+    setStudentPrograms,
+    availableYears,
+    firstYear,
+    yearCataloguePrograms,
+    yearCatalogueLoading,
+    setFirstYear,
+  } = useAppStore();
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [transcriptError, setTranscriptError] = useState<string | null>(null);
   const [transcriptFeedback, setTranscriptFeedback] = useState<{
@@ -24,10 +35,17 @@ export function ProgramStep({ programs, value, onChange }: ProgramStepProps) {
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const effectivePrograms = yearCataloguePrograms ?? programs;
+
+  const yearSelectData = useMemo(() =>
+    availableYears.map(y => ({ value: String(y), label: `${y}–${y + 1}` })),
+    [availableYears],
+  );
+
   const { uniquePrograms, valueToIndex, data } = useMemo(() => {
     const seen = new Set<string>();
     const unique: Program[] = [];
-    for (const p of programs) {
+    for (const p of effectivePrograms) {
       if (seen.has(p.url)) continue;
       seen.add(p.url);
       unique.push(p);
@@ -45,7 +63,7 @@ export function ProgramStep({ programs, value, onChange }: ProgramStepProps) {
     });
 
     return { uniquePrograms: unique, valueToIndex, data };
-  }, [programs]);
+  }, [effectivePrograms]);
 
   const allDisciplineCodes = useMemo(() => {
     if (!cache) return [];
@@ -102,6 +120,18 @@ export function ProgramStep({ programs, value, onChange }: ProgramStepProps) {
 
   return (
     <Stack gap="md">
+      <Select
+        label="First year of study"
+        description="Determines which program requirements apply to you."
+        placeholder="Select your starting year..."
+        data={yearSelectData}
+        value={firstYear !== null ? String(firstYear) : null}
+        onChange={(v) => setFirstYear(v !== null ? Number(v) : null)}
+        rightSection={yearCatalogueLoading ? <Loader size="xs" /> : undefined}
+        disabled={yearCatalogueLoading}
+        clearable
+        size="md"
+      />
       <Select
         data-tour="program-select"
         label="Select your program"

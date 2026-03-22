@@ -76,6 +76,11 @@ export interface AppState {
   terms: Term[] | null;
   selectedTermId: string | null;
 
+  availableYears: number[];
+  firstYear: number | null;
+  yearCataloguePrograms: Program[] | null;
+  yearCatalogueLoading: boolean;
+
   program: Program | null;
   studentPrograms: string[];
   completedCourses: string[];
@@ -127,6 +132,7 @@ export interface AppState {
 export interface AppActions {
   loadData: () => Promise<void>;
   setSelectedTermId: (termId: string) => Promise<void>;
+  setFirstYear: (year: number | null) => Promise<void>;
   loadEncodedState: (decoded: DecodedState) => void;
   getShareUrl: () => string | null;
   getEncodedStateBase64: () => string | null;
@@ -182,6 +188,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   terms: null,
   selectedTermId: null,
+
+  availableYears: [],
+  firstYear: null,
+  yearCataloguePrograms: null,
+  yearCatalogueLoading: false,
 
   program: null,
   studentPrograms: [],
@@ -413,18 +424,47 @@ export const useAppStore = create<AppStore>((set, get) => ({
     return stateToShareUrl(bytes, undefined, s.selectedTermId ?? undefined);
   },
 
+  setFirstYear: async (year) => {
+    const { catalogue } = get();
+    set({ firstYear: year, yearCatalogueLoading: true });
+    try {
+      if (year === null) {
+        // Use the current year's programs (already loaded as the main catalogue)
+        set({ yearCataloguePrograms: null, yearCatalogueLoading: false });
+      } else {
+        const res = await fetch(`/data/catalogue.${year}.json`);
+        if (!res.ok) throw new Error(`Failed to load catalogue.${year}.json`);
+        const json = await res.json();
+        const parsed = CatalogueSchema.parse(json);
+        set({ yearCataloguePrograms: parsed.programs, yearCatalogueLoading: false });
+      }
+    } catch (err) {
+      set({ yearCatalogueLoading: false });
+      console.error("Failed to load year catalogue:", err);
+    }
+    // Clear program selection since requirements differ between years
+    get().setProgram(null);
+  },
+
   loadData: async () => {
     set({ loading: true, error: null });
     try {
-      const [catalogueRes, termsRes, indicesRes, rmpRes] = await Promise.all([
+      const [manifestRes, termsRes, indicesRes, rmpRes] = await Promise.all([
         fetch("/data/catalogue.json"),
         fetch("/data/terms.json"),
         fetch("/data/indices.json").catch(() => null),
         fetch("/data/ratemyprofessors.json").catch(() => null),
       ]);
-      if (!catalogueRes.ok || !termsRes.ok)
+      if (!manifestRes.ok || !termsRes.ok)
         throw new Error("Failed to load data");
 
+      const manifestJson = await manifestRes.json();
+      const availableYears: number[] = Array.isArray(manifestJson.years) ? manifestJson.years : [];
+      const latestYear = availableYears[0];
+      if (!latestYear) throw new Error("Catalogue manifest has no years");
+
+      const catalogueRes = await fetch(`/data/catalogue.${latestYear}.json`);
+      if (!catalogueRes.ok) throw new Error(`Failed to load catalogue.${latestYear}.json`);
       const catalogue = await catalogueRes.json();
       const termsJson = await termsRes.json();
 
@@ -486,6 +526,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         professorRatings,
         terms: parsedTerms.terms,
         selectedTermId: initialTermId,
+        availableYears,
         loading: false,
         error: null,
       });
@@ -706,7 +747,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   resetToDefault: () => {
-    const { catalogue, indices, schedulesData, cache, loading, error } = get();
+    const { catalogue, indices, schedulesData, cache, loading, error, availableYears } = get();
     set({
       catalogue,
       indices,
@@ -714,6 +755,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       cache,
       loading,
       error,
+      availableYears,
+      firstYear: null,
+      yearCataloguePrograms: null,
+      yearCatalogueLoading: false,
       program: null,
       completedCourses: [],
       remainingRequirements: [],
