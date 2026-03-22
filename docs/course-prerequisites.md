@@ -2,7 +2,7 @@
 
 This document explains how course prerequisites are represented in the scraped catalogue data, and how they can be integrated into the requirements / eligibility engine.
 
-The scraper lives in `scripts/scraper.ts` and writes `public/data/catalogue.json`.
+The scraper lives in `scripts/scraper.ts`. It writes per-year files (`public/data/catalogue.2024.json`, etc.) and a manifest at `public/data/catalogue.json` — see `docs/multi-year-catalogue.md` for details.
 
 ---
 

@@ -36,7 +36,23 @@ jobs:
 
       - name: Backup existing JSON data
         run: |
-          cp public/data/catalogue.json /tmp/catalogue_old.json
+          # Determine current academic year (Sep = new year)
+          MONTH=$(date +%-m)
+          YEAR=$(date +%Y)
+          if [ "$MONTH" -ge 9 ]; then
+            CURRENT_YEAR=$YEAR
+          else
+            CURRENT_YEAR=$((YEAR - 1))
+          fi
+          echo "CURRENT_YEAR=$CURRENT_YEAR" >> "$GITHUB_ENV"
+
+          # Manifest and missing log
+          cp public/data/catalogue.json /tmp/catalogue_manifest_old.json || true
+          cp public/data/catalogue.missing.json /tmp/catalogue_missing_old.json || true
+
+          # Only the current year is re-scraped every run
+          cp "public/data/catalogue.${CURRENT_YEAR}.json" "/tmp/catalogue_current_old.json" || true
+
           cp public/data/terms.json /tmp/terms_old.json || true
           cp public/data/ratemyprofessors.json /tmp/ratemyprofessors_old.json || true
           mkdir -p /tmp/schedules_old
@@ -60,15 +76,40 @@ jobs:
 
       - name: Show JSON diffs (catalogue and schedules)
         run: |
-          echo "::group::Diff catalogue.json"
-          diff -u /tmp/catalogue_old.json public/data/catalogue.json || true
+          echo "::group::Diff catalogue.json (manifest)"
+          diff -u /tmp/catalogue_manifest_old.json public/data/catalogue.json || true
           echo "::endgroup::"
+
+          echo "::group::Diff catalogue.${CURRENT_YEAR}.json (current year)"
+          diff -u /tmp/catalogue_current_old.json "public/data/catalogue.${CURRENT_YEAR}.json" || true
+          echo "::endgroup::"
+
+          echo "::group::New archive catalogue files"
+          shopt -s nullglob
+          for f in public/data/catalogue.*.json; do
+            base=$(basename "$f")
+            # Skip manifest and current year (already diffed above)
+            [ "$base" = "catalogue.json" ] && continue
+            [ "$base" = "catalogue.${CURRENT_YEAR}.json" ] && continue
+            if ! git show "HEAD:public/data/$base" &>/dev/null; then
+              echo "New file: $f"
+            fi
+          done
+          shopt -u nullglob
+          echo "::endgroup::"
+
+          echo "::group::Diff catalogue.missing.json"
+          diff -u /tmp/catalogue_missing_old.json public/data/catalogue.missing.json || true
+          echo "::endgroup::"
+
           echo "::group::Diff terms.json"
           diff -u /tmp/terms_old.json public/data/terms.json || true
           echo "::endgroup::"
+
           echo "::group::Diff ratemyprofessors.json"
           diff -u /tmp/ratemyprofessors_old.json public/data/ratemyprofessors.json || true
           echo "::endgroup::"
+
           echo "::group::Diff schedules.*.json"
           shopt -s nullglob
           for f in public/data/schedules.*.json; do
@@ -85,10 +126,19 @@ jobs:
       - name: Check for data changes
         id: check_changes
         run: |
-          if git diff --quiet -- public/data/catalogue.json public/data/terms.json public/data/ratemyprofessors.json public/data/schedules.*.json; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
+          # git status --porcelain detects both modified tracked files and new untracked files
+          CHANGED=$(git status --porcelain -- \
+            'public/data/catalogue.json' \
+            'public/data/catalogue.missing.json' \
+            public/data/catalogue.*.json \
+            public/data/terms.json \
+            public/data/ratemyprofessors.json \
+            public/data/schedules.*.json \
+          | wc -l)
+          if [ "$CHANGED" -gt 0 ]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Commit and push updated data
@@ -98,7 +148,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add public/data/catalogue.json public/data/terms.json public/data/ratemyprofessors.json public/data/schedules.*.json
+          git add public/data/catalogue.json public/data/catalogue.missing.json public/data/catalogue.*.json public/data/terms.json public/data/ratemyprofessors.json public/data/schedules.*.json
 
           BOT_EMAIL="github-actions[bot]@users.noreply.github.com"
           LAST_AUTHOR_EMAIL=$(git log -1 --format='%ae')

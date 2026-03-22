@@ -9,7 +9,6 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "scrape": "node scripts/scraper.ts",
     "scrape:catalogue": "node scripts/scraper.ts",
     "scrape:schedules": "node scripts/schedule_scraper.ts",
     "scrape:ratemyprofessors": "node scripts/ratemyprofessors_scraper.ts"

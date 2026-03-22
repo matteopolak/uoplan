@@ -4,7 +4,24 @@ import pLimit from 'p-limit';
 import fs from 'fs/promises';
 import path from 'path';
 
-const BASE_URL = 'https://catalogue.uottawa.ca';
+const ROOT_URL = 'https://catalogue.uottawa.ca';
+const OLDEST_YEAR = 2017;
+
+function getCurrentAcademicYear(): number {
+  const now = new Date();
+  // Academic year starts in September (month index 8)
+  return now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+}
+
+function buildBaseUrl(year: number): string {
+  if (year === getCurrentAcademicYear()) return ROOT_URL;
+  return `${ROOT_URL}/archive/${year}-${year + 1}`;
+}
+
+/** Returns the path-only prefix for the given baseUrl (e.g. "/archive/2021-2022" or ""). */
+function hrefPrefix(baseUrl: string): string {
+  return baseUrl.replace(ROOT_URL, '');
+}
 
 type CoursePrereqNode = {
   type: 'course' | 'or_group' | 'and_group' | 'non_course';
@@ -475,6 +492,13 @@ const CatalogueSchema = z.object({
 });
 export type Catalogue = z.infer<typeof CatalogueSchema>;
 
+class NotFoundError extends Error {
+  constructor(url: string) {
+    super(`Not found (404): ${url}`);
+    this.name = 'NotFoundError';
+  }
+}
+
 const USE_CACHE_ONLY = process.argv.includes('use-cache');
 
 async function fetchHtml(url: string, retries = 3): Promise<string> {
@@ -497,11 +521,14 @@ async function fetchHtml(url: string, retries = 3): Promise<string> {
   for (let i = 0; i < retries; i++) {
     try {
       const res = await fetch(url);
+      if (res.status === 404) throw new NotFoundError(url);
       if (!res.ok) throw new Error(`Status ${res.status}`);
       const text = await res.text();
       await fs.writeFile(filePath, text, 'utf-8');
       return text;
     } catch (err: any) {
+      // Don't retry 404s
+      if (err instanceof NotFoundError) throw err;
       if (i === retries - 1) throw new Error(`Failed to fetch ${url}: ${err.message}`);
       await new Promise(r => setTimeout(r, 1000 * (i + 1)));
     }
@@ -509,26 +536,29 @@ async function fetchHtml(url: string, retries = 3): Promise<string> {
   throw new Error(`Failed to fetch ${url}`);
 }
 
-async function scrapeDisciplineLinks(): Promise<string[]> {
-  const html = await fetchHtml(`${BASE_URL}/en/courses/`);
+async function scrapeDisciplineLinks(baseUrl: string): Promise<string[]> {
+  const html = await fetchHtml(`${baseUrl}/en/courses/`);
   const $ = cheerio.load(html);
+  const prefix = hrefPrefix(baseUrl);
+  const pattern = new RegExp(`^${prefix}/en/courses/[a-z]{3,4}/$`);
   const links: string[] = [];
   $('a').each((_, el) => {
     const href = $(el).attr('href');
-    if (href && /^\/en\/courses\/[a-z]{3,4}\/$/.test(href)) {
+    if (href && pattern.test(href)) {
       if (!links.includes(href)) links.push(href);
     }
   });
   return links;
 }
 
-async function scrapeProgramLinks(): Promise<string[]> {
-  const html = await fetchHtml(`${BASE_URL}/en/programs/`);
+async function scrapeProgramLinks(baseUrl: string): Promise<string[]> {
+  const html = await fetchHtml(`${baseUrl}/en/programs/`);
   const $ = cheerio.load(html);
+  const prefix = hrefPrefix(baseUrl);
   const links: string[] = [];
   $('a').each((_, el) => {
     const href = $(el).attr('href');
-    if (href && (href.startsWith('/en/undergrad/') || href.startsWith('/en/grad/'))) {
+    if (href && (href.startsWith(`${prefix}/en/undergrad/`) || href.startsWith(`${prefix}/en/grad/`))) {
       if (!links.includes(href)) links.push(href);
     }
   });
@@ -830,40 +860,45 @@ function processRequirements(reqs: ProgramRequirement[]): ProgramRequirement[] {
   return foldedSections;
 }
 
-async function main() {
-  console.log('Fetching course disciplines...');
-  const disciplineLinks = await scrapeDisciplineLinks();
-  console.log(`Found ${disciplineLinks.length} disciplines.`);
-
-  console.log('Fetching program links...');
-  const programLinks = await scrapeProgramLinks();
-  console.log(`Found ${programLinks.length} programs.`);
+async function scrapeYearCatalogue(baseUrl: string): Promise<{ catalogue: Catalogue; missingUrls: string[] }> {
+  const disciplineLinks = await scrapeDisciplineLinks(baseUrl);
+  const programLinks = await scrapeProgramLinks(baseUrl);
 
   const limit = pLimit(10);
+  const missingUrls: string[] = [];
 
-  console.log('Scraping courses...');
   const allCourses: Course[] = [];
   const coursePromises = disciplineLinks.map(link => limit(async () => {
-    const url = `${BASE_URL}${link}`;
+    // hrefs are root-relative paths, so always use ROOT_URL as the domain
+    const url = `${ROOT_URL}${link}`;
     try {
       const courses = await scrapeCourses(url);
       allCourses.push(...courses);
     } catch (e: any) {
-      console.error(`Error scraping courses at ${url}: ${e.message}`);
-      throw e;
+      if (e instanceof NotFoundError) {
+        console.warn(`Skipping missing course page: ${url}`);
+        missingUrls.push(url);
+      } else {
+        console.error(`Error scraping courses at ${url}: ${e.message}`);
+        throw e;
+      }
     }
   }));
 
-  console.log('Scraping programs...');
   const allPrograms: Program[] = [];
   const programPromises = programLinks.map(link => limit(async () => {
-    const url = `${BASE_URL}${link}`;
+    const url = `${ROOT_URL}${link}`;
     try {
       const prog = await scrapeProgram(url);
       allPrograms.push(prog);
     } catch (e: any) {
-      console.error(`Error scraping program at ${url}: ${e.message}`);
-      throw e;
+      if (e instanceof NotFoundError) {
+        console.warn(`Skipping missing program: ${url}`);
+        missingUrls.push(url);
+      } else {
+        console.error(`Error scraping program at ${url}: ${e.message}`);
+        throw e;
+      }
     }
   }));
 
@@ -880,49 +915,81 @@ async function main() {
     })),
   });
 
+  return { catalogue, missingUrls };
+}
+
+async function scrapeYear(year: number, dataDir: string, force: boolean): Promise<string[]> {
+  const outPath = path.join(dataDir, `catalogue.${year}.json`);
+
+  if (!force) {
+    try {
+      await fs.access(outPath);
+      console.log(`Skipping catalogue.${year}.json (already exists)`);
+      return [];
+    } catch {
+      // file doesn't exist, proceed with scraping
+    }
+  }
+
+  const baseUrl = buildBaseUrl(year);
+  console.log(`\nScraping ${year}-${year + 1} from ${baseUrl}...`);
+
+  const { catalogue, missingUrls } = await scrapeYearCatalogue(baseUrl);
+
+  await fs.writeFile(outPath, JSON.stringify(catalogue), 'utf-8');
+  console.log(
+    `Saved catalogue.${year}.json (${catalogue.courses.length} courses, ${catalogue.programs.length} programs)` +
+    (missingUrls.length ? ` — ${missingUrls.length} missing (404)` : '')
+  );
+
+  return missingUrls;
+}
+
+async function main() {
+  const currentYear = getCurrentAcademicYear();
   const dataDir = path.join(process.cwd(), 'public', 'data');
   await fs.mkdir(dataDir, { recursive: true });
 
-  let existingCourseCodes: string[] = [];
-  let existingProgramUrls: string[] = [];
-  const indicesPath = path.join(dataDir, 'indices.json');
+  // Load existing missing-URLs log so we can merge into it
+  const missingPath = path.join(dataDir, 'catalogue.missing.json');
+  let missingByYear: Record<string, string[]> = {};
   try {
-    const raw = await fs.readFile(indicesPath, 'utf-8');
-    const indices = JSON.parse(raw) as { courses?: string[]; programs?: string[] };
-    existingCourseCodes = Array.isArray(indices.courses) ? indices.courses : [];
-    existingProgramUrls = Array.isArray(indices.programs) ? indices.programs : [];
+    const raw = await fs.readFile(missingPath, 'utf-8');
+    missingByYear = JSON.parse(raw);
   } catch {
-    // No existing indices file
+    // No existing file — start fresh
   }
 
-  const existingCourseSet = new Set(existingCourseCodes);
-  const newCourseCodes = allCourses
-    .map(c => c.code)
-    .filter(code => !existingCourseSet.has(code));
-  newCourseCodes.sort((a, b) => a.localeCompare(b));
-  const mergedCourseCodes = [...existingCourseCodes, ...newCourseCodes];
+  // Scrape archive years (skip if already present)
+  for (let year = OLDEST_YEAR; year < currentYear; year++) {
+    const missing = await scrapeYear(year, dataDir, false);
+    if (missing.length) missingByYear[String(year)] = missing.sort();
+  }
 
-  const existingProgramSet = new Set(existingProgramUrls);
-  const newProgramUrls = allPrograms
-    .map(p => p.url)
-    .filter(url => !existingProgramSet.has(url));
-  newProgramUrls.sort((a, b) => a.localeCompare(b));
-  const mergedProgramUrls = [...existingProgramUrls, ...newProgramUrls];
+  // Always re-scrape the current year
+  const currentMissing = await scrapeYear(currentYear, dataDir, true);
+  if (currentMissing.length) {
+    missingByYear[String(currentYear)] = currentMissing.sort();
+  } else {
+    delete missingByYear[String(currentYear)];
+  }
 
-  const indices = { courses: mergedCourseCodes, programs: mergedProgramUrls };
-  await fs.writeFile(indicesPath, JSON.stringify(indices), 'utf-8');
+  // Write the missing-URLs log
+  await fs.writeFile(missingPath, JSON.stringify(missingByYear, null, 2), 'utf-8');
+  const totalMissing = Object.values(missingByYear).reduce((n, urls) => n + urls.length, 0);
+  if (totalMissing > 0) {
+    console.log(`\nWrote catalogue.missing.json (${totalMissing} missing URLs across ${Object.keys(missingByYear).length} year(s))`);
+  }
 
+  // Write the manifest
+  const years: number[] = [];
+  for (let y = currentYear; y >= OLDEST_YEAR; y--) years.push(y);
   await fs.writeFile(
     path.join(dataDir, 'catalogue.json'),
-    JSON.stringify(catalogue),
-    'utf-8'
+    JSON.stringify({ years }),
+    'utf-8',
   );
-  console.log(
-    `Successfully saved ${allCourses.length} courses and ${allPrograms.length} programs to public/data/catalogue.json`
-  );
-  console.log(
-    `Indices: ${mergedCourseCodes.length} courses, ${mergedProgramUrls.length} programs (append-only)`
-  );
+  console.log(`\nWrote catalogue.json manifest: years ${currentYear}–${OLDEST_YEAR}`);
 }
 
 main().catch(e => {
@@ -930,4 +997,3 @@ main().catch(e => {
   console.error(e);
   process.exit(1);
 });
-
