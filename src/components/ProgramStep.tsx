@@ -2,6 +2,7 @@ import { useState, useRef, useMemo } from 'react';
 import { Select, MultiSelect, Stack, Text, Button, Alert, Loader } from '@mantine/core';
 import type { Program } from '../schemas/catalogue';
 import { useAppStore } from '../store/appStore';
+import { useShallow } from 'zustand/react/shallow';
 import {
   parseTranscriptPdf,
   findBestMatchingProgram,
@@ -17,15 +18,26 @@ export function ProgramStep({ programs, value, onChange }: ProgramStepProps) {
   const {
     cache,
     completedCourses,
-    setCompletedCourses,
     studentPrograms,
-    setStudentPrograms,
     availableYears,
     firstYear,
     yearCataloguePrograms,
     yearCatalogueLoading,
-    setFirstYear,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((s) => ({
+      cache: s.cache,
+      completedCourses: s.completedCourses,
+      studentPrograms: s.studentPrograms,
+      availableYears: s.availableYears,
+      firstYear: s.firstYear,
+      yearCataloguePrograms: s.yearCataloguePrograms,
+      yearCatalogueLoading: s.yearCatalogueLoading,
+    })),
+  );
+
+  const setCompletedCourses = useAppStore((s) => s.setCompletedCourses);
+  const setStudentPrograms = useAppStore((s) => s.setStudentPrograms);
+  const setFirstYear = useAppStore((s) => s.setFirstYear);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [transcriptError, setTranscriptError] = useState<string | null>(null);
   const [transcriptFeedback, setTranscriptFeedback] = useState<{
