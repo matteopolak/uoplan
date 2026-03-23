@@ -7,6 +7,7 @@ import {
   parseTranscriptPdf,
   findBestMatchingProgram,
 } from '../lib/transcriptParser';
+import { normalizeCourseCode } from '../lib/dataCache';
 
 interface ProgramStepProps {
   programs: Program[];
@@ -17,6 +18,7 @@ interface ProgramStepProps {
 export function ProgramStep({ programs, value, onChange }: ProgramStepProps) {
   const {
     cache,
+    indices,
     completedCourses,
     studentPrograms,
     availableYears,
@@ -26,6 +28,7 @@ export function ProgramStep({ programs, value, onChange }: ProgramStepProps) {
   } = useAppStore(
     useShallow((s) => ({
       cache: s.cache,
+      indices: s.indices,
       completedCourses: s.completedCourses,
       studentPrograms: s.studentPrograms,
       availableYears: s.availableYears,
@@ -77,6 +80,11 @@ export function ProgramStep({ programs, value, onChange }: ProgramStepProps) {
     return { uniquePrograms: unique, valueToIndex, data };
   }, [effectivePrograms]);
 
+  const indexedCodes = useMemo(() => {
+    if (!indices) return null;
+    return new Set(indices.courses.map(normalizeCourseCode));
+  }, [indices]);
+
   const allDisciplineCodes = useMemo(() => {
     if (!cache) return [];
     const disciplines = new Set<string>();
@@ -102,7 +110,7 @@ export function ProgramStep({ programs, value, onChange }: ProgramStepProps) {
       const inCatalogue: string[] = [];
       const skippedCodes: string[] = [];
       for (const code of parsedCourses) {
-        if (cache.getCourse(code)) {
+        if (cache.getCourse(code) || indexedCodes?.has(normalizeCourseCode(code))) {
           inCatalogue.push(code);
         } else {
           skippedCodes.push(code);
