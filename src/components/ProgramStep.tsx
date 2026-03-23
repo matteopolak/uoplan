@@ -35,7 +35,7 @@ export function ProgramStep({ programs, value, onChange }: ProgramStepProps) {
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const effectivePrograms = yearCataloguePrograms ?? programs;
+  const effectivePrograms = yearCataloguePrograms ?? [];
 
   const yearSelectData = useMemo(() =>
     availableYears.map(y => ({ value: String(y), label: `${y}–${y + 1}` })),
@@ -86,7 +86,7 @@ export function ProgramStep({ programs, value, onChange }: ProgramStepProps) {
     setTranscriptLoading(true);
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const { courses: parsedCourses, fullText } = await parseTranscriptPdf(arrayBuffer);
+      const { courses: parsedCourses, fullText, startingYear } = await parseTranscriptPdf(arrayBuffer);
       const inCatalogue: string[] = [];
       const skippedCodes: string[] = [];
       for (const code of parsedCourses) {
@@ -99,7 +99,22 @@ export function ProgramStep({ programs, value, onChange }: ProgramStepProps) {
       const merged = [...new Set([...completedCourses, ...inCatalogue])];
       setCompletedCourses(merged);
 
-      const programMatched = findBestMatchingProgram(fullText, uniquePrograms);
+      // Set year first; setFirstYear awaits the catalogue fetch and then calls setProgram(null),
+      // so we must await it before matching the program against the updated programme list.
+      let programListToMatch = uniquePrograms;
+      if (startingYear !== null && firstYear === null) {
+        await setFirstYear(startingYear);
+        const freshPrograms = useAppStore.getState().yearCataloguePrograms;
+        if (freshPrograms) {
+          const seen = new Set<string>();
+          programListToMatch = freshPrograms.filter(p => {
+            if (seen.has(p.url)) return false;
+            seen.add(p.url);
+            return true;
+          });
+        }
+      }
+      const programMatched = findBestMatchingProgram(fullText, programListToMatch);
       if (programMatched) {
         onChange(programMatched);
       }

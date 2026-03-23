@@ -631,7 +631,7 @@ function parseUnits(text: string): number | undefined {
 async function scrapeProgram(url: string): Promise<Program> {
   const html = await fetchHtml(url);
   const $ = cheerio.load(html);
-  const title = $('h1').first().text().replace(/\s+/g, ' ').trim();
+  const title = $('#page-title-area>h1, h1.page-title').first().text().replace(/\s+/g, ' ').trim();
 
   const requirements: ProgramRequirement[] = [];
   let currentGroup: ProgramRequirement | null = null;
