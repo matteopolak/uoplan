@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { type Program, CatalogueSchema } from "../schemas/catalogue";
+import { type Course, type Program, CatalogueSchema } from "../schemas/catalogue";
 import type {
   RemainingRequirement,
   RequirementWithStatus,
@@ -62,6 +62,39 @@ import {
 
 const validEnrollmentsByCourseCode = new Map<string, CourseEnrollment[]>();
 
+function getMergedCatalogue(
+  catalogue: { courses: unknown[]; programs: Program[] } | null,
+  yearCatalogueCourses: Course[] | null,
+  completedCourses: string[],
+): { courses: unknown[]; programs: Program[] } | null {
+  if (!catalogue) return null;
+  if (!yearCatalogueCourses) return catalogue;
+
+  const completedSet = new Set(completedCourses.map(normalizeCourseCode));
+  const yearMap = new Map(
+    yearCatalogueCourses.map((c) => [normalizeCourseCode(c.code), c]),
+  );
+
+  // Start with year-specific courses as base
+  const merged = new Map<string, Course>();
+  for (const course of yearCatalogueCourses) {
+    merged.set(normalizeCourseCode(course.code), course);
+  }
+
+  // Override with latest year's courses, unless the user has completed that course
+  for (const course of catalogue.courses as Course[]) {
+    const key = normalizeCourseCode(course.code);
+    if (completedSet.has(key) && yearMap.has(key)) {
+      // User completed it and it exists in year-specific — keep year-specific version
+      continue;
+    }
+    // Use latest version (new course or not yet completed)
+    merged.set(key, course);
+  }
+
+  return { ...catalogue, courses: Array.from(merged.values()) };
+}
+
 const LOCAL_STORAGE_KEY = "uoplan-state";
 const TERM_LOCAL_STORAGE_KEY = "uoplan-term";
 
@@ -79,6 +112,7 @@ export interface AppState {
   availableYears: number[];
   firstYear: number | null;
   yearCataloguePrograms: Program[] | null;
+  yearCatalogueCourses: Course[] | null;
   yearCatalogueLoading: boolean;
 
   program: Program | null;
@@ -197,6 +231,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   availableYears: [],
   firstYear: null,
   yearCataloguePrograms: null,
+  yearCatalogueCourses: null,
   yearCatalogueLoading: false,
 
   program: null,
@@ -254,7 +289,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setSelectedTermId: async (termId: string) => {
     set({ loading: true, error: null });
     try {
-      const { catalogue } = get();
+      const { catalogue, yearCatalogueCourses, completedCourses } = get();
       if (!catalogue) throw new Error("Catalogue not loaded");
 
       const schedulesRes = await fetch(`/data/schedules.${termId}.json`);
@@ -262,7 +297,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       const schedulesData = await schedulesRes.json();
 
       const parsedSchedules = SchedulesDataSchema.parse(schedulesData);
-      const cache = buildDataCache(catalogue as any, parsedSchedules);
+      const effectiveCatalogue = getMergedCatalogue(catalogue, yearCatalogueCourses, completedCourses);
+      const cache = buildDataCache((effectiveCatalogue ?? catalogue) as any, parsedSchedules);
 
       // Recompute derived state against the new schedules/cache (keeping existing selections).
       const s = get();
@@ -438,13 +474,26 @@ export const useAppStore = create<AppStore>((set, get) => ({
     try {
       if (year === null) {
         // Use the current year's programs (already loaded as the main catalogue)
-        set({ yearCataloguePrograms: null, yearCatalogueLoading: false });
+        set({ yearCataloguePrograms: null, yearCatalogueCourses: null, yearCatalogueLoading: false });
+        // Rebuild cache with latest courses only
+        const { schedulesData, completedCourses } = get();
+        if (catalogue && schedulesData) {
+          const cache = buildDataCache(catalogue as any, schedulesData as any);
+          set({ cache });
+        }
       } else {
         const res = await fetch(`/data/catalogue.${year}.json`);
         if (!res.ok) throw new Error(`Failed to load catalogue.${year}.json`);
         const json = await res.json();
         const parsed = CatalogueSchema.parse(json);
-        set({ yearCataloguePrograms: parsed.programs, yearCatalogueLoading: false });
+        set({ yearCataloguePrograms: parsed.programs, yearCatalogueCourses: parsed.courses, yearCatalogueLoading: false });
+        // Rebuild cache with merged courses
+        const { schedulesData, completedCourses } = get();
+        const effectiveCatalogue = getMergedCatalogue(catalogue, parsed.courses, completedCourses);
+        if (effectiveCatalogue && schedulesData) {
+          const cache = buildDataCache(effectiveCatalogue as any, schedulesData as any);
+          set({ cache });
+        }
       }
     } catch (err) {
       set({ yearCatalogueLoading: false });
@@ -636,6 +685,20 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   setCompletedCourses: (courses) => {
     set({ completedCourses: courses });
+    // If a year-specific catalogue is loaded, rebuild the merged cache since
+    // which version of each course to use depends on whether it was completed.
+    const {
+      catalogue,
+      yearCatalogueCourses,
+      schedulesData,
+    } = get();
+    if (yearCatalogueCourses && catalogue && schedulesData) {
+      const effectiveCatalogue = getMergedCatalogue(catalogue, yearCatalogueCourses, courses);
+      if (effectiveCatalogue) {
+        const newCache = buildDataCache(effectiveCatalogue as any, schedulesData as any);
+        set({ cache: newCache });
+      }
+    }
     const {
       program,
       cache,
@@ -766,6 +829,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       availableYears,
       firstYear: null,
       yearCataloguePrograms: null,
+      yearCatalogueCourses: null,
       yearCatalogueLoading: false,
       program: null,
       completedCourses: [],
