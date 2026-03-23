@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   Group,
+  List,
   Select,
   Stack,
   Text,
@@ -41,6 +42,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
     getEncodedStateBase64,
     generateSchedules,
     generationError,
+    generationErrorDetails,
     cache,
     professorRatings,
     getSwapCandidates,
@@ -287,7 +289,25 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
 
         {generationError && (
           <Alert color="red" variant="light" radius="sm" py="xs">
-            {generationError}
+            <Stack gap="xs">
+              <Text size="sm">{generationError}</Text>
+              {generationErrorDetails && generationErrorDetails.emptyPools.length > 0 && (
+                <>
+                  <Text size="sm" fw={500}>Requirements with no eligible courses this term:</Text>
+                  <List size="sm" spacing={2}>
+                    {generationErrorDetails.emptyPools.map((p) => (
+                      <List.Item key={p.label}>{p.label}</List.Item>
+                    ))}
+                  </List>
+                </>
+              )}
+              {generationErrorDetails && generationErrorDetails.totalAvailable < generationErrorDetails.totalNeeded && (
+                <Text size="sm">
+                  Only {generationErrorDetails.totalAvailable} course{generationErrorDetails.totalAvailable !== 1 ? 's' : ''} available this term.
+                  Try reducing to {generationErrorDetails.totalAvailable} course{generationErrorDetails.totalAvailable !== 1 ? 's' : ''} for this semester.
+                </Text>
+              )}
+            </Stack>
           </Alert>
         )}
 

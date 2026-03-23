@@ -1,4 +1,4 @@
-import { Stack, NumberInput, Button, Alert, Group, MultiSelect, TextInput, Select, Checkbox } from '@mantine/core';
+import { Stack, NumberInput, Button, Alert, Group, MultiSelect, TextInput, Select, Checkbox, List, Text } from '@mantine/core';
 import type { DayOfWeek } from '../schemas/schedules';
 
 const DAY_OPTIONS: { value: DayOfWeek; label: string }[] = [
@@ -48,6 +48,11 @@ interface ScheduleCountStepProps {
   onGenerate: () => void;
   generating?: boolean;
   error?: string | null;
+  errorDetails?: {
+    emptyPools: Array<{ label: string }>;
+    totalAvailable: number;
+    totalNeeded: number;
+  } | null;
   disableGenerate?: boolean;
   disableGenerateReason?: string;
 }
@@ -73,6 +78,7 @@ export function ScheduleCountStep({
   onGenerate,
   generating = false,
   error,
+  errorDetails,
   disableGenerate = false,
   disableGenerateReason,
 }: ScheduleCountStepProps) {
@@ -148,7 +154,25 @@ export function ScheduleCountStep({
       />
       {error && (
         <Alert color="red" variant="light" radius="sm">
-          {error}
+          <Stack gap="xs">
+            <Text size="sm">{error}</Text>
+            {errorDetails && errorDetails.emptyPools.length > 0 && (
+              <>
+                <Text size="sm" fw={500}>Requirements with no eligible courses this term:</Text>
+                <List size="sm" spacing={2}>
+                  {errorDetails.emptyPools.map((p) => (
+                    <List.Item key={p.label}>{p.label}</List.Item>
+                  ))}
+                </List>
+              </>
+            )}
+            {errorDetails && errorDetails.totalAvailable < errorDetails.totalNeeded && (
+              <Text size="sm">
+                Only {errorDetails.totalAvailable} course{errorDetails.totalAvailable !== 1 ? 's' : ''} available this term.
+                Try reducing to {errorDetails.totalAvailable} course{errorDetails.totalAvailable !== 1 ? 's' : ''} for this semester.
+              </Text>
+            )}
+          </Stack>
         </Alert>
       )}
       {needMore && (

@@ -103,6 +103,11 @@ export interface AppState {
   schedulePoolMaps: Record<string, string>[];
   selectedScheduleIndex: number;
   generationError: string | null;
+  generationErrorDetails: {
+    emptyPools: Array<{ label: string }>;
+    totalAvailable: number;
+    totalNeeded: number;
+  } | null;
   unassignedCompletedCourses: string[];
   /** Stack of swaps for undo (most recent at end). Each entry: schedule index, enrollment index, previous course code. */
   swapHistory: Array<{
@@ -214,6 +219,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   schedulePoolMaps: [],
   selectedScheduleIndex: 0,
   generationError: null,
+  generationErrorDetails: null,
   unassignedCompletedCourses: [],
   swapHistory: [],
   generationMinStartMinutes: 8 * 60 + 30, // 8:30
@@ -278,6 +284,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         cache,
         generatedSchedules: [],
         generationError: null,
+        generationErrorDetails: null,
         selectedScheduleIndex: 0,
         ...full,
         loading: false,
@@ -366,6 +373,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       includeClosedComponents: decoded.includeClosedComponents ?? false,
       generatedSchedules: [],
       generationError: null,
+      generationErrorDetails: null,
       ...full,
     });
   },
@@ -778,6 +786,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       schedulePoolMaps: [],
       selectedScheduleIndex: 0,
       generationError: null,
+      generationErrorDetails: null,
       unassignedCompletedCourses: [],
       swapHistory: [],
       generationSeed: generateRandomSeed(),
@@ -841,6 +850,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
           : "";
       set({
         generationError: `Assign all completed courses to requirements before generating schedules. Unassigned: ${preview.join(", ")}${suffix}`,
+        generationErrorDetails: null,
       });
       return;
     }
@@ -968,7 +978,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (missingOptionGroups.length > 0) {
       set({
         generationError:
-          "Please choose exactly one option in each “or” block before generating schedules.",
+          "Please choose exactly one option in each \"or\" block before generating schedules.",
+        generationErrorDetails: null,
       });
       return;
     }
@@ -982,6 +993,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
     let finalSchedules: GeneratedSchedule[] = [];
     let lastChosenFromPool: Record<string, string> = {};
     let finalPoolMaps: Record<string, string>[] = [];
+    let poolDiagnostics: {
+      emptyPools: Array<{ label: string }>;
+      totalAvailable: number;
+      totalNeeded: number;
+    } | null = null;
 
     function isEligibleCandidate(code: string, poolType?: string): boolean {
       const sched = getEffectiveSchedule(
@@ -1308,6 +1324,19 @@ export const useAppStore = create<AppStore>((set, get) => ({
       lastChosenFromPool = collectedPoolMaps[0] ?? {};
 
       filteredOptionalPool = lastFilteredPool;
+
+      // Build diagnostics for error reporting: which pools had zero eligible courses.
+      const emptyPools = pools
+        .filter(
+          (p) =>
+            (candidatesByRequirement.get(p.requirementId) ?? []).length === 0,
+        )
+        .map((p) => ({ label: p.label }));
+      poolDiagnostics = {
+        emptyPools,
+        totalAvailable: pinned.length + filteredOptionalPool.length,
+        totalNeeded: effectiveTarget,
+      };
     }
 
     if (remainingNeeded <= 0) {
@@ -1331,6 +1360,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         set({
           generationError:
             "Not enough eligible courses to generate another schedule. Try relaxing filters or changing selections.",
+          generationErrorDetails: poolDiagnostics,
         });
         return;
       }
@@ -1344,6 +1374,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         swapHistory: [],
         generationError:
           "Not enough eligible courses match your filters and requirements to build a full schedule. Try relaxing filters or changing selections.",
+        generationErrorDetails: poolDiagnostics,
       });
       return;
     }
@@ -1370,6 +1401,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         selectedScheduleIndex: newSchedules.length - 1,
         swapHistory: [],
         generationError: null,
+        generationErrorDetails: null,
       });
       return;
     }
@@ -1378,6 +1410,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       set({
         generationError:
           "Could not generate another schedule after 100 attempts. Try different selections or filters.",
+        generationErrorDetails: null,
       });
       return;
     }
@@ -1393,6 +1426,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         limitedSchedules.length === 0
           ? "No non-overlapping schedules could be generated with your selections."
           : null,
+      generationErrorDetails: null,
     });
   },
 
