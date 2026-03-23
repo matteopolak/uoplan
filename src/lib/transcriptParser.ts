@@ -81,6 +81,24 @@ function extractCodesFromText(text: string): string[] {
 export interface TranscriptParseResult {
   courses: string[];
   fullText: string;
+  startingYear: number | null;
+}
+
+/**
+ * Parse the academic starting year from transcript full text.
+ * Looks for the line after "Start of Transcript" which has the form "YYYY Fall/Winter/Summer/Spring Term".
+ * Fall YYYY → starting year YYYY; Winter/Summer/Spring YYYY → starting year YYYY-1.
+ */
+function parseStartingYear(fullText: string): number | null {
+  const lines = fullText.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const match = /start\s+of\s+transcript\s+(\d{4})\s+(Fall|Winter|Summer|Spring)/i.exec(lines[i]);
+    if (!match) continue;
+    const year = parseInt(match[1], 10);
+    const term = match[2].toLowerCase();
+    return term === "fall" ? year : year - 1;
+  }
+  return null;
 }
 
 /**
@@ -144,9 +162,11 @@ export async function parseTranscriptPdf(
     fromText.forEach((c) => allCodes.add(c));
   }
 
+  const fullText = textParts.join("\n");
   return {
     courses: [...allCodes],
-    fullText: textParts.join("\n"),
+    fullText,
+    startingYear: parseStartingYear(fullText),
   };
 }
 

@@ -280,8 +280,12 @@ export function RequirementNode({
         }
         if (!courseMatchesFilters(c, { levels: levelBuckets, languageBuckets }))
           return false;
-        if (cache && !getEffectiveSchedule(cache, c, includeClosedComponents))
+        if (cache && !getEffectiveSchedule(cache, c, includeClosedComponents)) {
+          const isSpecificCourseReq =
+            node.type === "course" || node.type === "or_course";
+          if (isSpecificCourseReq && /\b4900\b/.test(c)) return true;
           return false;
+        }
         if (isElectiveWithExclusions && electiveLevelBuckets.length > 0) {
           const match = c.match(/\d{4}/);
           if (match) {

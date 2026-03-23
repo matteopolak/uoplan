@@ -877,9 +877,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     };
 
     function isHonoursProject(code: string): boolean {
-      const course = cacheVal.getCourse(code);
-      const component = course?.component?.trim().toLowerCase() ?? "";
-      return component.startsWith("recherche / research");
+      return /\b4900\b/i.test(code);
     }
 
     const allSelected = Object.values(selectedPerRequirement).flat();
