@@ -513,7 +513,7 @@ async function fetchScheduleForCourse(
     // Persist raw HTML per-course for debugging / verification.
     try {
       await fs.mkdir(HTML_CACHE_DIR, { recursive: true });
-      await fs.writeFile(cachePath, res.body, 'utf-8');
+      // await fs.writeFile(cachePath, res.body, 'utf-8');
     } catch (err) {
       console.error(
         `Warning: failed to write HTML cache for ${course.subject} ${course.catalogNbr}:`,

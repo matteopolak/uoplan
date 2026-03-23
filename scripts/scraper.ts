@@ -508,12 +508,12 @@ async function fetchHtml(url: string, retries = 3): Promise<string> {
   const filename = encodeURIComponent(url.replace(/^https?:\/\//, '')) + '.html';
   const filePath = path.join(cacheDir, filename);
 
-  try {
-    const cached = await fs.readFile(filePath, 'utf-8');
-    return cached;
-  } catch {
-    // not cached
-    if (USE_CACHE_ONLY) {
+  if (USE_CACHE_ONLY) {
+    try {
+      const cached = await fs.readFile(filePath, 'utf-8');
+      return cached;
+    } catch {
+      // not cached
       throw new Error(`Cache miss for ${url} with use-cache enabled (expected ${filePath})`);
     }
   }
@@ -524,7 +524,7 @@ async function fetchHtml(url: string, retries = 3): Promise<string> {
       if (res.status === 404) throw new NotFoundError(url);
       if (!res.ok) throw new Error(`Status ${res.status}`);
       const text = await res.text();
-      await fs.writeFile(filePath, text, 'utf-8');
+      // await fs.writeFile(filePath, text, 'utf-8');
       return text;
     } catch (err: any) {
       // Don't retry 404s
@@ -740,6 +740,10 @@ async function scrapeProgram(url: string): Promise<Program> {
       }
     }
   });
+
+  if (title === 'Honours BSc Computer Science') {
+    console.log(requirements);
+  }
 
   return ProgramSchema.parse({
     title,
