@@ -2,6 +2,8 @@ import {
   useState,
   useContext,
   useEffect,
+  useMemo,
+  memo,
   createContext,
   type MouseEvent,
 } from "react";
@@ -142,7 +144,7 @@ export interface RequirementNodeProps {
   includeClosedComponents: boolean;
 }
 
-export function RequirementNode({
+export const RequirementNode = memo(function RequirementNode({
   nodeKey,
   node: rawNode,
   cache,
@@ -262,71 +264,87 @@ export function RequirementNode({
       node.type === "non_discipline_elective") &&
     (node.excluded_disciplines?.length ?? 0) > 0;
 
-  const isCompletedCourse = (code: string): boolean => {
-    const norm = normalizeCourseCode(code);
-    const canonical = cache?.getCourse(norm)?.code ?? code;
-    return completedCourses.has(canonical) || completedCourses.has(norm);
-  };
+  const { filtered, selectedForDisplay, options } = useMemo(() => {
+    const isCompletedCourse = (code: string): boolean => {
+      const norm = normalizeCourseCode(code);
+      const canonical = cache?.getCourse(norm)?.code ?? code;
+      return completedCourses.has(canonical) || completedCourses.has(norm);
+    };
 
-  const filtered =
-    node.candidateCourses
-      ?.filter((c) => prereqEligible.has(c))
-      .filter((c) => {
-        if (
-          isCompletedCourse(c) ||
-          unassignedCompletedSetNormalized.has(normalizeCourseCode(c))
-        ) {
-          return true;
-        }
-        if (!courseMatchesFilters(c, { levels: levelBuckets, languageBuckets }))
-          return false;
-        if (cache && !getEffectiveSchedule(cache, c, includeClosedComponents)) {
-          const isSpecificCourseReq =
-            node.type === "course" || node.type === "or_course";
-          if (isSpecificCourseReq && /\b4900\b/.test(c)) return true;
-          return false;
-        }
-        if (isElectiveWithExclusions && electiveLevelBuckets.length > 0) {
-          const match = c.match(/\d{4}/);
-          if (match) {
-            const num = parseInt(match[0], 10);
-            if (!Number.isNaN(num)) {
-              const bucket = Math.floor(num / 1000) * 1000;
-              if (!electiveLevelBuckets.includes(bucket)) return false;
+    const filtered =
+      node.candidateCourses
+        ?.filter((c) => prereqEligible.has(c))
+        .filter((c) => {
+          if (
+            isCompletedCourse(c) ||
+            unassignedCompletedSetNormalized.has(normalizeCourseCode(c))
+          ) {
+            return true;
+          }
+          if (!courseMatchesFilters(c, { levels: levelBuckets, languageBuckets }))
+            return false;
+          if (cache && !getEffectiveSchedule(cache, c, includeClosedComponents)) {
+            const isSpecificCourseReq =
+              node.type === "course" || node.type === "or_course";
+            if (isSpecificCourseReq && /\b4900\b/.test(c)) return true;
+            return false;
+          }
+          if (isElectiveWithExclusions && electiveLevelBuckets.length > 0) {
+            const match = c.match(/\d{4}/);
+            if (match) {
+              const num = parseInt(match[0], 10);
+              if (!Number.isNaN(num)) {
+                const bucket = Math.floor(num / 1000) * 1000;
+                if (!electiveLevelBuckets.includes(bucket)) return false;
+              }
             }
           }
-        }
-        return true;
-      }) ?? [];
+          return true;
+        }) ?? [];
 
-  const selectedForDisplay = selected.map(
-    (c) => cache?.getCourse(normalizeCourseCode(c))?.code ?? c,
-  );
+    const selectedForDisplay = selected.map(
+      (c) => cache?.getCourse(normalizeCourseCode(c))?.code ?? c,
+    );
 
-  const normalizedSeen = new Set<string>();
-  const available: string[] = [];
-  for (const c of selectedForDisplay) {
-    const norm = normalizeCourseCode(c);
-    if (normalizedSeen.has(norm)) continue;
-    normalizedSeen.add(norm);
-    available.push(cache?.getCourse(norm)?.code ?? c);
-  }
-  for (const c of filtered) {
-    const norm = normalizeCourseCode(c);
-    if (normalizedSeen.has(norm)) continue;
-    normalizedSeen.add(norm);
-    available.push(cache?.getCourse(norm)?.code ?? c);
-  }
+    const normalizedSeen = new Set<string>();
+    const available: string[] = [];
+    for (const c of selectedForDisplay) {
+      const norm = normalizeCourseCode(c);
+      if (normalizedSeen.has(norm)) continue;
+      normalizedSeen.add(norm);
+      available.push(cache?.getCourse(norm)?.code ?? c);
+    }
+    for (const c of filtered) {
+      const norm = normalizeCourseCode(c);
+      if (normalizedSeen.has(norm)) continue;
+      normalizedSeen.add(norm);
+      available.push(cache?.getCourse(norm)?.code ?? c);
+    }
 
-  const availableSorted = [...available].sort((a, b) => {
-    const aUn = unassignedCompletedSetNormalized.has(normalizeCourseCode(a));
-    const bUn = unassignedCompletedSetNormalized.has(normalizeCourseCode(b));
-    if (aUn && !bUn) return -1;
-    if (!aUn && bUn) return 1;
-    return 0;
-  });
+    const availableSorted = [...available].sort((a, b) => {
+      const aUn = unassignedCompletedSetNormalized.has(normalizeCourseCode(a));
+      const bUn = unassignedCompletedSetNormalized.has(normalizeCourseCode(b));
+      if (aUn && !bUn) return -1;
+      if (!aUn && bUn) return 1;
+      return 0;
+    });
 
-  const options = createCourseOptions(availableSorted, cache);
+    return { filtered, selectedForDisplay, options: createCourseOptions(availableSorted, cache) };
+  }, [
+    node.candidateCourses,
+    node.type,
+    prereqEligible,
+    levelBuckets,
+    languageBuckets,
+    electiveLevelBuckets,
+    isElectiveWithExclusions,
+    cache,
+    completedCourses,
+    unassignedCompletedSetNormalized,
+    includeClosedComponents,
+    selected,
+  ]);
+
   const selectedCredits = getSelectedCredits(cache, selectedForDisplay);
   const satisfiedByDisplay = [
     ...(node.satisfiedBy ?? []),
@@ -925,4 +943,4 @@ export function RequirementNode({
       </Stack>
     </Paper>
   );
-}
+});

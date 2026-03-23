@@ -362,9 +362,12 @@ export function CalendarView({
 
   const currentSchedule = schedules[selectedIndex] ?? schedules[0];
 
-  const referenceWeekStart = startOfWeek(new Date(), { weekStartsOn: 0 });
+  const referenceWeekStart = useMemo(
+    () => startOfWeek(new Date(), { weekStartsOn: 0 }),
+    [],
+  );
 
-  const events: CalendarEvent[] = currentSchedule.enrollments.flatMap((enrollment, enrollIdx) => {
+  const events = useMemo<CalendarEvent[]>(() => currentSchedule.enrollments.flatMap((enrollment, enrollIdx) => {
     const out: CalendarEvent[] = [];
     let timeIdx = 0;
     for (const [comp, { section }] of Object.entries(enrollment.sectionCombo)) {
@@ -402,7 +405,7 @@ export function CalendarView({
       }
     }
     return out;
-  });
+  }), [currentSchedule, professorRatings, referenceWeekStart]);
 
   const fcEvents = events;
   const calendarRef = useRef<FullCalendar>(null);
