@@ -16,6 +16,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import { IconHelp, IconRefresh, IconShare } from "@tabler/icons-react";
 import { runTour } from "./tour";
 import { useAppStore } from "./store/appStore";
+import { useShallow } from "zustand/react/shallow";
 import { STEPS, StepNav } from "./components/StepNav";
 import { ResetModal } from "./components/ResetModal";
 import { CalendarPage } from "./components/CalendarPage";
@@ -29,8 +30,6 @@ import { useNavHistory } from "./hooks/useNavHistory";
 
 function App() {
   const {
-    loadData,
-    getShareUrl,
     catalogue,
     indices,
     cache,
@@ -51,35 +50,71 @@ function App() {
     generationMaxEndMinutes,
     generationAllowedDays,
     generationMinProfessorRating,
-    setGenerationMinProfessorRating,
-    setGenerationMinStartMinutes,
-    setGenerationMaxEndMinutes,
-    setGenerationAllowedDays,
     generatedSchedules,
-    setProgram,
-    setSelectedTermId,
-    setCompletedCourses,
-    setSelectedForRequirement,
-    setCoursesThisSemester,
-    setSelectedOptionForRequirement,
-    generateSchedules,
     generationError,
     generationErrorDetails,
     filteredPrereqEligibleCourses,
     levelBuckets,
     languageBuckets,
     electiveLevelBuckets,
-    setLevelBuckets,
-    setLanguageBuckets,
-    setElectiveLevelBuckets,
     includeClosedComponents,
-    setIncludeClosedComponents,
     generationLimitFirstYearCredits,
-    setGenerationLimitFirstYearCredits,
     generationCompressedSchedule,
-    setGenerationCompressedSchedule,
-    resetToDefault,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((s) => ({
+      catalogue: s.catalogue,
+      indices: s.indices,
+      cache: s.cache,
+      loading: s.loading,
+      error: s.error,
+      terms: s.terms,
+      selectedTermId: s.selectedTermId,
+      program: s.program,
+      completedCourses: s.completedCourses,
+      remainingRequirements: s.remainingRequirements,
+      requirementTreeWithStatus: s.requirementTreeWithStatus,
+      completedRequirementsList: s.completedRequirementsList,
+      unassignedCompletedCourses: s.unassignedCompletedCourses,
+      selectedPerRequirement: s.selectedPerRequirement,
+      selectedOptionsPerRequirement: s.selectedOptionsPerRequirement,
+      coursesThisSemester: s.coursesThisSemester,
+      generationMinStartMinutes: s.generationMinStartMinutes,
+      generationMaxEndMinutes: s.generationMaxEndMinutes,
+      generationAllowedDays: s.generationAllowedDays,
+      generationMinProfessorRating: s.generationMinProfessorRating,
+      generatedSchedules: s.generatedSchedules,
+      generationError: s.generationError,
+      generationErrorDetails: s.generationErrorDetails,
+      filteredPrereqEligibleCourses: s.filteredPrereqEligibleCourses,
+      levelBuckets: s.levelBuckets,
+      languageBuckets: s.languageBuckets,
+      electiveLevelBuckets: s.electiveLevelBuckets,
+      includeClosedComponents: s.includeClosedComponents,
+      generationLimitFirstYearCredits: s.generationLimitFirstYearCredits,
+      generationCompressedSchedule: s.generationCompressedSchedule,
+    })),
+  );
+
+  const loadData = useAppStore((s) => s.loadData);
+  const getShareUrl = useAppStore((s) => s.getShareUrl);
+  const setProgram = useAppStore((s) => s.setProgram);
+  const setSelectedTermId = useAppStore((s) => s.setSelectedTermId);
+  const setCompletedCourses = useAppStore((s) => s.setCompletedCourses);
+  const setSelectedForRequirement = useAppStore((s) => s.setSelectedForRequirement);
+  const setCoursesThisSemester = useAppStore((s) => s.setCoursesThisSemester);
+  const setSelectedOptionForRequirement = useAppStore((s) => s.setSelectedOptionForRequirement);
+  const generateSchedules = useAppStore((s) => s.generateSchedules);
+  const setGenerationMinProfessorRating = useAppStore((s) => s.setGenerationMinProfessorRating);
+  const setGenerationMinStartMinutes = useAppStore((s) => s.setGenerationMinStartMinutes);
+  const setGenerationMaxEndMinutes = useAppStore((s) => s.setGenerationMaxEndMinutes);
+  const setGenerationAllowedDays = useAppStore((s) => s.setGenerationAllowedDays);
+  const setLevelBuckets = useAppStore((s) => s.setLevelBuckets);
+  const setLanguageBuckets = useAppStore((s) => s.setLanguageBuckets);
+  const setElectiveLevelBuckets = useAppStore((s) => s.setElectiveLevelBuckets);
+  const setIncludeClosedComponents = useAppStore((s) => s.setIncludeClosedComponents);
+  const setGenerationLimitFirstYearCredits = useAppStore((s) => s.setGenerationLimitFirstYearCredits);
+  const setGenerationCompressedSchedule = useAppStore((s) => s.setGenerationCompressedSchedule);
+  const resetToDefault = useAppStore((s) => s.resetToDefault);
 
   const { active, setActive, showCalendar, setShowCalendar, resetNav } =
     useNavHistory();

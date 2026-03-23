@@ -22,6 +22,7 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import { useAppStore } from "../store/appStore";
+import { useShallow } from "zustand/react/shallow";
 import { CalendarView } from "./CalendarView";
 import { ResetModal } from "./ResetModal";
 import { buildScheduleIcs, downloadTextFile } from "../lib/ics";
@@ -34,21 +35,33 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
   const {
     generatedSchedules,
     selectedScheduleIndex,
-    setSelectedScheduleIndex,
     swapHistory,
-    undoLastSwap,
     indices,
-    getShareUrl,
-    getEncodedStateBase64,
-    generateSchedules,
     generationError,
     generationErrorDetails,
     cache,
     professorRatings,
-    getSwapCandidates,
-    swapCourseInSchedule,
-    resetToDefault,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((s) => ({
+      generatedSchedules: s.generatedSchedules,
+      selectedScheduleIndex: s.selectedScheduleIndex,
+      swapHistory: s.swapHistory,
+      indices: s.indices,
+      generationError: s.generationError,
+      generationErrorDetails: s.generationErrorDetails,
+      cache: s.cache,
+      professorRatings: s.professorRatings,
+    })),
+  );
+
+  const setSelectedScheduleIndex = useAppStore((s) => s.setSelectedScheduleIndex);
+  const undoLastSwap = useAppStore((s) => s.undoLastSwap);
+  const getShareUrl = useAppStore((s) => s.getShareUrl);
+  const getEncodedStateBase64 = useAppStore((s) => s.getEncodedStateBase64);
+  const generateSchedules = useAppStore((s) => s.generateSchedules);
+  const getSwapCandidates = useAppStore((s) => s.getSwapCandidates);
+  const swapCourseInSchedule = useAppStore((s) => s.swapCourseInSchedule);
+  const resetToDefault = useAppStore((s) => s.resetToDefault);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
