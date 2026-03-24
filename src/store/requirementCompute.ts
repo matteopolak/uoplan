@@ -93,7 +93,9 @@ function getAutoSelectedForRequirements(
     if (scheduledCandidates.length === 1) {
       // Avoid auto-selecting honours/research courses; users should opt in explicitly.
       const only = scheduledCandidates[0];
-      if (!isHonoursProject(only)) {
+      // Only auto-assign if the user has never interacted with this requirement.
+      // If the key exists (even as []), the user explicitly set or cleared it — respect that.
+      if (!isHonoursProject(only) && !(req.requirementId in existing)) {
         out[req.requirementId] = [only];
       }
     } else {
@@ -130,6 +132,7 @@ function getAutoSelectedSingleEligibleCompleted(
   unassignedCompleted: string[],
   cache: DataCache,
   alreadySelected: Record<string, string[]>,
+  originalExisting: Record<string, string[]>,
 ): Record<string, string[]> {
   // Track courses that appear in any never-auto-assign requirement; these are
   // fully ineligible for auto-assignment regardless of other matches.
@@ -164,6 +167,9 @@ function getAutoSelectedSingleEligibleCompleted(
     const best = reqs.filter((r) => r.priority === minPriority);
     if (best.length !== 1) continue; // tie — ambiguous
     const { reqId } = best[0];
+    // Don't auto-assign to requirements the user has already interacted with (set or cleared).
+    // Only auto-place completed courses into requirements that have never been touched.
+    if (reqId in originalExisting) continue;
     const courseCode = cache.getCourse(norm)?.code ?? norm;
     const existingForReq = alreadySelected[reqId] ?? out[reqId] ?? [];
     if (!existingForReq.includes(courseCode)) {
@@ -303,6 +309,7 @@ export function recomputeStateForProgram(
     unassignedCompleted,
     cache,
     { ...existingSelectedPerRequirement, ...autoSelected },
+    existingSelectedPerRequirement,
   );
 
   // Preserve nested selections (e.g. or_group option req-2-0) that are not in remaining;
