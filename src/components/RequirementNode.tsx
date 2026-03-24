@@ -18,7 +18,7 @@ import {
   Collapse,
   Radio,
 } from "@mantine/core";
-import { IconCheck, IconChevronDown } from "@tabler/icons-react";
+import { IconCheck, IconChevronDown, IconX } from "@tabler/icons-react";
 import { createCourseOptions } from "./CourseSelect";
 import type { ComboboxItem } from "@mantine/core";
 import type { DataCache } from "../lib/dataCache";
@@ -141,6 +141,8 @@ export interface RequirementNodeProps {
   unassignedCompletedSet: Set<string>;
   /** Normalized form of unassigned completed (for dedupe/checkmark when option value is canonical). */
   unassignedCompletedSetNormalized: Set<string>;
+  /** Normalized course codes already assigned to any requirement (auto-matched or user-selected). */
+  allAssignedCoursesNormalized: Set<string>;
   includeClosedComponents: boolean;
 }
 
@@ -163,6 +165,7 @@ export const RequirementNode = memo(function RequirementNode({
   electiveLevelBuckets,
   unassignedCompletedSet,
   unassignedCompletedSetNormalized,
+  allAssignedCoursesNormalized,
   includeClosedComponents,
 }: RequirementNodeProps) {
   // If a parent (like an option) is responsible for selection UX, don't remove it,
@@ -329,7 +332,15 @@ export const RequirementNode = memo(function RequirementNode({
       return 0;
     });
 
-    return { filtered, selectedForDisplay, options: createCourseOptions(availableSorted, cache) };
+    const options = availableSorted.map((code) => {
+      const norm = normalizeCourseCode(code);
+      const usedElsewhere =
+        allAssignedCoursesNormalized.has(norm) &&
+        !selectedForDisplay.includes(code);
+      return { value: code, label: code, disabled: usedElsewhere };
+    });
+
+    return { filtered, selectedForDisplay, options };
   }, [
     node.candidateCourses,
     node.type,
@@ -341,6 +352,7 @@ export const RequirementNode = memo(function RequirementNode({
     cache,
     completedCourses,
     unassignedCompletedSetNormalized,
+    allAssignedCoursesNormalized,
     includeClosedComponents,
     selected,
   ]);
@@ -383,11 +395,34 @@ export const RequirementNode = memo(function RequirementNode({
           const label = cache?.getCourse(option.value)?.title
             ? `${option.value} – ${cache.getCourse(option.value)?.title}`
             : option.value;
-          if (
-            unassignedCompletedSetNormalized.has(
-              normalizeCourseCode(option.value),
-            )
-          ) {
+          const isSelected = selectedForDisplay.includes(option.value);
+          const isCompleted = unassignedCompletedSetNormalized.has(
+            normalizeCourseCode(option.value),
+          );
+          const isUsedElsewhere = (option as { disabled?: boolean }).disabled === true;
+          if (isUsedElsewhere) {
+            return (
+              <Group gap="xs" wrap="nowrap">
+                <Badge size="xs" color="gray" variant="light" style={{ flexShrink: 0 }}>
+                  USED
+                </Badge>
+                <Text span size="sm" c="dimmed">
+                  {label}
+                </Text>
+              </Group>
+            );
+          }
+          if (isSelected) {
+            return (
+              <Group gap="xs" wrap="nowrap">
+                <IconX size={14} color="var(--mantine-color-red-6)" />
+                <Text span size="sm">
+                  {label}
+                </Text>
+              </Group>
+            );
+          }
+          if (isCompleted) {
             return (
               <Group gap="xs" wrap="nowrap">
                 <IconCheck size={14} color="var(--mantine-color-green-6)" />
@@ -563,6 +598,7 @@ export const RequirementNode = memo(function RequirementNode({
                     unassignedCompletedSetNormalized={
                       unassignedCompletedSetNormalized
                     }
+                    allAssignedCoursesNormalized={allAssignedCoursesNormalized}
                     includeClosedComponents={includeClosedComponents}
                     radio={
                       node.requirementId != null && !node.complete
@@ -713,6 +749,7 @@ export const RequirementNode = memo(function RequirementNode({
                     unassignedCompletedSetNormalized={
                       unassignedCompletedSetNormalized
                     }
+                    allAssignedCoursesNormalized={allAssignedCoursesNormalized}
                     includeClosedComponents={includeClosedComponents}
                     radio={
                       node.requirementId != null && !node.complete
@@ -821,6 +858,7 @@ export const RequirementNode = memo(function RequirementNode({
                   unassignedCompletedSetNormalized={
                     unassignedCompletedSetNormalized
                   }
+                  allAssignedCoursesNormalized={allAssignedCoursesNormalized}
                   includeClosedComponents={includeClosedComponents}
                 />
               );
@@ -933,6 +971,7 @@ export const RequirementNode = memo(function RequirementNode({
                     unassignedCompletedSetNormalized={
                       unassignedCompletedSetNormalized
                     }
+                    allAssignedCoursesNormalized={allAssignedCoursesNormalized}
                     includeClosedComponents={includeClosedComponents}
                   />
                 );

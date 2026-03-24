@@ -86,8 +86,11 @@ export function computeCoursesPerPool(
     for (const pool of byCreditsDesc) {
       if (extra <= 0) break;
       const cur = result.get(pool.requirementId) ?? 0;
-      result.set(pool.requirementId, cur + 1);
-      extra -= 1;
+      const poolIdeal = ideal.get(pool.requirementId) ?? 0;
+      if (cur < poolIdeal) {
+        result.set(pool.requirementId, cur + 1);
+        extra -= 1;
+      }
     }
   } else {
     // Need to allocate exactly remainingCourseSlots; distribute by creditsNeeded proportion.

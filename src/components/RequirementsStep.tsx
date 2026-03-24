@@ -1,4 +1,4 @@
-import { useState, useRef, type MouseEvent } from "react";
+import { useState, useRef, useMemo, type MouseEvent } from "react";
 import {
   Stack,
   MultiSelect,
@@ -185,6 +185,26 @@ export function RequirementsStep({
   const unassignedCompletedSetNormalized = new Set(
     unassignedCompletedCourses.map((c) => normalizeCourseCode(c)),
   );
+
+  const allAssignedCoursesNormalized = useMemo(() => {
+    const set = new Set<string>();
+    const walk = (nodes: RequirementWithStatus[]) => {
+      for (const node of nodes) {
+        if (
+          (node.type === "course" || node.type === "or_course") &&
+          node.satisfiedBy?.length
+        ) {
+          for (const code of node.satisfiedBy) set.add(normalizeCourseCode(code));
+        }
+        if (node.options?.length) walk(node.options);
+      }
+    };
+    walk(requirementTreeWithStatus);
+    for (const codes of Object.values(selectedPerRequirement)) {
+      for (const code of codes) set.add(normalizeCourseCode(code));
+    }
+    return set;
+  }, [requirementTreeWithStatus, selectedPerRequirement]);
 
   const hasTree = requirementTreeWithStatus.length > 0;
   const incompleteNodes = requirementTreeWithStatus.filter(
@@ -380,6 +400,7 @@ export function RequirementsStep({
                   unassignedCompletedSetNormalized={
                     unassignedCompletedSetNormalized
                   }
+                  allAssignedCoursesNormalized={allAssignedCoursesNormalized}
                   includeClosedComponents={includeClosedComponents}
                 />
               );

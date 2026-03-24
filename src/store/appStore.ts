@@ -1244,12 +1244,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         return hasSchedulableNonHonours;
       });
 
-      const coursesPerPool = computeCoursesPerPool(
-        pools,
-        remainingNeeded,
-        cacheVal,
-      );
-
+      // Build candidates first so we can exclude empty pools from slot allocation.
       const candidatesByRequirement = new Map<string, string[]>();
       for (const pool of pools) {
         const candidates: string[] = [];
@@ -1303,6 +1298,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
           candidatesByRequirement.set(pool.requirementId, candidates);
         }
       }
+
+      // Only pass pools with candidates to slot allocation — empty pools must not
+      // steal slots from pools that can actually contribute courses.
+      const poolsWithCandidates = pools.filter((p) =>
+        candidatesByRequirement.has(p.requirementId),
+      );
+      const coursesPerPool = computeCoursesPerPool(
+        poolsWithCandidates,
+        remainingNeeded,
+        cacheVal,
+      );
 
       const maxAttempts = appendFirstOnly ? 100 : 300;
       const targetUniqueSchedules = appendFirstOnly ? 1 : 5;

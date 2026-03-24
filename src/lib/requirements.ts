@@ -263,7 +263,7 @@ function runRequirementPass(
         let allSatisfied = true;
         const childNodes: RequirementWithStatus[] = [];
         for (let i = 0; i < req.options.length; i++) {
-          const { result: r, node } = process(req.options[i], `${path}-${i}`, opts);
+          const { result: r, node } = process(req.options[i], `${path}-${i}`, { ...opts, forceRequirementId: true });
           totalCredits += r.creditsUsed;
           allCoursesUsed.push(...r.coursesUsed);
           if (!r.satisfied) allSatisfied = false;
