@@ -419,6 +419,37 @@ function parseElectiveRequirement(text: string, credits?: number): ProgramRequir
 
   const orParts = trimmed.split(/;\s*or\s+/i).map(s => s.trim()).filter(Boolean);
   if (orParts.length > 1) {
+    const allSubsequentLackCredits = orParts.slice(1).every(p => parseCreditRequirement(p) == null);
+
+    if (allSubsequentLackCredits) {
+      // Subsequent parts have no credit spec of their own — they share the same credit pool.
+      // Collect all disciplines/courses from every part into a single pick.
+      const allOptions: ProgramRequirement[] = [];
+      for (const part of orParts) {
+        const p = part.replace(/^\s*(and|or)\s+/i, '').trim();
+        const partDisciplines = extractDisciplines(p);
+        const partLevels = parseLevelsFromClause(p);
+        const partCourses = extractCourseCodes(p);
+        for (const d of partDisciplines) {
+          allOptions.push({
+            type: 'discipline_elective',
+            title: `Any ${d}${partLevels ? ` at ${partLevels.join(' or ')} level` : ''}`,
+            disciplineLevels: [{ discipline: d, levels: partLevels }],
+          });
+        }
+        for (const c of partCourses) {
+          allOptions.push({ type: 'course', code: c });
+        }
+      }
+      if (allOptions.length === 1) {
+        return { ...allOptions[0], credits: effectiveCredits, title: trimmed };
+      }
+      if (allOptions.length > 1) {
+        return { type: 'pick', title: trimmed, credits: effectiveCredits, options: allOptions };
+      }
+      // Fall through to or_group if no disciplines/courses found in any part
+    }
+
     return {
       type: 'or_group',
       title: 'or',
@@ -500,6 +531,7 @@ class NotFoundError extends Error {
 }
 
 const USE_CACHE_ONLY = process.argv.includes('use-cache');
+const WRITE_CACHE = process.argv.includes('write-cache');
 
 async function fetchHtml(url: string, retries = 3): Promise<string> {
   const cacheDir = '.cache/catalogue';
@@ -524,7 +556,7 @@ async function fetchHtml(url: string, retries = 3): Promise<string> {
       if (res.status === 404) throw new NotFoundError(url);
       if (!res.ok) throw new Error(`Status ${res.status}`);
       const text = await res.text();
-      // await fs.writeFile(filePath, text, 'utf-8');
+      if (WRITE_CACHE) await fs.writeFile(filePath, text, 'utf-8');
       return text;
     } catch (err: any) {
       // Don't retry 404s
@@ -741,10 +773,6 @@ async function scrapeProgram(url: string): Promise<Program> {
     }
   });
 
-  if (title === 'Honours BSc Computer Science') {
-    console.log(requirements);
-  }
-
   return ProgramSchema.parse({
     title,
     url,
@@ -940,7 +968,7 @@ async function scrapeYear(year: number, dataDir: string, force: boolean): Promis
 
   const { catalogue, missingUrls } = await scrapeYearCatalogue(baseUrl);
 
-  await fs.writeFile(outPath, JSON.stringify(catalogue), 'utf-8');
+  await fs.writeFile(outPath, JSON.stringify(catalogue, null, 2), 'utf-8');
   console.log(
     `Saved catalogue.${year}.json (${catalogue.courses.length} courses, ${catalogue.programs.length} programs)` +
     (missingUrls.length ? ` — ${missingUrls.length} missing (404)` : '')

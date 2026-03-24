@@ -164,7 +164,7 @@ async function main(): Promise<void> {
     professors: allTeachers,
   };
 
-  await fs.writeFile(outPath, JSON.stringify(output), 'utf-8');
+  await fs.writeFile(outPath, JSON.stringify(output, null, 2), 'utf-8');
   console.log(`Saved ${allTeachers.length} professors to ${outPath}`);
 }
 
