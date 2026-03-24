@@ -16,11 +16,28 @@ export function requirementIdsFromTree(nodes: RequirementWithStatus[]): string[]
   return out;
 }
 
-const VERSION = 4;
+/**
+ * Derive a stable slug from a catalogue program URL. Works for both current and archive URLs:
+ *   https://catalogue.uottawa.ca/en/undergrad/foo/         → undergrad/foo
+ *   https://catalogue.uottawa.ca/archive/2024-2025/en/undergrad/foo/ → undergrad/foo
+ */
+export function urlToSlug(url: string): string {
+  return url
+    .replace(/^https?:\/\/catalogue\.uottawa\.ca(?:\/archive\/\d{4}-\d{4})?\/en\//, '')
+    .replace(/\/$/, '');
+}
+
+function programSlug(p: Program): string {
+  return (p as Program & { slug?: string }).slug ?? urlToSlug(p.url);
+}
+
+const VERSION = 5;
 const MAX_U16 = 0xffff;
 const MAX_U32 = 0xffffffff;
 
 export interface EncodeInput {
+  selectedTermId: string | null;
+  firstYear: number | null;
   program: Program | null;
   completedCourses: string[];
   levelBuckets: CourseLevelBucket[];
@@ -39,6 +56,8 @@ export interface EncodeInput {
 }
 
 export interface DecodedState {
+  selectedTermId: string | null;
+  firstYear: number | null;
   program: Program | null;
   completedCourseCodes: string[];
   levelBuckets: CourseLevelBucket[];
@@ -108,6 +127,25 @@ function readU32(view: DataView, offset: number): { value: number; next: number 
 /**
  * Encode user state to a compact binary format. Returns null if indices/catalogue
  * don't contain the current program or courses (e.g. program not in indices).
+ *
+ * Binary layout (VERSION 5):
+ *   U8  version
+ *   U8  termId byte-length (0 = absent)
+ *   [ASCII bytes for termId]
+ *   U16 firstYear (0 = null/current)
+ *   U16 programIndex (MAX_U16 = no program)
+ *   U16 completedCount
+ *   [U16 × completedCount]
+ *   U8  levelBuckets count + [U8 × count]
+ *   U8  languageBuckets count + [U8 × count]
+ *   U8  electiveLevelBuckets count + [U16 × count]
+ *   U8  coursesThisSemester
+ *   U16 selectedScheduleIndex
+ *   U32 generationSeed
+ *   U8  includeClosedComponents
+ *   U16 optionSelections count + [U16 reqIndex, U16 optionIndex × count]
+ *   U16 courseSelections count + [U16 reqIndex, U16 count, U16 × count] × count
+ *   U8  studentPrograms count + [U8 byteLen + ASCII bytes] × count
  */
 export function encodeState(
   input: EncodeInput,
@@ -116,7 +154,7 @@ export function encodeState(
 ): Uint8Array | null {
   const programIndex =
     input.program != null
-      ? indices.programs.indexOf(input.program.url)
+      ? indices.programs.indexOf(programSlug(input.program))
       : -1;
   if (input.program != null && programIndex < 0) return null;
 
@@ -127,16 +165,23 @@ export function encodeState(
     if (!courseCodeToIndex.has(code)) return null;
   }
 
+  const termIdBytes = input.selectedTermId
+    ? Array.from(input.selectedTermId).map(c => c.charCodeAt(0))
+    : [];
+
   const orderedReqIds = requirementIdsFromTree(input.requirementTreeWithStatus);
   const reqIdToIndex = new Map<string, number>();
   orderedReqIds.forEach((id, i) => reqIdToIndex.set(id, i));
 
   const size =
-    1 + 2 + 2 + input.completedCourses.length * 2 +
+    1 + // version
+    1 + termIdBytes.length + // termId
+    2 + // firstYear
+    2 + 2 + input.completedCourses.length * 2 + // programIndex + completed
     1 + input.levelBuckets.length +
     1 + input.languageBuckets.length +
     1 + input.electiveLevelBuckets.length * 2 +
-    1 + 2 + 4 + 1 +
+    1 + 2 + 4 + 1 + // coursesThisSemester, scheduleIndex, seed, includeClosedComponents
     (2 + Object.keys(input.selectedOptionsPerRequirement).length * 4) +
     (2 + (() => {
       let n = 0;
@@ -152,6 +197,14 @@ export function encodeState(
   let off = 0;
 
   off = writeU8(view, off, VERSION);
+
+  // termId
+  off = writeU8(view, off, Math.min(255, termIdBytes.length));
+  for (const b of termIdBytes) off = writeU8(view, off, b);
+
+  // firstYear (0 = null)
+  off = writeU16(view, off, input.firstYear != null ? input.firstYear : 0);
+
   off = writeU16(view, off, programIndex === -1 ? MAX_U16 : programIndex);
 
   const completed = input.completedCourses.map((c) => courseCodeToIndex.get(c)!);
@@ -215,6 +268,38 @@ export function encodeState(
 export type DecodeError = { error: string };
 
 /**
+ * Read just the termId and firstYear from the binary header without decoding the rest
+ * or needing a catalogue. Returns null if the version is unsupported or the buffer is
+ * too short to contain the header.
+ */
+export function peekTermAndYear(
+  bytes: Uint8Array
+): { termId: string | null; firstYear: number | null } | null {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (bytes.length < 1) return null;
+  const version = view.getUint8(0);
+  if (version !== VERSION) return null;
+  let off = 1;
+
+  if (off + 1 > bytes.length) return null;
+  const termIdLen = view.getUint8(off++);
+  if (off + termIdLen + 2 > bytes.length) return null;
+
+  let termId: string | null = null;
+  if (termIdLen > 0) {
+    let s = '';
+    for (let i = 0; i < termIdLen; i++) s += String.fromCharCode(view.getUint8(off + i));
+    termId = s;
+  }
+  off += termIdLen;
+
+  const firstYearRaw = view.getUint16(off, true);
+  const firstYear = firstYearRaw === 0 ? null : firstYearRaw;
+
+  return { termId, firstYear };
+}
+
+/**
  * Decode binary state. Returns DecodedState or DecodeError if version is unknown
  * or any referenced program/course is missing from the current catalogue.
  */
@@ -232,13 +317,32 @@ export function decodeState(
     return { error: 'Invalid or unsupported state version' };
   }
 
+  // termId
+  if (off + 1 > buffer.length) return { error: 'Invalid state: truncated' };
+  const { value: termIdLen, next: n0b } = readU8(view, off);
+  off = n0b;
+  if (off + termIdLen > buffer.length) return { error: 'Invalid state: truncated' };
+  let selectedTermId: string | null = null;
+  if (termIdLen > 0) {
+    let s = '';
+    for (let i = 0; i < termIdLen; i++) s += String.fromCharCode(view.getUint8(off + i));
+    selectedTermId = s;
+  }
+  off += termIdLen;
+
+  // firstYear
+  if (off + 2 > buffer.length) return { error: 'Invalid state: truncated' };
+  const { value: firstYearRaw, next: n0c } = readU16(view, off);
+  off = n0c;
+  const firstYear: number | null = firstYearRaw === 0 ? null : firstYearRaw;
+
   const { value: programIndex, next: n1 } = readU16(view, off);
   off = n1;
 
   let program: Program | null = null;
   if (programIndex !== MAX_U16 && programIndex < indices.programs.length) {
-    const url = indices.programs[programIndex];
-    program = catalogue.programs.find((p) => p.url === url) ?? null;
+    const slug = indices.programs[programIndex];
+    program = catalogue.programs.find((p) => programSlug(p) === slug) ?? null;
     if (program === null)
       return { error: 'Program from shared state is no longer in the catalogue' };
   }
@@ -251,11 +355,7 @@ export function decodeState(
     off = n;
     if (idx >= indices.courses.length)
       return { error: 'A course from shared state is no longer in the catalogue' };
-    const code = indices.courses[idx];
-    const exists = catalogue.courses.some((c) => c.code === code);
-    if (!exists)
-      return { error: 'A course from shared state is no longer in the catalogue' };
-    completedCourseCodes.push(code);
+    completedCourseCodes.push(indices.courses[idx]);
   }
 
   if (off + 1 > buffer.length) return { error: 'Invalid state: truncated' };
@@ -338,7 +438,7 @@ export function decodeState(
     courseSelections.push({ reqIndex, courseIndices });
   }
 
-  // Student programs (version 4+).
+  // Student programs
   const studentPrograms: string[] = [];
   if (off + 1 <= buffer.length) {
     const { value: progCount, next: nPc } = readU8(view, off);
@@ -357,6 +457,8 @@ export function decodeState(
   }
 
   return {
+    selectedTermId,
+    firstYear,
     program,
     completedCourseCodes,
     levelBuckets,
@@ -397,13 +499,10 @@ export function stateToShareUrl(
   encoded: Uint8Array,
   baseUrl: string = typeof window !== 'undefined'
     ? `${window.location.origin}${window.location.pathname}`
-    : '',
-  termId?: string
+    : ''
 ): string {
   const q = baseUrl.includes('?') ? '&' : '?';
-  const params: string[] = [`s=${encodeURIComponent(bytesToBase64(encoded))}`];
-  if (termId) params.push(`t=${encodeURIComponent(termId)}`);
-  return `${baseUrl}${q}${params.join('&')}`;
+  return `${baseUrl}${q}s=${encodeURIComponent(bytesToBase64(encoded))}`;
 }
 
 export function parseStateFromUrl(search: string): Uint8Array | null {
@@ -435,4 +534,12 @@ export function decodeStateFromBase64(
   const bytes = base64ToBytes(base64);
   if (!bytes) return { error: 'Invalid state encoding' };
   return decodeState(bytes, catalogue, indices);
+}
+
+export function peekTermAndYearFromBase64(
+  base64: string
+): { termId: string | null; firstYear: number | null } | null {
+  const bytes = base64ToBytes(base64);
+  if (!bytes) return null;
+  return peekTermAndYear(bytes);
 }

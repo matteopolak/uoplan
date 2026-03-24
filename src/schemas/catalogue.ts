@@ -81,6 +81,7 @@ export type ProgramRequirement = ProgramRequirementType;
 export const ProgramSchema = z.object({
   title: z.string(),
   url: z.string(),
+  slug: z.string().optional(),
   requirements: z.array(ProgramRequirementSchema),
 });
 export type Program = z.infer<typeof ProgramSchema>;
