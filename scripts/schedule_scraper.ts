@@ -10,6 +10,7 @@ const BASE_URL =
 const HTML_CACHE_DIR = '.cache/course-search-html';
 const MAX_CONCURRENCY = 20;
 const USE_CACHE_ONLY = process.argv.includes('use-cache');
+const WRITE_CACHE = process.argv.includes('write-cache');
 
 type Term = { termId: string; name: string };
 
@@ -513,7 +514,7 @@ async function fetchScheduleForCourse(
     // Persist raw HTML per-course for debugging / verification.
     try {
       await fs.mkdir(HTML_CACHE_DIR, { recursive: true });
-      // await fs.writeFile(cachePath, res.body, 'utf-8');
+      if (WRITE_CACHE) await fs.writeFile(cachePath, res.body, 'utf-8');
     } catch (err) {
       console.error(
         `Warning: failed to write HTML cache for ${course.subject} ${course.catalogNbr}:`,
@@ -620,7 +621,7 @@ async function main(): Promise<void> {
 
   await fs.writeFile(
     'public/data/terms.json',
-    JSON.stringify({ terms }),
+    JSON.stringify({ terms }, null, 2),
     'utf-8',
   );
   console.log(`Saved ${terms.length} term(s) to public/data/terms.json`);
@@ -669,7 +670,7 @@ async function main(): Promise<void> {
     };
 
     const outPath = `public/data/schedules.${term.termId}.json`;
-    await fs.writeFile(outPath, JSON.stringify(output), 'utf-8');
+    await fs.writeFile(outPath, JSON.stringify(output, null, 2), 'utf-8');
     console.log(
       `Done. Saved schedules for ${results.length} courses (out of ${courses.length}) to ${path.basename(outPath)}`,
     );
