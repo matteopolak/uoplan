@@ -38,8 +38,11 @@ import {
   encodeState,
   encodeStateToBase64,
   parseStateFromUrl,
+  peekTermAndYear,
+  peekTermAndYearFromBase64,
   requirementIdsFromTree,
   stateToShareUrl,
+  urlToSlug,
   type DecodedState,
   type EncodeInput,
 } from "../lib/stateEncode";
@@ -96,7 +99,6 @@ function getMergedCatalogue(
 }
 
 const LOCAL_STORAGE_KEY = "uoplan-state";
-const TERM_LOCAL_STORAGE_KEY = "uoplan-term";
 
 export interface AppState {
   catalogue: { courses: unknown[]; programs: Program[] } | null;
@@ -327,13 +329,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
         error: null,
       });
 
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem(TERM_LOCAL_STORAGE_KEY, termId);
-        } catch {
-          // ignore
-        }
-      }
     } catch (err) {
       set({
         loading: false,
@@ -343,12 +338,23 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   loadEncodedState: (decoded) => {
-    const { catalogue, indices, cache } = get();
+    const { catalogue, indices, cache, yearCataloguePrograms } = get();
     if (!catalogue || !cache || !indices) return;
+
+    // If a year catalogue is loaded, prefer the program object from there so its URL
+    // matches what ProgramStep's dropdown (which uses yearCataloguePrograms) expects.
+    // Archive-year URLs differ from current-year URLs, so without this the dropdown
+    // won't recognise the selected program.
+    let program = decoded.program;
+    if (program != null && yearCataloguePrograms != null) {
+      const slug = urlToSlug(program.url);
+      const yearProgram = yearCataloguePrograms.find(p => urlToSlug(p.url) === slug);
+      if (yearProgram) program = yearProgram;
+    }
 
     const studentPrograms = decoded.studentPrograms;
     const firstPass = recomputeStateForProgram(
-      decoded.program,
+      program,
       decoded.completedCourseCodes,
       cache,
       {},
@@ -385,7 +391,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
 
     const full = recomputeStateForProgram(
-      decoded.program,
+      program,
       decoded.completedCourseCodes,
       cache,
       selectedPerRequirement,
@@ -397,7 +403,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     );
 
     set({
-      program: decoded.program,
+      program,
       studentPrograms,
       completedCourses: decoded.completedCourseCodes,
       levelBuckets: decoded.levelBuckets,
@@ -410,6 +416,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       generatedSchedules: [],
       generationError: null,
       generationErrorDetails: null,
+      // Restore term and year from the decoded blob (they were already used to load
+      // the right schedules/catalogue in loadData, so we just update the state values).
+      ...(decoded.selectedTermId != null ? { selectedTermId: decoded.selectedTermId } : {}),
+      ...(decoded.firstYear != null ? { firstYear: decoded.firstYear } : {}),
       ...full,
     });
   },
@@ -418,6 +428,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const s = get();
     if (!s.catalogue || !s.indices) return null;
     const input: EncodeInput = {
+      selectedTermId: s.selectedTermId,
+      firstYear: s.firstYear,
       program: s.program,
       completedCourses: s.completedCourses,
       levelBuckets: s.levelBuckets,
@@ -444,6 +456,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const s = get();
     if (!s.catalogue || !s.indices) return null;
     const input: EncodeInput = {
+      selectedTermId: s.selectedTermId,
+      firstYear: s.firstYear,
       program: s.program,
       completedCourses: s.completedCourses,
       levelBuckets: s.levelBuckets,
@@ -465,7 +479,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       s.indices,
     );
     if (!bytes) return null;
-    return stateToShareUrl(bytes, undefined, s.selectedTermId ?? undefined);
+    return stateToShareUrl(bytes);
   },
 
   setFirstYear: async (year) => {
@@ -543,37 +557,65 @@ export const useAppStore = create<AppStore>((set, get) => ({
         const indicesJson = await indicesRes.json();
         indices = IndicesSchema.parse(indicesJson);
       } else {
+        // Fallback: derive slugs from the catalogue's program URLs
         indices = {
           courses: (parsedCatalogue.courses as Array<{ code: string }>).map(
             (c) => c.code,
           ),
-          programs: parsedCatalogue.programs.map((p) => p.url),
+          programs: parsedCatalogue.programs.map((p) => urlToSlug(p.url)),
         };
       }
 
-      let initialTermId: string | null = null;
+      // Peek the binary blob (URL param or localStorage) to extract termId and
+      // firstYear before loading schedules/year catalogue, since both are needed
+      // to fetch the right data files.
+      let peekedTermId: string | null = null;
+      let peekedFirstYear: number | null = null;
       if (typeof window !== "undefined") {
-        const params = new URLSearchParams(window.location.search);
-        const urlTerm = params.get("t");
-        if (urlTerm) initialTermId = urlTerm;
-        if (!initialTermId) {
+        const urlBytes = parseStateFromUrl(window.location.search);
+        if (urlBytes && urlBytes.length > 0) {
+          const peeked = peekTermAndYear(urlBytes);
+          if (peeked) { peekedTermId = peeked.termId; peekedFirstYear = peeked.firstYear; }
+        } else {
           try {
-            initialTermId = localStorage.getItem(TERM_LOCAL_STORAGE_KEY);
+            const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (stored) {
+              const peeked = peekTermAndYearFromBase64(stored);
+              if (peeked) { peekedTermId = peeked.termId; peekedFirstYear = peeked.firstYear; }
+            }
           } catch {
             // ignore
           }
         }
       }
-      if (!initialTermId) {
-        initialTermId = parsedTerms.terms[0]?.termId ?? null;
-      }
+
+      const initialTermId = peekedTermId ?? parsedTerms.terms[0]?.termId ?? null;
       if (!initialTermId) throw new Error("No terms available");
+      const initialFirstYear = peekedFirstYear;
+
+      // Load year-specific catalogue if firstYear is set
+      let yearCataloguePrograms: Program[] | null = null;
+      let yearCatalogueCourses: Course[] | null = null;
+      if (initialFirstYear !== null) {
+        try {
+          const yearRes = await fetch(`/data/catalogue.${initialFirstYear}.json`);
+          if (yearRes.ok) {
+            const yearJson = await yearRes.json();
+            const parsedYear = CatalogueSchema.parse(yearJson);
+            yearCataloguePrograms = parsedYear.programs;
+            yearCatalogueCourses = parsedYear.courses;
+          }
+        } catch {
+          // Year catalogue missing — proceed without it
+        }
+      }
 
       const schedulesRes = await fetch(`/data/schedules.${initialTermId}.json`);
       if (!schedulesRes.ok) throw new Error("Failed to load schedules data");
       const schedulesData = await schedulesRes.json();
       const parsedSchedules = SchedulesDataSchema.parse(schedulesData);
-      const cache = buildDataCache(parsedCatalogue, parsedSchedules);
+      const effectiveCatalogue = getMergedCatalogue(parsedCatalogue, yearCatalogueCourses, []);
+      const cache = buildDataCache((effectiveCatalogue ?? parsedCatalogue) as any, parsedSchedules);
 
       set({
         catalogue: parsedCatalogue,
@@ -583,18 +625,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
         professorRatings,
         terms: parsedTerms.terms,
         selectedTermId: initialTermId,
+        firstYear: initialFirstYear,
+        yearCataloguePrograms,
+        yearCatalogueCourses,
         availableYears,
         loading: false,
         error: null,
       });
-
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem(TERM_LOCAL_STORAGE_KEY, initialTermId);
-        } catch {
-          // ignore
-        }
-      }
 
       if (indices && typeof window !== "undefined") {
         const catalogueLike = parsedCatalogue as {
@@ -610,7 +647,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
             get().loadEncodedState(decoded);
             const u = new URL(window.location.href);
             u.searchParams.delete("s");
+            // Clean up legacy params that may be present in old shared URLs
             u.searchParams.delete("t");
+            u.searchParams.delete("f");
             window.history.replaceState({}, "", u.toString());
           }
         } else {

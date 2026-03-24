@@ -513,9 +513,16 @@ function parseElectiveRequirement(text: string, credits?: number): ProgramRequir
 const ProgramSchema = z.object({
   title: z.string(),
   url: z.string(),
+  slug: z.string(),
   requirements: z.array(ProgramRequirementSchema),
 });
 export type Program = z.infer<typeof ProgramSchema>;
+
+function urlToSlug(url: string): string {
+  return url
+    .replace(/^https?:\/\/catalogue\.uottawa\.ca(?:\/archive\/\d{4}-\d{4})?\/en\//, '')
+    .replace(/\/$/, '');
+}
 
 const CatalogueSchema = z.object({
   courses: z.array(CourseSchema),
@@ -776,6 +783,7 @@ async function scrapeProgram(url: string): Promise<Program> {
   return ProgramSchema.parse({
     title,
     url,
+    slug: urlToSlug(url),
     requirements,
   });
 }
@@ -977,6 +985,19 @@ async function scrapeYear(year: number, dataDir: string, force: boolean): Promis
   return missingUrls;
 }
 
+async function generateIndices(year: number, dataDir: string): Promise<void> {
+  const raw = await fs.readFile(path.join(dataDir, `catalogue.${year}.json`), 'utf-8');
+  const catalogue = JSON.parse(raw);
+  const indices = {
+    courses: (catalogue.courses as Array<{ code: string }>).map(c => c.code),
+    programs: (catalogue.programs as Array<{ slug?: string; url: string }>).map(
+      p => p.slug ?? urlToSlug(p.url),
+    ),
+  };
+  await fs.writeFile(path.join(dataDir, 'indices.json'), JSON.stringify(indices), 'utf-8');
+  console.log(`\nWrote indices.json (${indices.courses.length} courses, ${indices.programs.length} programs)`);
+}
+
 async function main() {
   const currentYear = getCurrentAcademicYear();
   const dataDir = path.join(process.cwd(), 'public', 'data');
@@ -1022,6 +1043,8 @@ async function main() {
     'utf-8',
   );
   console.log(`\nWrote catalogue.json manifest: years ${currentYear}–${OLDEST_YEAR}`);
+
+  await generateIndices(currentYear, dataDir);
 }
 
 main().catch(e => {
