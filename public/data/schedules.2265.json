@@ -4591,7 +4591,7 @@
               "2026-06-22",
               "2026-07-31"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -4774,7 +4774,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           },
           {
             "section": "C00-SEM Session C",
@@ -4801,7 +4801,7 @@
               "2026-06-22",
               "2026-07-31"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -4839,7 +4839,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -4865,7 +4865,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -4874,7 +4874,7 @@
       "subject": "API",
       "catalogNumber": "6757",
       "courseCode": "API 6757",
-      "title": "Conflits et sécurité humaine Section Days & Times Instructor Meeting Dates Status Details A00-LECSession C Mo 17:30 - 20:20We 17:30 - 20:20 StaffStaff 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31",
+      "title": "Conflits et sécurité humaine Section Days & Times Instructor Meeting Dates Status Details A00-LECSession C Mo 17:30 - 20:20We 17:30 - 20:20 Julien PelletierJulien Pelletier 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -4896,8 +4896,8 @@
               }
             ],
             "instructors": [
-              "Staff",
-              "Staff"
+              "Julien Pelletier",
+              "Julien Pelletier"
             ],
             "meetingDates": [
               "2026-06-22",
@@ -4979,7 +4979,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           },
           {
             "section": "B00-SEM Session C",
@@ -5633,6 +5633,38 @@
             "meetingDates": [
               "2026-05-04",
               "2026-07-24"
+            ],
+            "status": "Open"
+          }
+        ]
+      }
+    },
+    {
+      "subject": "BIL",
+      "catalogNumber": "5509",
+      "courseCode": "BIL 5509",
+      "title": "MSc Seminar (+3 combined) Section Days & Times Instructor Meeting Dates Status Details A00-SEMTerm Fr 13:00 - 13:50 Staff 2026-05-01 - 2026-08-31",
+      "timeZone": "America/Toronto",
+      "components": {
+        "SEM": [
+          {
+            "section": "A00-SEM Term",
+            "sectionCode": "A00",
+            "component": "SEM",
+            "session": null,
+            "times": [
+              {
+                "day": "Fr",
+                "startMinutes": 780,
+                "endMinutes": 830
+              }
+            ],
+            "instructors": [
+              "Staff"
+            ],
+            "meetingDates": [
+              "2026-05-01",
+              "2026-08-31"
             ],
             "status": "Open"
           }
@@ -7925,35 +7957,9 @@
     },
     {
       "subject": "CML",
-      "catalogNumber": "2302",
-      "courseCode": "CML 2302",
-      "title": "Business Organizations Section Days & Times Instructor Meeting Dates Status Details S00-LECTerm N/A 00:00 - 00:00 Staff 2026-05-01 - 2026-08-31",
-      "timeZone": "America/Toronto",
-      "components": {
-        "LEC": [
-          {
-            "section": "S00-LEC Term",
-            "sectionCode": "S00",
-            "component": "LEC",
-            "session": null,
-            "times": [],
-            "instructors": [
-              "Staff"
-            ],
-            "meetingDates": [
-              "2026-05-01",
-              "2026-08-31"
-            ],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "CML",
       "catalogNumber": "3171",
       "courseCode": "CML 3171",
-      "title": "Student-Proposed Internship Section Days & Times Instructor Meeting Dates Status Details S00-STGTerm N/A 00:00 - 00:00 Staff 2026-05-01 - 2026-08-31",
+      "title": "Student-Proposed Internship Section Days & Times Instructor Meeting Dates Status Details S00-STGTerm N/A 00:00 - 00:00 Josée Desmarais 2026-05-01 - 2026-08-31",
       "timeZone": "America/Toronto",
       "components": {
         "STG": [
@@ -7964,7 +7970,7 @@
             "session": null,
             "times": [],
             "instructors": [
-              "Staff"
+              "Josée Desmarais"
             ],
             "meetingDates": [
               "2026-05-01",
@@ -8020,7 +8026,7 @@
       "subject": "CML",
       "catalogNumber": "3571",
       "courseCode": "CML 3571",
-      "title": "Stage proposé par l'étudiant Section Days & Times Instructor Meeting Dates Status Details E00-STGTerm N/A 00:00 - 00:00 Staff 2026-05-01 - 2026-08-31",
+      "title": "Stage proposé par l'étudiant Section Days & Times Instructor Meeting Dates Status Details E00-STGTerm N/A 00:00 - 00:00 Josée Desmarais 2026-05-01 - 2026-08-31",
       "timeZone": "America/Toronto",
       "components": {
         "STG": [
@@ -8031,7 +8037,7 @@
             "session": null,
             "times": [],
             "instructors": [
-              "Staff"
+              "Josée Desmarais"
             ],
             "meetingDates": [
               "2026-05-01",
@@ -8550,7 +8556,7 @@
       "subject": "CMN",
       "catalogNumber": "3530",
       "courseCode": "CMN 3530",
-      "title": "Planification des communications Section Days & Times Instructor Meeting Dates Status Details A00-LECSession C Tu 19:00 - 21:50Th 19:00 - 21:50 StaffStaff 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31",
+      "title": "Planification des communications Section Days & Times Instructor Meeting Dates Status Details A00-LECSession C Tu 19:00 - 21:50Th 19:00 - 21:50 Pierre Negaud DupenorPierre Negaud Dupenor 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -8572,8 +8578,8 @@
               }
             ],
             "instructors": [
-              "Staff",
-              "Staff"
+              "Pierre Negaud Dupenor",
+              "Pierre Negaud Dupenor"
             ],
             "meetingDates": [
               "2026-06-22",
@@ -8614,7 +8620,7 @@
       "subject": "CMN",
       "catalogNumber": "4115",
       "courseCode": "CMN 4115",
-      "title": "Media and Public Broadcasting Section Days & Times Instructor Meeting Dates Status Details A00-SEMSession B Th 14:30 - 17:20Tu 14:30 - 17:20 StaffStaff 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
+      "title": "Media and Public Broadcasting Section Days & Times Instructor Meeting Dates Status Details A00-SEMSession B Th 14:30 - 17:20Tu 14:30 - 17:20 Radamis ZakyRadamis Zaky 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
       "timeZone": "America/Toronto",
       "components": {
         "SEM": [
@@ -8636,8 +8642,8 @@
               }
             ],
             "instructors": [
-              "Staff",
-              "Staff"
+              "Radamis Zaky",
+              "Radamis Zaky"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -8842,7 +8848,7 @@
       "subject": "CMN",
       "catalogNumber": "5595",
       "courseCode": "CMN 5595",
-      "title": "Thèmes spéciaux Section Days & Times Instructor Meeting Dates Status Details A00-SEMSession B Tu 08:30 - 11:20Th 08:30 - 11:20 Julie Alice GramacciaJulie Alice Gramaccia 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
+      "title": "Thèmes spéciaux Section Days & Times Instructor Meeting Dates Status Details A00-SEMSession B Tu 08:30 - 11:20Th 08:30 - 11:20 Julie Alice GramacciaJulie Alice Gramaccia 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12 Topic: IA et désordre de l’information numérique",
       "timeZone": "America/Toronto",
       "components": {
         "SEM": [
@@ -9408,32 +9414,6 @@
             "meetingDates": [
               "2026-05-04",
               "2026-06-12"
-            ],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "CRM",
-      "catalogNumber": "6999",
-      "courseCode": "CRM 6999",
-      "title": "Major Research Paper Section Days & Times Instructor Meeting Dates Status Details T00-RECTerm N/A 00:00 - 00:00 Staff 2026-05-01 - 2026-08-31",
-      "timeZone": "America/Toronto",
-      "components": {
-        "REC": [
-          {
-            "section": "T00-REC Term",
-            "sectionCode": "T00",
-            "component": "REC",
-            "session": null,
-            "times": [],
-            "instructors": [
-              "Staff"
-            ],
-            "meetingDates": [
-              "2026-05-01",
-              "2026-08-31"
             ],
             "status": "Open"
           }
@@ -10089,6 +10069,32 @@
             "meetingDates": [
               "2026-05-04",
               "2026-07-24"
+            ],
+            "status": "Open"
+          }
+        ]
+      }
+    },
+    {
+      "subject": "CSI",
+      "catalogNumber": "5787",
+      "courseCode": "CSI 5787",
+      "title": "Ph.D. Comprehensive Section Days & Times Instructor Meeting Dates Status Details X00-RECTerm N/A 00:00 - 00:00 Staff 2026-05-01 - 2026-08-31",
+      "timeZone": "America/Toronto",
+      "components": {
+        "REC": [
+          {
+            "section": "X00-REC Term",
+            "sectionCode": "X00",
+            "component": "REC",
+            "session": null,
+            "times": [],
+            "instructors": [
+              "Staff"
+            ],
+            "meetingDates": [
+              "2026-05-01",
+              "2026-08-31"
             ],
             "status": "Open"
           }
@@ -11822,203 +11828,9 @@
     },
     {
       "subject": "DRC",
-      "catalogNumber": "3501",
-      "courseCode": "DRC 3501",
-      "title": "Problèmes choisis de droit international I Section Days & Times Instructor Meeting Dates Status Details AA00-LECTerm Mo 09:00 - 17:00Tu 09:00 - 17:00We 09:00 - 17:00Th 09:00 - 17:00Fr 09:00 - 17:00Sa 09:00 - 17:00Su 09:00 - 17:00Mo 09:00 - 17:00Tu 09:00 - 17:00We 09:00 - 17:00Th 09:00 - 17:00Fr 09:00 - 17:00 StaffStaffStaffStaffStaffStaffStaffStaffStaffStaffStaffStaff 2026-07-20 - 2026-07-202026-07-21 - 2026-07-212026-07-22 - 2026-07-222026-07-23 - 2026-07-232026-07-24 - 2026-07-242026-07-25 - 2026-07-252026-07-26 - 2026-07-262026-07-27 - 2026-07-272026-07-28 - 2026-07-282026-07-29 - 2026-07-292026-07-30 - 2026-07-302026-07-31 - 2026-07-31 Topic: Amér.Latine et Canada Section Days & Times Instructor Meeting Dates Status Details BB00-LECTerm Mo 00:00 - 00:00Tu 00:00 - 00:00We 00:00 - 00:00Th 00:00 - 00:00Fr 00:00 - 00:00 Geneviève DufourGeneviève DufourGeneviève DufourGeneviève DufourGeneviève Dufour 2026-06-15 - 2026-06-152026-06-16 - 2026-06-162026-06-17 - 2026-06-172026-06-18 - 2026-06-182026-06-19 - 2026-06-19 Topic: Genève - Négociations commerciales multilatérales Section Days & Times Instructor Meeting Dates Status Details CC00-LECTerm Su 00:00 - 00:00Mo 00:00 - 00:00Tu 00:00 - 00:00We 00:00 - 00:00Th 00:00 - 00:00Fr 00:00 - 00:00 Patrick DumberryPatrick DumberryPatrick DumberryPatrick DumberryPatrick DumberryPatrick Dumberry 2026-05-17 - 2026-05-172026-05-18 - 2026-05-182026-05-19 - 2026-05-192026-05-20 - 2026-05-202026-05-21 - 2026-05-212026-05-22 - 2026-05-22",
-      "timeZone": "America/Toronto",
-      "components": {
-        "LEC": [
-          {
-            "section": "AA00-LEC Term",
-            "sectionCode": "AA00",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "Mo",
-                "startMinutes": 540,
-                "endMinutes": 1020
-              },
-              {
-                "day": "Tu",
-                "startMinutes": 540,
-                "endMinutes": 1020
-              },
-              {
-                "day": "We",
-                "startMinutes": 540,
-                "endMinutes": 1020
-              },
-              {
-                "day": "Th",
-                "startMinutes": 540,
-                "endMinutes": 1020
-              },
-              {
-                "day": "Fr",
-                "startMinutes": 540,
-                "endMinutes": 1020
-              },
-              {
-                "day": "Sa",
-                "startMinutes": 540,
-                "endMinutes": 1020
-              },
-              {
-                "day": "Su",
-                "startMinutes": 540,
-                "endMinutes": 1020
-              },
-              {
-                "day": "Mo",
-                "startMinutes": 540,
-                "endMinutes": 1020
-              },
-              {
-                "day": "Tu",
-                "startMinutes": 540,
-                "endMinutes": 1020
-              },
-              {
-                "day": "We",
-                "startMinutes": 540,
-                "endMinutes": 1020
-              },
-              {
-                "day": "Th",
-                "startMinutes": 540,
-                "endMinutes": 1020
-              },
-              {
-                "day": "Fr",
-                "startMinutes": 540,
-                "endMinutes": 1020
-              }
-            ],
-            "instructors": [
-              "Staff",
-              "Staff",
-              "Staff",
-              "Staff",
-              "Staff",
-              "Staff",
-              "Staff",
-              "Staff",
-              "Staff",
-              "Staff",
-              "Staff",
-              "Staff"
-            ],
-            "meetingDates": [
-              "2026-07-20",
-              "2026-07-20"
-            ],
-            "status": "Open"
-          },
-          {
-            "section": "BB00-LEC Term",
-            "sectionCode": "BB00",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "Mo",
-                "startMinutes": 0,
-                "endMinutes": 0
-              },
-              {
-                "day": "Tu",
-                "startMinutes": 0,
-                "endMinutes": 0
-              },
-              {
-                "day": "We",
-                "startMinutes": 0,
-                "endMinutes": 0
-              },
-              {
-                "day": "Th",
-                "startMinutes": 0,
-                "endMinutes": 0
-              },
-              {
-                "day": "Fr",
-                "startMinutes": 0,
-                "endMinutes": 0
-              }
-            ],
-            "instructors": [
-              "Geneviève Dufour",
-              "Geneviève Dufour",
-              "Geneviève Dufour",
-              "Geneviève Dufour",
-              "Geneviève Dufour"
-            ],
-            "meetingDates": [
-              "2026-06-15",
-              "2026-06-15"
-            ],
-            "status": "Open"
-          },
-          {
-            "section": "CC00-LEC Term",
-            "sectionCode": "CC00",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "Su",
-                "startMinutes": 0,
-                "endMinutes": 0
-              },
-              {
-                "day": "Mo",
-                "startMinutes": 0,
-                "endMinutes": 0
-              },
-              {
-                "day": "Tu",
-                "startMinutes": 0,
-                "endMinutes": 0
-              },
-              {
-                "day": "We",
-                "startMinutes": 0,
-                "endMinutes": 0
-              },
-              {
-                "day": "Th",
-                "startMinutes": 0,
-                "endMinutes": 0
-              },
-              {
-                "day": "Fr",
-                "startMinutes": 0,
-                "endMinutes": 0
-              }
-            ],
-            "instructors": [
-              "Patrick Dumberry",
-              "Patrick Dumberry",
-              "Patrick Dumberry",
-              "Patrick Dumberry",
-              "Patrick Dumberry",
-              "Patrick Dumberry"
-            ],
-            "meetingDates": [
-              "2026-05-17",
-              "2026-05-17"
-            ],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "DRC",
       "catalogNumber": "4513",
       "courseCode": "DRC 4513",
-      "title": "Problèmes choisis de droit international I Section Days & Times Instructor Meeting Dates Status Details AA00-LECTerm Mo 09:00 - 17:00Tu 09:00 - 17:00We 09:00 - 17:00Th 09:00 - 17:00Fr 09:00 - 17:00Sa 09:00 - 17:00Su 09:00 - 17:00Mo 09:00 - 17:00Tu 09:00 - 17:00We 09:00 - 17:00Th 09:00 - 17:00Fr 09:00 - 17:00 StaffStaffStaffStaffStaffStaffStaffStaffStaffStaffStaffStaff 2026-07-20 - 2026-07-202026-07-21 - 2026-07-212026-07-22 - 2026-07-222026-07-23 - 2026-07-232026-07-24 - 2026-07-242026-07-25 - 2026-07-252026-07-26 - 2026-07-262026-07-27 - 2026-07-272026-07-28 - 2026-07-282026-07-29 - 2026-07-292026-07-30 - 2026-07-302026-07-31 - 2026-07-31 Topic: Amér.Latine et Canada Section Days & Times Instructor Meeting Dates Status Details BB00-LECTerm Mo 00:00 - 00:00Tu 00:00 - 00:00We 00:00 - 00:00Th 00:00 - 00:00Fr 00:00 - 00:00 Geneviève DufourGeneviève DufourGeneviève DufourGeneviève DufourGeneviève Dufour 2026-06-15 - 2026-06-152026-06-16 - 2026-06-162026-06-17 - 2026-06-172026-06-18 - 2026-06-182026-06-19 - 2026-06-19 Topic: Genève - Négociations commerciales multilatérales Section Days & Times Instructor Meeting Dates Status Details CC00-LECTerm Su 00:00 - 00:00Mo 00:00 - 00:00Tu 00:00 - 00:00We 00:00 - 00:00Th 00:00 - 00:00Fr 00:00 - 00:00 Patrick DumberryPatrick DumberryPatrick DumberryPatrick DumberryPatrick DumberryPatrick Dumberry 2026-05-17 - 2026-05-172026-05-18 - 2026-05-182026-05-19 - 2026-05-192026-05-20 - 2026-05-202026-05-21 - 2026-05-212026-05-22 - 2026-05-22",
+      "title": "Problèmes choisis de droit international I Section Days & Times Instructor Meeting Dates Status Details AA00-LECTerm Mo 09:00 - 17:00Tu 09:00 - 17:00We 09:00 - 17:00Th 09:00 - 17:00Fr 09:00 - 17:00Sa 09:00 - 17:00Su 09:00 - 17:00Mo 09:00 - 17:00Tu 09:00 - 17:00We 09:00 - 17:00Th 09:00 - 17:00Fr 09:00 - 17:00 StaffStaffStaffStaffStaffStaffStaffStaffStaffStaffStaffStaff 2026-07-20 - 2026-07-202026-07-21 - 2026-07-212026-07-22 - 2026-07-222026-07-23 - 2026-07-232026-07-24 - 2026-07-242026-07-25 - 2026-07-252026-07-26 - 2026-07-262026-07-27 - 2026-07-272026-07-28 - 2026-07-282026-07-29 - 2026-07-292026-07-30 - 2026-07-302026-07-31 - 2026-07-31 Topic: Amér.Latine et Canada Section Days & Times Instructor Meeting Dates Status Details BB00-LECTerm Mo 00:00 - 00:00Tu 00:00 - 00:00We 00:00 - 00:00Th 00:00 - 00:00Fr 00:00 - 00:00 Geneviève DufourGeneviève DufourGeneviève DufourGeneviève DufourGeneviève Dufour 2026-06-15 - 2026-06-152026-06-16 - 2026-06-162026-06-17 - 2026-06-172026-06-18 - 2026-06-182026-06-19 - 2026-06-19 Topic: Genève - Négociations commerciales multilatérales Section Days & Times Instructor Meeting Dates Status Details CC00-LECTerm Su 00:00 - 00:00Mo 00:00 - 00:00Tu 00:00 - 00:00We 00:00 - 00:00Th 00:00 - 00:00Fr 00:00 - 00:00 Patrick DumberryPatrick DumberryPatrick DumberryPatrick DumberryPatrick DumberryPatrick Dumberry 2026-05-17 - 2026-05-172026-05-18 - 2026-05-182026-05-19 - 2026-05-192026-05-20 - 2026-05-202026-05-21 - 2026-05-212026-05-22 - 2026-05-22 Topic: Droit comparatif et international – Maroc",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -15137,36 +14949,42 @@
       "subject": "ECO",
       "catalogNumber": "6120",
       "courseCode": "ECO 6120",
-      "title": "Macroeconomic Theory IV Section Days & Times Instructor Meeting Dates Status Details A00-LECSession C Tu 09:30 - 12:20Th 09:30 - 12:20 StaffStaff 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31",
+      "title": "Macroeconomic Theory IV Section Days & Times Instructor Meeting Dates Status Details A01-LECSession A Tu 09:30 - 12:30 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details A00-LECSession C N/A 00:00 - 00:00 Staff -",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
           {
-            "section": "A00-LEC Session C",
-            "sectionCode": "A00",
+            "section": "A01-LEC Session A",
+            "sectionCode": "A01",
             "component": "LEC",
             "session": null,
             "times": [
               {
                 "day": "Tu",
                 "startMinutes": 570,
-                "endMinutes": 740
-              },
-              {
-                "day": "Th",
-                "startMinutes": 570,
-                "endMinutes": 740
+                "endMinutes": 750
               }
             ],
             "instructors": [
-              "Staff",
               "Staff"
             ],
             "meetingDates": [
-              "2026-06-22",
-              "2026-07-31"
+              "2026-05-04",
+              "2026-07-24"
             ],
             "status": "Open"
+          },
+          {
+            "section": "A00-LEC Session C",
+            "sectionCode": "A00",
+            "component": "LEC",
+            "session": null,
+            "times": [],
+            "instructors": [
+              "Staff"
+            ],
+            "meetingDates": null,
+            "status": "Closed"
           }
         ]
       }
@@ -15591,7 +15409,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           },
           {
             "section": "DA10-LEC Session B",
@@ -15606,7 +15424,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -15673,7 +15491,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -15729,7 +15547,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -15851,7 +15669,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           },
           {
             "section": "DA40-LEC Session B",
@@ -15866,7 +15684,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -15892,7 +15710,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Open"
+            "status": "Closed"
           },
           {
             "section": "DA10-LEC Session A",
@@ -15948,7 +15766,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           },
           {
             "section": "DA10-LEC Session B",
@@ -16097,7 +15915,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -16170,7 +15988,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           },
           {
             "section": "DA10-LEC Session B",
@@ -16185,7 +16003,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -16211,7 +16029,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -16237,7 +16055,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -16882,6 +16700,32 @@
       "subject": "ELE",
       "catalogNumber": "29003",
       "courseCode": "ELE 29003",
+      "title": "Clinical Placement - Non Mandatory Elective - Second Year (Part 3 of 3) Section Days & Times Instructor Meeting Dates Status Details A00-STGTerm N/A 00:00 - 00:00 Staff 2026-06-01 - 2026-08-23",
+      "timeZone": "America/Toronto",
+      "components": {
+        "STG": [
+          {
+            "section": "A00-STG Term",
+            "sectionCode": "A00",
+            "component": "STG",
+            "session": null,
+            "times": [],
+            "instructors": [
+              "Staff"
+            ],
+            "meetingDates": [
+              "2026-06-01",
+              "2026-08-23"
+            ],
+            "status": "Open"
+          }
+        ]
+      }
+    },
+    {
+      "subject": "ELG",
+      "catalogNumber": "3106",
+      "courseCode": "ELG 3106",
       "title": "Clinical Placement - Non Mandatory Elective - Second Year (Part 3 of 3) Section Days & Times Instructor Meeting Dates Status Details A00-STGTerm N/A 00:00 - 00:00 Staff 2026-06-01 - 2026-08-23",
       "timeZone": "America/Toronto",
       "components": {
@@ -17638,6 +17482,44 @@
             "meetingDates": [
               "2026-05-04",
               "2026-07-24"
+            ],
+            "status": "Open"
+          }
+        ]
+      }
+    },
+    {
+      "subject": "ENG",
+      "catalogNumber": "3385",
+      "courseCode": "ENG 3385",
+      "title": "Romantics: Seminar Section Days & Times Instructor Meeting Dates Status Details A00-SEMSession B Tu 14:30 - 17:20Th 14:30 - 17:20 Ian DennisIan Dennis 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
+      "timeZone": "America/Toronto",
+      "components": {
+        "SEM": [
+          {
+            "section": "A00-SEM Session B",
+            "sectionCode": "A00",
+            "component": "SEM",
+            "session": null,
+            "times": [
+              {
+                "day": "Tu",
+                "startMinutes": 870,
+                "endMinutes": 1040
+              },
+              {
+                "day": "Th",
+                "startMinutes": 870,
+                "endMinutes": 1040
+              }
+            ],
+            "instructors": [
+              "Ian Dennis",
+              "Ian Dennis"
+            ],
+            "meetingDates": [
+              "2026-05-04",
+              "2026-06-12"
             ],
             "status": "Open"
           }
@@ -23107,7 +22989,7 @@
       "subject": "ITI",
       "catalogNumber": "1121",
       "courseCode": "ITI 1121",
-      "title": "Introduction to Computing II Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A We 19:00 - 21:50 Karim Al Ghoul 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z01-LABSession A Mo 19:00 - 21:50 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z02-LABSession A We 11:30 - 14:20 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z03-LABSession A Fr 17:30 - 20:20 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z04-LABSession A Th 19:00 - 21:50 Staff 2026-05-04 - 2026-07-24",
+      "title": "Introduction to Computing II Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A We 19:00 - 21:50 Karim Al Ghoul 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z01-LABSession A Mo 19:00 - 21:50 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z02-LABSession A We 11:30 - 14:20 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z03-LABSession A Fr 17:30 - 20:20Fr 17:30 - 20:20Fr 17:30 - 20:20 StaffStaffStaff 2026-05-04 - 2026-05-072026-05-08 - 2026-05-092026-05-10 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z04-LABSession A Th 19:00 - 21:50 Staff 2026-05-04 - 2026-07-24",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -23186,14 +23068,26 @@
                 "day": "Fr",
                 "startMinutes": 1050,
                 "endMinutes": 1220
+              },
+              {
+                "day": "Fr",
+                "startMinutes": 1050,
+                "endMinutes": 1220
+              },
+              {
+                "day": "Fr",
+                "startMinutes": 1050,
+                "endMinutes": 1220
               }
             ],
             "instructors": [
+              "Staff",
+              "Staff",
               "Staff"
             ],
             "meetingDates": [
               "2026-05-04",
-              "2026-07-24"
+              "2026-05-07"
             ],
             "status": "Closed"
           },
@@ -25957,7 +25851,7 @@
       "subject": "MBA",
       "catalogNumber": "6265",
       "courseCode": "MBA 6265",
-      "title": "Managing the Professional Services Firm – Introduction Section Days & Times Instructor Meeting Dates Status Details B00-LECTerm Th 19:00 - 21:50 Staff 2026-05-07 - 2026-06-11",
+      "title": "Managing the Professional Services Firm – Introduction Section Days & Times Instructor Meeting Dates Status Details B00-LECTerm Th 19:00 - 21:50 Murray Kronick 2026-05-07 - 2026-06-11",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -25974,7 +25868,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Murray Kronick"
             ],
             "meetingDates": [
               "2026-05-07",
@@ -27219,6 +27113,59 @@
           {
             "section": "CX00-LEC Session A",
             "sectionCode": "CX00",
+            "component": "LEC",
+            "session": null,
+            "times": [
+              {
+                "day": "We",
+                "startMinutes": 1140,
+                "endMinutes": 1310
+              }
+            ],
+            "instructors": [
+              "Staff"
+            ],
+            "meetingDates": [
+              "2026-05-04",
+              "2026-07-24"
+            ],
+            "status": "Open"
+          }
+        ]
+      }
+    },
+    {
+      "subject": "MCG",
+      "catalogNumber": "5141",
+      "courseCode": "MCG 5141",
+      "title": "Selected Topics I (+2 combined) Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A Mo 19:00 - 21:50 Staff 2026-05-04 - 2026-07-24 Topic: Electronics Packaging & Manuf. Section Days & Times Instructor Meeting Dates Status Details ZV00-LECSession A We 19:00 - 21:50 Staff 2026-05-04 - 2026-07-24 Topic: Building Energy Analysis",
+      "timeZone": "America/Toronto",
+      "components": {
+        "LEC": [
+          {
+            "section": "Z00-LEC Session A",
+            "sectionCode": "Z00",
+            "component": "LEC",
+            "session": null,
+            "times": [
+              {
+                "day": "Mo",
+                "startMinutes": 1140,
+                "endMinutes": 1310
+              }
+            ],
+            "instructors": [
+              "Staff"
+            ],
+            "meetingDates": [
+              "2026-05-04",
+              "2026-07-24"
+            ],
+            "status": "Open"
+          },
+          {
+            "section": "ZV00-LEC Session A",
+            "sectionCode": "ZV00",
             "component": "LEC",
             "session": null,
             "times": [
@@ -28522,7 +28469,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Open"
+            "status": "Closed"
           },
           {
             "section": "ZZ00-LEC Session A",
@@ -29283,7 +29230,7 @@
               "2026-05-01",
               "2026-08-31"
             ],
-            "status": "Open"
+            "status": "Closed"
           },
           {
             "section": "NPB0-LEC Term",
@@ -29929,7 +29876,7 @@
       "subject": "ORA",
       "catalogNumber": "6752",
       "courseCode": "ORA 6752",
-      "title": "Troubles de la déglutition et alimentation Section Days & Times Instructor Meeting Dates Status Details A00-LECTerm Tu 17:30 - 20:20Th 17:30 - 20:20 StaffStaff 2026-05-26 - 2026-07-022026-05-26 - 2026-07-02",
+      "title": "Troubles de la déglutition et alimentation Section Days & Times Instructor Meeting Dates Status Details A00-LECTerm Tu 17:30 - 20:20Th 17:30 - 20:20 StaffStaff 2026-06-02 - 2026-07-092026-06-02 - 2026-07-09",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -29955,8 +29902,8 @@
               "Staff"
             ],
             "meetingDates": [
-              "2026-05-26",
-              "2026-07-02"
+              "2026-06-02",
+              "2026-07-09"
             ],
             "status": "Open"
           }
@@ -30081,7 +30028,7 @@
       "subject": "PAP",
       "catalogNumber": "4755",
       "courseCode": "PAP 4755",
-      "title": "Éthique et affaires publiques Section Days & Times Instructor Meeting Dates Status Details A00-LECSession B Mo 09:00 - 11:50We 09:00 - 11:50 StaffStaff 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
+      "title": "Éthique et affaires publiques Section Days & Times Instructor Meeting Dates Status Details A00-LECSession B Mo 09:00 - 11:50We 09:00 - 11:50 Robert JohnsonRobert Johnson 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -30103,8 +30050,8 @@
               }
             ],
             "instructors": [
-              "Staff",
-              "Staff"
+              "Robert Johnson",
+              "Robert Johnson"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -30542,70 +30489,64 @@
       "subject": "PED",
       "catalogNumber": "3545",
       "courseCode": "PED 3545",
-      "title": "Éducation au cycle préparatoire Section Days & Times Instructor Meeting Dates Status Details X200-LECTerm We 18:30 - 21:20 Staff 2026-07-07 - 2026-08-14 Section Days & Times Instructor Meeting Dates Status Details Y200-LECTerm Tu 18:30 - 21:20 Staff 2026-07-07 - 2026-08-14 Section Days & Times Instructor Meeting Dates Status Details Z200-LECTerm Th 18:30 - 21:20 Staff 2026-07-07 - 2026-08-14",
+      "title": "Stage I en milieu scolaire secondaire Section Days & Times Instructor Meeting Dates Status Details K00-STGMulti-Term Mo 08:00 - 17:00Tu 08:00 - 17:00We 08:00 - 17:00Th 08:00 - 17:00N/A 08:00 - 17:00 StaffStaffStaffStaffStaff 2026-04-20 - 2026-06-152026-04-20 - 2026-06-152026-04-20 - 2026-06-152026-04-20 - 2026-06-152026-04-20 - 2026-06-15 Section Days & Times Instructor Meeting Dates Status Details K01-DGDMulti-Term N/A 00:00 - 00:00 Staff 2026-04-20 - 2026-06-15",
       "timeZone": "America/Toronto",
       "components": {
-        "LEC": [
+        "STG": [
           {
-            "section": "X200-LEC Term",
-            "sectionCode": "X200",
-            "component": "LEC",
+            "section": "K00-STG Multi-Term",
+            "sectionCode": "K00",
+            "component": "STG",
             "session": null,
             "times": [
               {
-                "day": "We",
-                "startMinutes": 1110,
-                "endMinutes": 1280
-              }
-            ],
-            "instructors": [
-              "Staff"
-            ],
-            "meetingDates": [
-              "2026-07-07",
-              "2026-08-14"
-            ],
-            "status": "Open"
-          },
-          {
-            "section": "Y200-LEC Term",
-            "sectionCode": "Y200",
-            "component": "LEC",
-            "session": null,
-            "times": [
+                "day": "Mo",
+                "startMinutes": 480,
+                "endMinutes": 1020
+              },
               {
                 "day": "Tu",
-                "startMinutes": 1110,
-                "endMinutes": 1280
-              }
-            ],
-            "instructors": [
-              "Staff"
-            ],
-            "meetingDates": [
-              "2026-07-07",
-              "2026-08-14"
-            ],
-            "status": "Open"
-          },
-          {
-            "section": "Z200-LEC Term",
-            "sectionCode": "Z200",
-            "component": "LEC",
-            "session": null,
-            "times": [
+                "startMinutes": 480,
+                "endMinutes": 1020
+              },
+              {
+                "day": "We",
+                "startMinutes": 480,
+                "endMinutes": 1020
+              },
               {
                 "day": "Th",
-                "startMinutes": 1110,
-                "endMinutes": 1280
+                "startMinutes": 480,
+                "endMinutes": 1020
               }
             ],
+            "instructors": [
+              "Staff",
+              "Staff",
+              "Staff",
+              "Staff",
+              "Staff"
+            ],
+            "meetingDates": [
+              "2026-04-20",
+              "2026-06-15"
+            ],
+            "status": "Open"
+          }
+        ],
+        "DGD": [
+          {
+            "section": "K01-DGD Multi-Term",
+            "sectionCode": "K01",
+            "component": "DGD",
+            "session": null,
+            "times": [],
             "instructors": [
               "Staff"
             ],
             "meetingDates": [
-              "2026-07-07",
-              "2026-08-14"
+              "2026-04-20",
+              "2026-06-15"
             ],
             "status": "Open"
           }
@@ -33920,7 +33861,7 @@
       "subject": "POL",
       "catalogNumber": "2101",
       "courseCode": "POL 2101",
-      "title": "Introduction to Canadian Politics Section Days & Times Instructor Meeting Dates Status Details A00-LECSession C Mo 09:00 - 11:50We 09:00 - 11:50 StaffStaff 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31",
+      "title": "Introduction to Canadian Politics Section Days & Times Instructor Meeting Dates Status Details A00-LECSession C Mo 09:00 - 11:50We 09:00 - 11:50 Joseph RomanJoseph Roman 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -33942,8 +33883,8 @@
               }
             ],
             "instructors": [
-              "Staff",
-              "Staff"
+              "Joseph Roman",
+              "Joseph Roman"
             ],
             "meetingDates": [
               "2026-06-22",
@@ -34453,47 +34394,9 @@
     },
     {
       "subject": "POL",
-      "catalogNumber": "4302",
-      "courseCode": "POL 4302",
-      "title": "Le parlementarisme au Canada Section Days & Times Instructor Meeting Dates Status Details A00-LECSession B Mo 17:30 - 20:20We 17:30 - 20:20 Darren Padraic O'TooleDarren Padraic O'Toole 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
-      "timeZone": "America/Toronto",
-      "components": {
-        "LEC": [
-          {
-            "section": "A00-LEC Session B",
-            "sectionCode": "A00",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "Mo",
-                "startMinutes": 1050,
-                "endMinutes": 1220
-              },
-              {
-                "day": "We",
-                "startMinutes": 1050,
-                "endMinutes": 1220
-              }
-            ],
-            "instructors": [
-              "Darren Padraic O'Toole",
-              "Darren Padraic O'Toole"
-            ],
-            "meetingDates": [
-              "2026-05-04",
-              "2026-06-12"
-            ],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "POL",
       "catalogNumber": "4350",
       "courseCode": "POL 4350",
-      "title": "Honours Seminar in Comparative Politics Section Days & Times Instructor Meeting Dates Status Details A00-SEMSession C Tu 09:00 - 11:50Th 09:00 - 11:50 StaffStaff 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31",
+      "title": "Honours Seminar in Comparative Politics Section Days & Times Instructor Meeting Dates Status Details A00-SEMSession C Tu 09:00 - 11:50Th 09:00 - 11:50 Klavdiia TatarKlavdiia Tatar 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31",
       "timeZone": "America/Toronto",
       "components": {
         "SEM": [
@@ -34515,8 +34418,8 @@
               }
             ],
             "instructors": [
-              "Staff",
-              "Staff"
+              "Klavdiia Tatar",
+              "Klavdiia Tatar"
             ],
             "meetingDates": [
               "2026-06-22",
@@ -37337,32 +37240,6 @@
     },
     {
       "subject": "SOC",
-      "catalogNumber": "2117",
-      "courseCode": "SOC 2117",
-      "title": "Work Term IV Section Days & Times Instructor Meeting Dates Status Details S00-STGTerm N/A 00:00 - 00:00 Staff 2026-05-01 - 2026-08-31",
-      "timeZone": "America/Toronto",
-      "components": {
-        "STG": [
-          {
-            "section": "S00-STG Term",
-            "sectionCode": "S00",
-            "component": "STG",
-            "session": null,
-            "times": [],
-            "instructors": [
-              "Staff"
-            ],
-            "meetingDates": [
-              "2026-05-01",
-              "2026-08-31"
-            ],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "SOC",
       "catalogNumber": "2503",
       "courseCode": "SOC 2503",
       "title": "Socio-anthropologie de la famille (+1 combined) Section Days & Times Instructor Meeting Dates Status Details A00-LECSession B Tu 09:00 - 11:50Th 09:00 - 11:50 StaffStaff 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
@@ -38358,7 +38235,7 @@
       "subject": "TMM",
       "catalogNumber": "4907",
       "courseCode": "TMM 4907",
-      "title": "Life in a Lab II Section Days & Times Instructor Meeting Dates Status Details A00-LABSession C Th 11:30 - 14:20 Staff 2026-06-22 - 2026-07-31",
+      "title": "Life in a Lab II Section Days & Times Instructor Meeting Dates Status Details A00-LABSession C Th 11:30 - 14:20 Kin Chan 2026-06-22 - 2026-07-31",
       "timeZone": "America/Toronto",
       "components": {
         "LAB": [
@@ -38375,7 +38252,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Kin Chan"
             ],
             "meetingDates": [
               "2026-06-22",

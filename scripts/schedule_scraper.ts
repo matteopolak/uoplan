@@ -124,8 +124,15 @@ function parseCourseCode(code: string): ParsedCourseCode | null {
   return { subject: m[1], catalogNbr: m[2], code: `${m[1]} ${m[2]}` };
 }
 
-async function loadCatalogue(): Promise<ParsedCourseCode[]> {
-  const raw = await fs.readFile('public/data/catalogue.json', 'utf-8');
+function getCatalogueYearForTerm(termName: string): number {
+  const m = termName.match(/(\d{4})/);
+  if (!m) throw new Error(`Cannot extract year from term name: ${termName}`);
+  const year = parseInt(m[1], 10);
+  return termName.toLowerCase().includes('fall') ? year : year - 1;
+}
+
+async function loadCatalogue(year: number): Promise<ParsedCourseCode[]> {
+  const raw = await fs.readFile(`public/data/catalogue.${year}.json`, 'utf-8');
   const data = JSON.parse(raw) as { courses?: CatalogueCourse[] };
   if (!Array.isArray(data.courses)) {
     throw new Error('catalogue.json does not contain a courses array');
@@ -578,27 +585,8 @@ async function fetchScheduleForCourse(
 }
 
 async function main(): Promise<void> {
-  console.log('Loading catalogue.json`..`.');
-  const allCourses = await loadCatalogue();
-  console.log(`Found ${allCourses.length} unique course codes.`);
-
-  // Optional env-based filtering for testing specific courses (e.g. ONLY_SUBJECT=MAT ONLY_CATALOG=1300).
   const onlySubject = process.env.ONLY_SUBJECT;
   const onlyCatalog = process.env.ONLY_CATALOG;
-  const courses =
-    onlySubject || onlyCatalog
-      ? allCourses.filter(c => {
-          if (onlySubject && c.subject !== onlySubject) return false;
-          if (onlyCatalog && c.catalogNbr !== onlyCatalog) return false;
-          return true;
-        })
-      : allCourses;
-
-  if (courses.length !== allCourses.length) {
-    console.log(
-      `Filtered to ${courses.length} course(s) based on ONLY_SUBJECT/ONLY_CATALOG environment variables.`,
-    );
-  }
 
   console.log('Initializing PeopleSoft session...');
   const clientCount = USE_CACHE_ONLY ? 1 : MAX_CONCURRENCY;
@@ -629,6 +617,26 @@ async function main(): Promise<void> {
   console.log(`Initialized ${clientInfos.length} PeopleSoft session(s).`);
 
   for (const term of terms) {
+    const catalogueYear = getCatalogueYearForTerm(term.name);
+    console.log(`Loading catalogue.${catalogueYear}.json for ${term.name}...`);
+    const allCourses = await loadCatalogue(catalogueYear);
+    console.log(`Found ${allCourses.length} unique course codes.`);
+
+    const courses =
+      onlySubject || onlyCatalog
+        ? allCourses.filter(c => {
+            if (onlySubject && c.subject !== onlySubject) return false;
+            if (onlyCatalog && c.catalogNbr !== onlyCatalog) return false;
+            return true;
+          })
+        : allCourses;
+
+    if (courses.length !== allCourses.length) {
+      console.log(
+        `Filtered to ${courses.length} course(s) based on ONLY_SUBJECT/ONLY_CATALOG environment variables.`,
+      );
+    }
+
     console.log(`Starting schedule scrape for ${term.name} (${term.termId})...`);
     const limit = pLimit(MAX_CONCURRENCY);
     const results: CourseSchedule[] = [];
