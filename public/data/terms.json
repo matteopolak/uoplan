@@ -1,1 +1,12 @@
-{"terms":[{"termId":"2261","name":"2026 Winter Term"},{"termId":"2265","name":"2026 Spring/Summer Term"}]}
+{
+  "terms": [
+    {
+      "termId": "2261",
+      "name": "2026 Winter Term"
+    },
+    {
+      "termId": "2265",
+      "name": "2026 Spring/Summer Term"
+    }
+  ]
+}
