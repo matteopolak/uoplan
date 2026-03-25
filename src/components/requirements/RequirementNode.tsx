@@ -19,7 +19,6 @@ import {
   Radio,
 } from "@mantine/core";
 import { IconCheck, IconChevronDown, IconX } from "@tabler/icons-react";
-import { createCourseOptions } from "../shared/CourseSelect";
 import type { ComboboxItem } from "@mantine/core";
 import type { DataCache } from "../../lib/dataCache";
 import { normalizeCourseCode } from "../../lib/dataCache";
@@ -267,7 +266,7 @@ export const RequirementNode = memo(function RequirementNode({
       node.type === "non_discipline_elective") &&
     (node.excluded_disciplines?.length ?? 0) > 0;
 
-  const { filtered, selectedForDisplay, options } = useMemo(() => {
+  const { selectedForDisplay, options } = useMemo(() => {
     const isCompletedCourse = (code: string): boolean => {
       const norm = normalizeCourseCode(code);
       const canonical = cache?.getCourse(norm)?.code ?? code;
@@ -340,7 +339,7 @@ export const RequirementNode = memo(function RequirementNode({
       return { value: code, label: code, disabled: usedElsewhere };
     });
 
-    return { filtered, selectedForDisplay, options };
+    return { selectedForDisplay, options };
   }, [
     node.candidateCourses,
     node.type,
