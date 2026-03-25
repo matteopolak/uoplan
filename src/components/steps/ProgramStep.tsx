@@ -15,7 +15,7 @@ interface ProgramStepProps {
   onChange: (program: Program | null) => void;
 }
 
-export function ProgramStep({ programs, value, onChange }: ProgramStepProps) {
+export function ProgramStep({ programs: _programs, value, onChange }: ProgramStepProps) {
   const {
     cache,
     indices,

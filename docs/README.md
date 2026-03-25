@@ -6,3 +6,4 @@
 | [course-prerequisites.md](./course-prerequisites.md) | Prerequisite data model and how prerequisites are parsed and represented |
 | [schedule-generation.md](./schedule-generation.md) | Schedule generation algorithm and constraints |
 | [state-encoding.md](./state-encoding.md) | Binary state encoding for URL sharing and localStorage persistence |
+| [store-architecture.md](./store-architecture.md) | Zustand slice pattern and application state management |
