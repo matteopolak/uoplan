@@ -1,55 +1,17 @@
 {
-  "name": "uoplan",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "scrape:catalogue": "node scripts/scraper.ts",
-    "scrape:schedules": "node scripts/schedule_scraper.ts",
-    "scrape:ratemyprofessors": "node scripts/ratemyprofessors_scraper.ts"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "name": "uoplan-monorepo",
+  "private": true,
   "packageManager": "pnpm@10.27.0",
-  "devDependencies": {
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "@types/node": "^25.5.0",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@types/tough-cookie": "^4.0.5",
-    "@vitejs/plugin-react": "^6.0.1",
-    "cheerio": "^1.2.0",
-    "jsdom": "^28.1.0",
-    "typescript": "^5.9.3",
-    "vite": "^8.0.0",
-    "vitest": "^4.1.0",
-    "zod": "^4.3.6"
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "test": "pnpm --filter web test",
+    "test:watch": "pnpm --filter web test:watch",
+    "scrape:catalogue": "pnpm --filter scrapers scrape:catalogue",
+    "scrape:schedules": "pnpm --filter scrapers scrape:schedules",
+    "scrape:ratemyprofessors": "pnpm --filter scrapers scrape:ratemyprofessors"
   },
-  "type": "module",
-  "dependencies": {
-    "@fullcalendar/core": "^6.1.20",
-    "@fullcalendar/interaction": "^6.1.20",
-    "@fullcalendar/react": "^6.1.20",
-    "@fullcalendar/timegrid": "^6.1.20",
-    "@mantine/core": "^8.3.17",
-    "@mantine/hooks": "^8.3.17",
-    "@tabler/icons-react": "^3.40.0",
-    "date-fns": "^4.1.0",
-    "driver.js": "^1.4.0",
-    "framer-motion": "^12.36.0",
-    "got": "^14.6.6",
-    "p-limit": "^7.3.0",
-    "pdfjs-dist": "^5.5.207",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "tough-cookie": "^6.0.1",
-    "zustand": "^5.0.11"
+  "devDependencies": {
+    "typescript": "^5.9.3"
   }
 }
