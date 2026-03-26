@@ -19,8 +19,7 @@ export function normalizeCourseCode(code: string): string {
 export function isHonoursProject(code: string, cache: DataCache | null): boolean {
   if (!cache) return false;
   const course = cache.getCourse(code);
-  const component = course?.component?.trim().toLowerCase() ?? "";
-  return component.startsWith("recherche / research");
+  return course?.code.endsWith('900') ?? false;
 }
 
 /**
@@ -29,7 +28,7 @@ export function isHonoursProject(code: string, cache: DataCache | null): boolean
  */
 export function isWorkTermCourse(course: Course): boolean {
   const component = course.component?.trim().toLowerCase() ?? "";
-  return component.startsWith("stage / work term");
+  return component.includes("work term");
 }
 
 /**
