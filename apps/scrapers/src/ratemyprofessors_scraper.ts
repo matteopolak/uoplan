@@ -57,6 +57,7 @@ interface TeacherNode {
 interface FormattedTeacherNode {
   name: string;
   rating: number | null;
+  numRatings: number;
 }
 
 interface TeacherSearchResponse {
@@ -132,6 +133,7 @@ async function main(): Promise<void> {
     const nodes = teachers.edges.map((e) => ({
       name: `${e.node.firstName} ${e.node.lastName}`,
       rating: e.node.avgRating,
+      numRatings: e.node.numRatings,
     }));
     allTeachers.push(...nodes);
 

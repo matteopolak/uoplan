@@ -1,9 +1,10 @@
-import { Box } from "@mantine/core";
+import { Box, Stack, Text, Tooltip } from "@mantine/core";
 import type { DataCache } from "schedule";
 import type { CourseEnrollment } from "schedule";
 import {
   formatRatingsDisplay,
   getRatingsForInstructors,
+  getRatingDetailsForInstructors,
   type ProfessorRatingsMap,
 } from "schedule";
 import {
@@ -19,6 +20,25 @@ interface EventStyleCardProps {
   enrollmentIndex: number;
   cache: DataCache | null;
   professorRatings: ProfessorRatingsMap | null;
+}
+
+function RatingTooltipLabel({
+  details,
+}: {
+  details?: Array<{ name: string; rating: number; numRatings: number }>;
+}) {
+  if (!details?.length) return null;
+  return (
+    <Stack gap={4}>
+      <Text size="xs" fw={600} c="dimmed">RateMyProfessors</Text>
+      {details.map((d) => (
+        <Text key={d.name} size="xs">
+          {d.name} · {d.rating.toFixed(1).replace(/\.0$/, '')}/5
+          {d.numRatings > 0 ? ` (${d.numRatings} ratings)` : ''}
+        </Text>
+      ))}
+    </Stack>
+  );
 }
 
 /**
@@ -58,6 +78,12 @@ export function EventStyleCard({
       ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) /
         10
       : null;
+  const ratingDetails = firstEntry
+    ? getRatingDetailsForInstructors(
+        firstEntry[1].section.instructors ?? [],
+        professorRatings
+      )
+    : [];
 
   const colorName = COURSE_COLORS[enrollmentIndex % COURSE_COLORS.length];
   const hex = COURSE_COLOR_HEX[colorName];
@@ -114,18 +140,35 @@ export function EventStyleCard({
             {professor}
           </span>
           {ratingDisplay && ratingValue != null && (
-            <Box
-              title={`RateMyProfessors: ${ratingDisplay}`}
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: 2,
-                backgroundColor: ratingColorToCssVar(ratingToColor(ratingValue)),
-                border: "1px solid rgba(0,0,0,0.45)",
-                boxShadow: "0 0 0 1px rgba(255,255,255,0.08) inset",
-                flexShrink: 0,
-              }}
-            />
+            <Tooltip
+              label={<RatingTooltipLabel details={ratingDetails} />}
+              withArrow
+              position="top"
+              withinPortal
+              color="dark"
+            >
+              <Box
+                style={{
+                  padding: 4,
+                  flexShrink: 0,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Box
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 2,
+                    backgroundColor: ratingColorToCssVar(ratingToColor(ratingValue)),
+                    border: "1px solid rgba(0,0,0,0.45)",
+                    boxShadow: "0 0 0 1px rgba(255,255,255,0.08) inset",
+                  }}
+                />
+              </Box>
+            </Tooltip>
           )}
         </span>
       </div>

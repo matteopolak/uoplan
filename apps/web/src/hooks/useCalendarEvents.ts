@@ -5,6 +5,7 @@ import type { ProfessorRatingsMap } from "schedule";
 import {
   formatRatingsDisplay,
   getRatingsForInstructors,
+  getRatingDetailsForInstructors,
 } from "schedule";
 import { addDays, minutesToDate, DAY_OFFSETS } from "schedule";
 
@@ -24,11 +25,12 @@ export interface CalendarEvent {
   professor: string;
   professorRatingDisplay?: string | null;
   professorRatingValue?: number | null;
+  professorRatingDetails?: Array<{ name: string; rating: number; numRatings: number }>;
 }
 
 /**
  * Hook to transform a schedule into FullCalendar-compatible events.
- * 
+ *
  * @param schedule - The generated schedule to transform
  * @param professorRatings - Optional professor ratings map for display
  * @returns Array of calendar events positioned on a reference week
@@ -66,6 +68,10 @@ export function useCalendarEvents(
                 (ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10
               ) / 10
             : null;
+        const professorRatingDetails = getRatingDetailsForInstructors(
+          section.instructors ?? [],
+          professorRatings
+        );
 
         for (const t of section.times) {
           if (t.startMinutes >= t.endMinutes) continue;
@@ -89,6 +95,7 @@ export function useCalendarEvents(
             professor,
             professorRatingDisplay,
             professorRatingValue,
+            professorRatingDetails,
           });
           timeIdx += 1;
         }
