@@ -155,7 +155,7 @@ async function main(): Promise<void> {
     await new Promise((r) => setTimeout(r, 300));
   }
 
-  const outDir = path.join(process.cwd(), 'public', 'data');
+  const outDir = '../web/public/data';
   await fs.mkdir(outDir, { recursive: true });
   const outPath = path.join(outDir, 'ratemyprofessors.json');
 
