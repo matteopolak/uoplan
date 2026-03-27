@@ -340,14 +340,14 @@ export async function generateSchedulesAction(
 
     let pools: RequirementPool[] = allPools
       .map((pool) => {
+        const selectedForPool =
+          selectedPerRequirement[pool.requirementId] ?? [];
         let pinnedCredits = 0;
         for (const code of pinned) {
-          if (!pool.candidateCourses.includes(code)) continue;
+          if (!selectedForPool.includes(code)) continue;
           const course = cacheVal.getCourse(code);
           pinnedCredits += course?.credits ?? 3;
         }
-        const selectedForPool =
-          selectedPerRequirement[pool.requirementId] ?? [];
         let completedSelectedCredits = 0;
         for (const code of selectedForPool) {
           if (!completedSet.has(normalizeCourseCode(code))) continue;
