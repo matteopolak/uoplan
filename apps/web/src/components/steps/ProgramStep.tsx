@@ -200,8 +200,9 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
       )}
       <Alert color="violet" variant="light" radius="sm">
         <Text size="sm" c="dimmed">
-          Upload your unofficial transcript (PDF) to auto-fill completed courses and detect your
-          program. The PDF is parsed entirely in your browser (client-side) and does not use AI.
+          <strong>Optional.</strong> Uploading your transcript saves you from manually selecting
+          your start year, program, and completed courses — everything is auto-detected. Your PDF
+          is processed entirely on your device and is never sent to any server.
         </Text>
       </Alert>
       <input
