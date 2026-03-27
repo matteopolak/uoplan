@@ -226,7 +226,7 @@ function getLastSemesterSegment(transcriptText: string): string {
  */
 function extractProgramBetweenTermAndCourse(text: string): string | null {
   const normalized = text.replace(/\s+/g, " ").trim();
-  const match = normalized.match(/Term\s+(.+?)\s+Course\b/i);
+  const match = normalized.match(/Term\s+(.+?)\s+(Course|Transfer)\b/i);
   if (!match) return null;
   const fragment = match[1]
     .replace(/\s+/g, " ")
