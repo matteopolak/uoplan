@@ -1000,7 +1000,7 @@ async function generateIndices(year: number, dataDir: string): Promise<void> {
 
 async function main() {
   const currentYear = getCurrentAcademicYear();
-  const dataDir = path.join(process.cwd(), 'public', 'data');
+  const dataDir = '../web/public/data';
   await fs.mkdir(dataDir, { recursive: true });
 
   // Load existing missing-URLs log so we can merge into it

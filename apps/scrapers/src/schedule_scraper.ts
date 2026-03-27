@@ -7,6 +7,7 @@ import { CookieJar } from 'tough-cookie';
 
 const BASE_URL =
   'https://uocampus.public.uottawa.ca/psc/csprpr9pub/EMPLOYEE/SA/c/UO_SR_AA_MODS.UO_PUB_CLSSRCH.GBL';
+const PUBLIC_DIR = '../web/public';
 const HTML_CACHE_DIR = '.cache/course-search-html';
 const MAX_CONCURRENCY = 20;
 const USE_CACHE_ONLY = process.argv.includes('use-cache');
@@ -132,7 +133,7 @@ function getCatalogueYearForTerm(termName: string): number {
 }
 
 async function loadCatalogue(year: number): Promise<ParsedCourseCode[]> {
-  const raw = await fs.readFile(`public/data/catalogue.${year}.json`, 'utf-8');
+  const raw = await fs.readFile(path.join(PUBLIC_DIR, 'data', `catalogue.${year}.json`), 'utf-8');
   const data = JSON.parse(raw) as { courses?: CatalogueCourse[] };
   if (!Array.isArray(data.courses)) {
     throw new Error('catalogue.json does not contain a courses array');
@@ -608,11 +609,11 @@ async function main(): Promise<void> {
   terms.sort((a, b) => a.termId.localeCompare(b.termId));
 
   await fs.writeFile(
-    'public/data/terms.json',
+    path.join(PUBLIC_DIR, 'data', 'terms.json'),
     JSON.stringify({ terms }, null, 2),
     'utf-8',
   );
-  console.log(`Saved ${terms.length} term(s) to public/data/terms.json`);
+  console.log(`Saved ${terms.length} term(s) to ${path.join(PUBLIC_DIR, 'data', 'terms.json')}`);
   
   console.log(`Initialized ${clientInfos.length} PeopleSoft session(s).`);
 
@@ -677,7 +678,7 @@ async function main(): Promise<void> {
       schedules: results,
     };
 
-    const outPath = `public/data/schedules.${term.termId}.json`;
+    const outPath = path.join(PUBLIC_DIR, 'data', `schedules.${term.termId}.json`);
     await fs.writeFile(outPath, JSON.stringify(output, null, 2), 'utf-8');
     console.log(
       `Done. Saved schedules for ${results.length} courses (out of ${courses.length}) to ${path.basename(outPath)}`,
