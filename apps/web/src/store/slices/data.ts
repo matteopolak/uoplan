@@ -2,13 +2,21 @@ import { StateCreator } from "zustand";
 import type { AppStore } from "../types";
 import { type Course, type Program, CatalogueSchema } from 'schemas'
 import { SchedulesDataSchema } from 'schemas'
-import { buildDataCache, normalizeCourseCode } from "schedule";
+import { buildDataCache, normalizeCourseCode, withExtraCourses, isOptCourse } from "schedule";
 import { IndicesSchema } from 'schemas'
 import { TermsDataSchema } from 'schemas'
 import { buildProfessorRatingsMap } from "schedule";
 import { parseStateFromUrl, peekTermAndYear, peekTermAndYearFromBase64, decodeState, decodeStateFromBase64, urlToSlug } from "schedule";
 import { recomputeStateForProgram } from "../requirementCompute";
 import { LOCAL_STORAGE_KEY } from "../constants";
+
+/** Build a DataCache and inject fake entries for any OPT transfer credit codes in completedCourses. */
+function buildCacheWithOpt(catalogue: any, schedulesData: any, completedCourses: string[]) {
+  const base = buildDataCache(catalogue, schedulesData);
+  const optCodes = completedCourses.map(normalizeCourseCode).filter(isOptCourse);
+  if (optCodes.length === 0) return base;
+  return withExtraCourses(base, optCodes.map((code): Course => ({ code, title: code, credits: 3, description: '' })));
+}
 
 function getMergedCatalogue(
   catalogue: { courses: unknown[]; programs: Program[] } | null,
@@ -63,7 +71,7 @@ export const createDataSlice: StateCreator<
 
       const parsedSchedules = SchedulesDataSchema.parse(schedulesData);
       const effectiveCatalogue = getMergedCatalogue(catalogue, yearCatalogueCourses, completedCourses);
-      const cache = buildDataCache((effectiveCatalogue ?? catalogue) as any, parsedSchedules);
+      const cache = buildCacheWithOpt((effectiveCatalogue ?? catalogue) as any, parsedSchedules, completedCourses);
 
       const s = get();
       const full = recomputeStateForProgram(
@@ -105,9 +113,9 @@ export const createDataSlice: StateCreator<
     try {
       if (year === null) {
         set({ yearCataloguePrograms: null, yearCatalogueCourses: null, yearCatalogueLoading: false });
-        const { schedulesData } = get();
+        const { schedulesData, completedCourses: cc } = get();
         if (catalogue && schedulesData) {
-          const cache = buildDataCache(catalogue as any, schedulesData as any);
+          const cache = buildCacheWithOpt(catalogue as any, schedulesData as any, cc);
           set({ cache });
         }
       } else {
@@ -119,7 +127,7 @@ export const createDataSlice: StateCreator<
         const { schedulesData, completedCourses } = get();
         const effectiveCatalogue = getMergedCatalogue(catalogue, parsed.courses, completedCourses);
         if (effectiveCatalogue && schedulesData) {
-          const cache = buildDataCache(effectiveCatalogue as any, schedulesData as any);
+          const cache = buildCacheWithOpt(effectiveCatalogue as any, schedulesData as any, completedCourses);
           set({ cache });
         }
       }

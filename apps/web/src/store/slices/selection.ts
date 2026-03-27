@@ -1,7 +1,7 @@
 import { StateCreator } from "zustand";
 import type { AppStore } from "../types";
 import { recomputeStateForProgram, getDisciplineCodesForProgram } from "../requirementCompute";
-import { buildDataCache, normalizeCourseCode } from "schedule";
+import { buildDataCache, normalizeCourseCode, withExtraCourses, isOptCourse } from "schedule";
 
 function getMergedCatalogue(
   catalogue: any,
@@ -118,7 +118,7 @@ export const createSelectionSlice: StateCreator<
     }
     const {
       program,
-      cache,
+      cache: cacheAfterRebuild,
       selectedPerRequirement,
       selectedOptionsPerRequirement,
       levelBuckets,
@@ -126,6 +126,15 @@ export const createSelectionSlice: StateCreator<
       includeClosedComponents,
       studentPrograms,
     } = get();
+
+    // Inject fake course entries for OPT transfer credit codes so they flow through
+    // the standard catalogue-based logic (prerequisite checks, elective candidates, etc.)
+    const optCodes = courses.map(normalizeCourseCode).filter(isOptCourse);
+    const cache = cacheAfterRebuild && optCodes.length > 0
+      ? withExtraCourses(cacheAfterRebuild, optCodes.map((code) => ({ code, title: code, credits: 3, description: '' })))
+      : cacheAfterRebuild;
+    if (cache !== cacheAfterRebuild) set({ cache });
+
     const state = recomputeStateForProgram(
       program,
       courses,

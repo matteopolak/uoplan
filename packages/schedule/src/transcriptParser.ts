@@ -1,7 +1,10 @@
 import { normalizeCourseCode } from "./utils/courseUtils";
 
 /** Course code pattern: 3–4 letters + 4–5 digits, optional letter suffix (e.g. ADM 1100, ESL 2121) */
-const COURSE_CODE_REGEX = /([A-Z]{3,4})\s*(\d{4,5}[A-Z]?)/gi;
+const COURSE_CODE_REGEX = /\b([A-Z]{3,4})\s*(\d{4,5}[A-Z]?)\b/gi;
+
+/** OPT transfer credit placeholder: "OPT 1XXX", "OPT 2XXX", etc. */
+const OPT_PLACEHOLDER_REGEX = /\bOPT\s+([1-9])XXX\b/gi;
 
 /** Y-coordinate tolerance for grouping text items into the same row (PDF units) */
 const ROW_Y_TOLERANCE = 3;
@@ -27,10 +30,25 @@ interface TextItemWithPosition {
 }
 
 /**
+ * Assign a sequential OPT transfer credit code for a given level digit (1–9).
+ * Mutates optCounters. e.g., two calls with digit "1" produce "OPT 1000", "OPT 1001".
+ */
+function assignOptCode(digit: string, optCounters: Map<number, number>): string {
+  const level = parseInt(digit, 10) * 1000;
+  const offset = optCounters.get(level) ?? 0;
+  optCounters.set(level, offset + 1);
+  return `OPT ${level + offset}`;
+}
+
+/**
  * Extract course codes from PDF text using table structure:
  * group items by row (y), sort by x, take first two columns as category + number.
+ * OPT placeholder rows ("OPT 1XXX" etc.) are assigned sequential unique codes via optCounters.
  */
-function extractCodesFromPositions(items: TextItemWithPosition[]): string[] {
+function extractCodesFromPositions(
+  items: TextItemWithPosition[],
+  optCounters: Map<number, number>,
+): string[] {
   const codes: string[] = [];
   if (items.length === 0) return codes;
 
@@ -56,10 +74,32 @@ function extractCodesFromPositions(items: TextItemWithPosition[]): string[] {
     const number = row[1]?.str?.trim() ?? "";
     const combined = `${category} ${number}`.trim();
     if (!combined) continue;
+
+    // Check for OPT transfer credit placeholder (e.g. "OPT 1XXX")
+    const optMatch = /^OPT\s+([1-9])XXX$/i.exec(combined);
+    if (optMatch) {
+      codes.push(assignOptCode(optMatch[1], optCounters));
+      continue;
+    }
+
     const normalized = normalizeCourseCode(combined);
     if (/^[A-Z]{3,4}\s+\d{4,5}[A-Z]?$/i.test(normalized)) {
       codes.push(normalized);
     }
+  }
+  return codes;
+}
+
+/**
+ * Extract OPT transfer credit placeholders from plain text (fallback when no position data).
+ * Uses the same shared optCounters to assign sequential codes.
+ */
+function extractOptFromText(text: string, optCounters: Map<number, number>): string[] {
+  const codes: string[] = [];
+  OPT_PLACEHOLDER_REGEX.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = OPT_PLACEHOLDER_REGEX.exec(text)) !== null) {
+    codes.push(assignOptCode(m[1], optCounters));
   }
   return codes;
 }
@@ -115,6 +155,8 @@ export async function parseTranscriptPdf(
   const numPages = pdf.numPages;
   const allCodes = new Set<string>();
   const textParts: string[] = [];
+  // Shared counter for OPT placeholder codes across all pages (level -> next offset)
+  const optCounters = new Map<number, number>();
 
   for (let pageNum = 1; pageNum <= numPages; pageNum++) {
     const page = await pdf.getPage(pageNum);
@@ -154,8 +196,12 @@ export async function parseTranscriptPdf(
     textParts.push(pageText);
 
     if (hasPosition && itemsWithPosition.length > 0) {
-      const fromPositions = extractCodesFromPositions(itemsWithPosition);
+      const fromPositions = extractCodesFromPositions(itemsWithPosition, optCounters);
       fromPositions.forEach((c) => allCodes.add(c));
+    } else {
+      // No position data: use text-based OPT extraction as fallback
+      const optFromText = extractOptFromText(pageText, optCounters);
+      optFromText.forEach((c) => allCodes.add(c));
     }
 
     const fromText = extractCodesFromText(pageText);
