@@ -7,8 +7,12 @@ import {
   urlToSlug,
   type EncodeInput,
   requirementIdsFromTree,
+  withExtraCourses,
+  isOptCourse,
+  normalizeCourseCode,
 } from "schedule";
 import { recomputeStateForProgram } from "../requirementCompute";
+import type { Course } from "schemas";
 
 export interface UrlSlice {
   loadEncodedState: AppStore["loadEncodedState"];
@@ -23,8 +27,8 @@ export const createUrlSlice: StateCreator<
   UrlSlice
 > = (set, get) => ({
   loadEncodedState: (decoded) => {
-    const { catalogue, indices, cache, yearCataloguePrograms } = get();
-    if (!catalogue || !cache || !indices) return;
+    const { catalogue, indices, cache: baseCache, yearCataloguePrograms } = get();
+    if (!catalogue || !baseCache || !indices) return;
 
     let program = decoded.program;
     if (program != null && yearCataloguePrograms != null) {
@@ -32,6 +36,12 @@ export const createUrlSlice: StateCreator<
       const yearProgram = yearCataloguePrograms.find((p) => urlToSlug(p.url) === slug);
       if (yearProgram) program = yearProgram;
     }
+
+    // Augment cache with fake entries for any OPT transfer credit codes
+    const optCodes = decoded.completedCourseCodes.map(normalizeCourseCode).filter(isOptCourse);
+    const cache = optCodes.length > 0
+      ? withExtraCourses(baseCache, optCodes.map((code): Course => ({ code, title: code, credits: 3, description: '' })))
+      : baseCache;
 
     const studentPrograms = decoded.studentPrograms;
     const firstPass = recomputeStateForProgram(
@@ -55,17 +65,16 @@ export const createUrlSlice: StateCreator<
       if (reqId != null) selectedOptionsPerRequirement[reqId] = optionIndex;
     }
 
+    const inCatalogue = new Set(
+      (catalogue.courses as Array<{ code: string }>).map((c) => c.code),
+    );
     const selectedPerRequirement: Record<string, string[]> = {};
-    for (const { reqIndex, courseIndices } of decoded.courseSelections) {
+    for (const { reqIndex, courseCodes } of decoded.courseSelections) {
       const reqId = reqIndexToId.get(reqIndex);
       if (reqId == null) continue;
-      const codes = courseIndices
-        .map((i) => (i < indices.courses.length ? indices.courses[i] : null))
-        .filter((c): c is string => c != null);
-      const inCatalogue = new Set(
-        (catalogue.courses as Array<{ code: string }>).map((c) => c.code),
+      const valid = courseCodes.filter(
+        (code) => isOptCourse(normalizeCourseCode(code)) || inCatalogue.has(code),
       );
-      const valid = codes.filter((code) => inCatalogue.has(code));
       if (valid.length) selectedPerRequirement[reqId] = valid;
     }
 
@@ -85,6 +94,7 @@ export const createUrlSlice: StateCreator<
       program,
       studentPrograms,
       completedCourses: decoded.completedCourseCodes,
+      cache,
       levelBuckets: decoded.levelBuckets,
       languageBuckets: decoded.languageBuckets,
       electiveLevelBuckets: decoded.electiveLevelBuckets,

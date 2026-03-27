@@ -16,6 +16,45 @@ export interface DataCache {
 // Use the centralized utility
 const isStageWorkTermCourse = isWorkTermCourse;
 
+/**
+ * Wrap an existing DataCache with additional courses (e.g. OPT transfer credit stubs).
+ * Extra courses are included in getCourse, getCoursesByDiscipline, and getAllCourses.
+ */
+export function withExtraCourses(base: DataCache, courses: Course[]): DataCache {
+  const extra = new Map<string, Course>();
+  const byDiscipline = new Map<string, Course[]>();
+
+  for (const course of courses) {
+    const key = normalizeCourseCode(course.code);
+    extra.set(key, course);
+    const discipline = course.code.split(/\s+/)[0]?.toUpperCase() ?? '';
+    if (discipline) {
+      const list = byDiscipline.get(discipline) ?? [];
+      list.push(course);
+      byDiscipline.set(discipline, list);
+    }
+  }
+
+  return {
+    getCourse(code) {
+      return base.getCourse(code) ?? extra.get(normalizeCourseCode(code));
+    },
+    getSchedule(code) {
+      return base.getSchedule(code);
+    },
+    getCoursesByDiscipline(discipline) {
+      const key = discipline.toUpperCase().trim();
+      return [...base.getCoursesByDiscipline(discipline), ...(byDiscipline.get(key) ?? [])];
+    },
+    getAllCourses() {
+      return [...base.getAllCourses(), ...extra.values()];
+    },
+    getAllSchedules() {
+      return base.getAllSchedules();
+    },
+  };
+}
+
 export function buildDataCache(catalogue: Catalogue, schedulesData: SchedulesData): DataCache {
   const courseMap = new Map<string, Course>();
   const scheduleMap = new Map<string, CourseSchedule>();

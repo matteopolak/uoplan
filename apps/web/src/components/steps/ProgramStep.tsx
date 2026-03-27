@@ -6,6 +6,7 @@ import { useShallow } from 'zustand/react/shallow';
 import {
   parseTranscriptPdf,
   findBestMatchingProgram,
+  isOptCourse,
 } from 'schedule';
 import { normalizeCourseCode } from 'schedule';
 
@@ -110,7 +111,7 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
       const inCatalogue: string[] = [];
       const skippedCodes: string[] = [];
       for (const code of parsedCourses) {
-        if (cache.getCourse(code) || indexedCodes?.has(normalizeCourseCode(code))) {
+        if (isOptCourse(normalizeCourseCode(code)) || cache.getCourse(code) || indexedCodes?.has(normalizeCourseCode(code))) {
           inCatalogue.push(code);
         } else {
           skippedCodes.push(code);
@@ -255,9 +256,25 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
           </Alert>
           {transcriptFeedback.skippedCodes.length > 0 && (
             <Alert color="yellow" variant="light" title="Not found in catalogue">
-              {transcriptFeedback.skippedCodes.length} code
-              {transcriptFeedback.skippedCodes.length !== 1 ? 's' : ''} from the PDF were not found
-              in the catalogue: {transcriptFeedback.skippedCodes.sort().join(', ')}
+              <Stack gap="xs">
+                <Text size="sm">
+                  {transcriptFeedback.skippedCodes.length} code
+                  {transcriptFeedback.skippedCodes.length !== 1 ? 's' : ''} from the PDF were not found
+                  in the catalogue: {transcriptFeedback.skippedCodes.sort().join(', ')}
+                </Text>
+                <Button
+                  size="xs"
+                  variant="light"
+                  color="yellow"
+                  onClick={() => {
+                    const merged = [...new Set([...completedCourses, ...transcriptFeedback.skippedCodes])];
+                    setCompletedCourses(merged);
+                    setTranscriptFeedback({ ...transcriptFeedback, skippedCodes: [] });
+                  }}
+                >
+                  Add anyway
+                </Button>
+              </Stack>
             </Alert>
           )}
         </Stack>

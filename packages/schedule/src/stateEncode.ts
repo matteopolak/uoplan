@@ -2,6 +2,7 @@ import type { Program } from 'schemas';
 import type { CourseLevelBucket, CourseLanguageBucket } from './courseFilters';
 import type { RemainingRequirement, RequirementWithStatus } from './requirements';
 import type { Indices } from 'schemas';
+import { isOptCourse, getCourseLevel } from './utils/courseUtils';
 
 /** Collect all requirement IDs from the tree in depth-first order (used for stable encoding). */
 export function requirementIdsFromTree(nodes: RequirementWithStatus[]): string[] {
@@ -31,9 +32,11 @@ function programSlug(p: Program): string {
   return (p as Program & { slug?: string }).slug ?? urlToSlug(p.url);
 }
 
-const VERSION = 5;
+const VERSION = 6;
 const MAX_U16 = 0xffff;
 const MAX_U32 = 0xffffffff;
+/** Sentinel base for OPT transfer credit codes. Level 1000 → 0xFFF1, 2000 → 0xFFF2, etc. */
+const OPT_SENTINEL_BASE = 0xFFF0;
 
 export interface EncodeInput {
   selectedTermId: string | null;
@@ -67,7 +70,7 @@ export interface DecodedState {
   selectedScheduleIndex: number;
   generationSeed: number;
   optionSelections: Array<{ reqIndex: number; optionIndex: number }>;
-  courseSelections: Array<{ reqIndex: number; courseIndices: number[] }>;
+  courseSelections: Array<{ reqIndex: number; courseCodes: string[] }>;
   includeClosedComponents: boolean;
   studentPrograms: string[];
 }
@@ -128,14 +131,14 @@ function readU32(view: DataView, offset: number): { value: number; next: number 
  * Encode user state to a compact binary format. Returns null if indices/catalogue
  * don't contain the current program or courses (e.g. program not in indices).
  *
- * Binary layout (VERSION 5):
+ * Binary layout (VERSION 6):
  *   U8  version
  *   U8  termId byte-length (0 = absent)
  *   [ASCII bytes for termId]
  *   U16 firstYear (0 = null/current)
  *   U16 programIndex (MAX_U16 = no program)
  *   U16 completedCount
- *   [U16 × completedCount]
+ *   [U16 × completedCount]  — OPT codes use sentinels: OPT_SENTINEL_BASE + level/1000
  *   U8  levelBuckets count + [U8 × count]
  *   U8  languageBuckets count + [U8 × count]
  *   U8  electiveLevelBuckets count + [U16 × count]
@@ -162,7 +165,7 @@ export function encodeState(
   indices.courses.forEach((code, i) => courseCodeToIndex.set(code, i));
 
   for (const code of input.completedCourses) {
-    if (!courseCodeToIndex.has(code)) return null;
+    if (!isOptCourse(code) && !courseCodeToIndex.has(code)) return null;
   }
 
   const termIdBytes = input.selectedTermId
@@ -207,7 +210,10 @@ export function encodeState(
 
   off = writeU16(view, off, programIndex === -1 ? MAX_U16 : programIndex);
 
-  const completed = input.completedCourses.map((c) => courseCodeToIndex.get(c)!);
+  const completed = input.completedCourses.map((c) => {
+    if (isOptCourse(c)) return OPT_SENTINEL_BASE + Math.floor((getCourseLevel(c) ?? 1000) / 1000);
+    return courseCodeToIndex.get(c)!;
+  });
   off = writeU16(view, off, completed.length);
   for (const idx of completed) off = writeU16(view, off, idx);
 
@@ -242,7 +248,10 @@ export function encodeState(
     const reqIndex = reqIdToIndex.get(reqId);
     if (reqIndex === undefined) continue;
     const courseIndices = codes
-      .map((c) => courseCodeToIndex.get(c))
+      .map((c) => {
+        if (isOptCourse(c)) return OPT_SENTINEL_BASE + Math.floor((getCourseLevel(c) ?? 1000) / 1000);
+        return courseCodeToIndex.get(c);
+      })
       .filter((i): i is number => i !== undefined);
     if (courseIndices.length) courseEntries.push({ reqIndex, courseIndices });
   }
@@ -350,12 +359,20 @@ export function decodeState(
   const { value: completedLen, next: n2 } = readU16(view, off);
   off = n2;
   const completedCourseCodes: string[] = [];
+  const completedOptCounters = new Map<number, number>();
   for (let i = 0; i < completedLen && off + 2 <= buffer.length; i++) {
     const { value: idx, next: n } = readU16(view, off);
     off = n;
-    if (idx >= indices.courses.length)
-      return { error: 'A course from shared state is no longer in the catalogue' };
-    completedCourseCodes.push(indices.courses[idx]);
+    if (idx > OPT_SENTINEL_BASE) {
+      const level = (idx - OPT_SENTINEL_BASE) * 1000;
+      const count = completedOptCounters.get(level) ?? 0;
+      completedOptCounters.set(level, count + 1);
+      completedCourseCodes.push(`OPT ${level + count}`);
+    } else {
+      if (idx >= indices.courses.length)
+        return { error: 'A course from shared state is no longer in the catalogue' };
+      completedCourseCodes.push(indices.courses[idx]);
+    }
   }
 
   if (off + 1 > buffer.length) return { error: 'Invalid state: truncated' };
@@ -419,23 +436,29 @@ export function decodeState(
   if (off + 2 > buffer.length) return { error: 'Invalid state: truncated' };
   const { value: courseSelCount, next: n9 } = readU16(view, off);
   off = n9;
-  const courseSelections: Array<{ reqIndex: number; courseIndices: number[] }> = [];
+  const courseSelections: Array<{ reqIndex: number; courseCodes: string[] }> = [];
+  const selectionOptCounters = new Map<number, number>();
   for (let i = 0; i < courseSelCount; i++) {
     if (off + 2 + 2 > buffer.length) break;
     const { value: reqIndex, next: nc } = readU16(view, off);
     off = nc;
     const { value: numCourses, next: nd } = readU16(view, off);
     off = nd;
-    const courseIndices: number[] = [];
+    const courseCodes: string[] = [];
     for (let j = 0; j < numCourses && off + 2 <= buffer.length; j++) {
       const { value: idx, next: ne } = readU16(view, off);
       off = ne;
-      if (idx < indices.courses.length) {
+      if (idx > OPT_SENTINEL_BASE) {
+        const level = (idx - OPT_SENTINEL_BASE) * 1000;
+        const count = selectionOptCounters.get(level) ?? 0;
+        selectionOptCounters.set(level, count + 1);
+        courseCodes.push(`OPT ${level + count}`);
+      } else if (idx < indices.courses.length) {
         const code = indices.courses[idx];
-        if (catalogue.courses.some((c) => c.code === code)) courseIndices.push(idx);
+        if (catalogue.courses.some((c) => c.code === code)) courseCodes.push(code);
       }
     }
-    courseSelections.push({ reqIndex, courseIndices });
+    courseSelections.push({ reqIndex, courseCodes });
   }
 
   // Student programs

@@ -77,6 +77,15 @@ export function getCourseLevel(code: string): number | null {
 }
 
 /**
+ * Check if a course code is an OPT transfer credit placeholder.
+ * These are generated during transcript parsing for "OPT 1XXX" / "OPT 2XXX" etc.
+ * e.g., "OPT 1000", "OPT 2001"
+ */
+export function isOptCourse(code: string): boolean {
+  return /^OPT\s+\d{4}$/i.test(code.trim());
+}
+
+/**
  * Format a course code with its title for display.
  * e.g., "CSI 2101" + "Discrete Structures" -> "CSI 2101 - Discrete Structures"
  */
