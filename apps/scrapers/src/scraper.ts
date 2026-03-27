@@ -994,7 +994,7 @@ async function generateIndices(year: number, dataDir: string): Promise<void> {
       p => p.slug ?? urlToSlug(p.url),
     ),
   };
-  await fs.writeFile(path.join(dataDir, 'indices.json'), JSON.stringify(indices), 'utf-8');
+  await fs.writeFile(path.join(dataDir, 'indices.json'), JSON.stringify(indices, null, 2), 'utf-8');
   console.log(`\nWrote indices.json (${indices.courses.length} courses, ${indices.programs.length} programs)`);
 }
 
