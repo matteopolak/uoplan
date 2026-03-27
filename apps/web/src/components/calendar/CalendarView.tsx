@@ -1,5 +1,5 @@
 import { useRef, useEffect, useMemo } from 'react';
-import { Badge, Box, Group, Text, Modal, Stack, Button, Select } from '@mantine/core';
+import { Badge, Box, Group, Text, Modal, Stack, Button, Select, Tooltip } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -18,6 +18,25 @@ import {
 import { EventStyleCard } from './EventStyleCard';
 import { useCalendarEvents, type CalendarEvent } from '../../hooks/useCalendarEvents';
 import { useSwapModal, type SwapCandidatesGetter } from '../../hooks/useSwapModal';
+
+function RatingTooltipLabel({
+  details,
+}: {
+  details?: Array<{ name: string; rating: number; numRatings: number }>;
+}) {
+  if (!details?.length) return null;
+  return (
+    <Stack gap={4}>
+      <Text size="xs" fw={600} c="dimmed">RateMyProfessors</Text>
+      {details.map((d) => (
+        <Text key={d.name} size="xs">
+          {d.name} · {d.rating.toFixed(1).replace(/\.0$/, '')}/5
+          {d.numRatings > 0 ? ` (${d.numRatings} ratings)` : ''}
+        </Text>
+      ))}
+    </Stack>
+  );
+}
 
 interface CalendarViewProps {
   schedules: GeneratedSchedule[];
@@ -240,20 +259,37 @@ export function CalendarView({
                         {ext.professor}
                       </span>
                       {ext.professorRatingDisplay && ext.professorRatingValue != null && (
-                        <Box
-                          title={`RateMyProfessors: ${ext.professorRatingDisplay}`}
-                          style={{
-                            width: 10,
-                            height: 10,
-                            borderRadius: 2,
-                            backgroundColor: ratingColorToCssVar(
-                              ratingToColor(ext.professorRatingValue),
-                            ),
-                            border: '1px solid rgba(0,0,0,0.45)',
-                            boxShadow: '0 0 0 1px rgba(255,255,255,0.08) inset',
-                            flexShrink: 0,
-                          }}
-                        />
+                        <Tooltip
+                          label={<RatingTooltipLabel details={ext.professorRatingDetails} />}
+                          withArrow
+                          position="top"
+                          withinPortal
+                          color="dark"
+                        >
+                          <Box
+                            style={{
+                              padding: 4,
+                              flexShrink: 0,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <Box
+                              style={{
+                                width: 10,
+                                height: 10,
+                                borderRadius: 2,
+                                backgroundColor: ratingColorToCssVar(
+                                  ratingToColor(ext.professorRatingValue),
+                                ),
+                                border: '1px solid rgba(0,0,0,0.45)',
+                                boxShadow: '0 0 0 1px rgba(255,255,255,0.08) inset',
+                              }}
+                            />
+                          </Box>
+                        </Tooltip>
                       )}
                     </span>
                   </div>

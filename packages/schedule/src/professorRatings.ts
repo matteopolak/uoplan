@@ -1,11 +1,12 @@
-export type ProfessorRatingsMap = Record<string, number>;
+export type ProfessorRatingsEntry = { rating: number; numRatings: number };
+export type ProfessorRatingsMap = Record<string, ProfessorRatingsEntry>;
 
 export function normalizeProfessorName(name: string): string {
   return (name ?? '').trim().replace(/\s+/g, ' ');
 }
 
 export function buildProfessorRatingsMap(input: {
-  professors: Array<{ name: string; rating: number }>;
+  professors: Array<{ name: string; rating: number | null; numRatings?: number }>;
 }): ProfessorRatingsMap {
   const map: ProfessorRatingsMap = {};
   for (const p of input.professors ?? []) {
@@ -13,7 +14,7 @@ export function buildProfessorRatingsMap(input: {
     if (!key) continue;
     const rating = typeof p.rating === 'number' ? p.rating : Number(p.rating);
     if (!Number.isFinite(rating)) continue;
-    map[key] = rating;
+    map[key] = { rating, numRatings: p.numRatings ?? 0 };
   }
   return map;
 }
@@ -29,8 +30,27 @@ export function getRatingsForInstructors(
     const key = normalizeProfessorName(raw);
     if (!key || seen.has(key)) continue;
     seen.add(key);
-    const rating = map[key];
-    if (typeof rating === 'number' && Number.isFinite(rating)) out.push(rating);
+    const entry = map[key];
+    if (entry && Number.isFinite(entry.rating)) out.push(entry.rating);
+  }
+  return out;
+}
+
+export function getRatingDetailsForInstructors(
+  instructors: string[] | null | undefined,
+  map: ProfessorRatingsMap | null | undefined
+): Array<{ name: string; rating: number; numRatings: number }> {
+  if (!map || !instructors?.length) return [];
+  const out: Array<{ name: string; rating: number; numRatings: number }> = [];
+  const seen = new Set<string>();
+  for (const raw of instructors) {
+    const key = normalizeProfessorName(raw);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    const entry = map[key];
+    if (entry && Number.isFinite(entry.rating)) {
+      out.push({ name: raw.trim(), rating: entry.rating, numRatings: entry.numRatings });
+    }
   }
   return out;
 }
