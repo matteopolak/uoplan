@@ -1,12 +1,8 @@
 import { useRef } from "react";
 import { Stack, Text } from "@mantine/core";
 import type { RequirementWithStatus } from "schedule";
-import {
-  RequirementNode,
-  ExpandRegistryContext,
-  getStableNodeKey,
-  type ExpandRegistry,
-} from "./RequirementNode";
+import { ExpandRegistryContext, getStableNodeKey, type ExpandRegistry } from "./RequirementNode";
+import { OptionsDrilldown } from "./OptionsDrilldown";
 import { nodeHasOptionGroups } from "./requirementUtils";
 
 export interface OptionsStepProps {
@@ -14,16 +10,15 @@ export interface OptionsStepProps {
   completedCourses: string[];
   selectedOptionsPerRequirement: Record<string, number>;
   onSelectOption: (requirementId: string, optionIndex: number) => void;
+  onClearOption: (requirementId: string) => void;
 }
-
-const EMPTY_SET = new Set<string>();
-const EMPTY_RECORD: Record<string, string[]> = {};
 
 export function OptionsStep({
   requirementTreeWithStatus,
   completedCourses,
   selectedOptionsPerRequirement,
   onSelectOption,
+  onClearOption,
 }: OptionsStepProps) {
   const openFnsRef = useRef(new Map<string, () => void>());
   const registryRef = useRef<ExpandRegistry>({
@@ -35,7 +30,7 @@ export function OptionsStep({
     },
   });
 
-  const completedSet = new Set(completedCourses);
+  const completedCoursesSet = new Set(completedCourses);
 
   // Only show top-level nodes that contain (or are) option groups needing selection.
   const relevantNodes = requirementTreeWithStatus.filter(nodeHasOptionGroups);
@@ -51,8 +46,8 @@ export function OptionsStep({
   return (
     <Stack gap="md" data-tour="options">
       <Text size="sm" c="dimmed">
-        Your program requires you to choose one option from each group below.
-        Select an option for each before continuing.
+        Step through each choice below. Tap an option to continue; use the back
+        arrow to change a path and pick a different branch.
       </Text>
 
       <ExpandRegistryContext.Provider value={registryRef.current}>
@@ -60,26 +55,16 @@ export function OptionsStep({
           {relevantNodes.map((node, idx) => {
             const nodeKey = getStableNodeKey(node, `options:${idx}`);
             return (
-              <RequirementNode
+              <OptionsDrilldown
                 key={nodeKey}
-                nodeKey={nodeKey}
+                nodeKeyPrefix={nodeKey}
                 node={node}
-                cache={null}
-                completedCourses={completedSet}
-                selectedPerRequirement={EMPTY_RECORD}
-                onSelect={() => {}}
+                completedCourses={completedCoursesSet}
                 selectedOptionsPerRequirement={selectedOptionsPerRequirement}
                 onSelectOption={onSelectOption}
+                onClearOption={onClearOption}
                 activeBranch={true}
-                prereqEligible={EMPTY_SET}
-                levelBuckets={["undergrad", "grad"]}
-                languageBuckets={["en", "fr", "other"]}
-                electiveLevelBuckets={[]}
-                unassignedCompletedSet={EMPTY_SET}
-                unassignedCompletedSetNormalized={EMPTY_SET}
-                allAssignedCoursesNormalized={EMPTY_SET}
-                includeClosedComponents={false}
-                hideSelection
+                depth={0}
               />
             );
           })}

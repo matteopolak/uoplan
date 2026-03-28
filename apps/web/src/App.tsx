@@ -111,6 +111,9 @@ function App() {
   const setConstrainedForRequirement = useAppStore((s) => s.setConstrainedForRequirement);
   const setCoursesThisSemester = useAppStore((s) => s.setCoursesThisSemester);
   const setSelectedOptionForRequirement = useAppStore((s) => s.setSelectedOptionForRequirement);
+  const clearSelectedOptionForRequirement = useAppStore(
+    (s) => s.clearSelectedOptionForRequirement,
+  );
   const generateSchedules = useAppStore((s) => s.generateSchedules);
   const setGenerationMinProfessorRating = useAppStore((s) => s.setGenerationMinProfessorRating);
   const setGenerationMinStartMinutes = useAppStore((s) => s.setGenerationMinStartMinutes);
@@ -420,6 +423,7 @@ function App() {
                       completedCourses={completedCourses}
                       selectedOptionsPerRequirement={selectedOptionsPerRequirement}
                       onSelectOption={setSelectedOptionForRequirement}
+                      onClearOption={clearSelectedOptionForRequirement}
                     />
                   </Stack>
                 )}

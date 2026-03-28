@@ -4,6 +4,8 @@ import {
   applyOptionSelections,
   countRequirementIdSlots,
   countSatisfiedTopLevelRoots,
+  getOptionSecondarySummaryLine,
+  pruneOptionSelectionsForClear,
 } from "./requirementUtils";
 
 describe("countRequirementIdSlots", () => {
@@ -50,6 +52,67 @@ describe("countRequirementIdSlots", () => {
 
     const flattened = applyOptionSelections(tree, { "req-0": 0 });
     expect(countRequirementIdSlots(flattened)).toBe(2);
+  });
+});
+
+describe("pruneOptionSelectionsForClear", () => {
+  it("removes the requirement id and descendant req-path keys only", () => {
+    const selected = {
+      "req-0": 1,
+      "req-0-0": 0,
+      "req-0-0-1": 2,
+      "req-1": 0,
+      "req-10": 1,
+    };
+    expect(pruneOptionSelectionsForClear(selected, "req-0")).toEqual({
+      "req-1": 0,
+      "req-10": 1,
+    });
+  });
+
+  it("does not strip req-10 when clearing req-1", () => {
+    expect(
+      pruneOptionSelectionsForClear(
+        { "req-1": 0, "req-10": 1, "req-1-0": 0 },
+        "req-1",
+      ),
+    ).toEqual({ "req-10": 1 });
+  });
+});
+
+describe("getOptionSecondarySummaryLine", () => {
+  it("returns null when there is nothing to show", () => {
+    const node: RequirementWithStatus = {
+      type: "course",
+      title: "X",
+      complete: false,
+      satisfiedBy: [],
+      creditsNeeded: 0,
+    };
+    expect(getOptionSecondarySummaryLine(node)).toBeNull();
+  });
+
+  it("combines credits, pool size, and nested hint", () => {
+    const nested: RequirementWithStatus = {
+      type: "options_group",
+      title: "Nested",
+      complete: false,
+      satisfiedBy: [],
+      requirementId: "n",
+      options: [],
+    };
+    const node: RequirementWithStatus = {
+      type: "discipline_elective",
+      title: "Elective",
+      complete: false,
+      satisfiedBy: [],
+      creditsNeeded: 6,
+      candidateCourses: ["CSI 2101", "CSI 2110", "CSI 2120"],
+      options: [nested],
+    };
+    expect(getOptionSecondarySummaryLine(node)).toBe(
+      "6 credits required · 3 possible courses · Further choices below",
+    );
   });
 });
 

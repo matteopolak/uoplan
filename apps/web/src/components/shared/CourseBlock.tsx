@@ -50,7 +50,7 @@ export function CourseBlock({
   const block = (
     <Paper
       p="xs"
-      radius="sm"
+      radius={0}
       bg={`var(--mantine-color-${color}-7)`}
       style={{
         gridColumn: col,

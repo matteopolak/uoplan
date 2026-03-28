@@ -133,7 +133,7 @@ export function ScheduleCountStep({
         clearable
       />
       {warnFirstYearLimit && (
-        <Alert color="yellow" variant="light" radius="sm">
+        <Alert color="yellow" variant="light" radius={0}>
           Your selected courses may push your total 1000-level credits to {totalFirstYearCredits}/48,
           exceeding the undergraduate limit. Enable the option below to cap them at 48.
         </Alert>
@@ -153,7 +153,7 @@ export function ScheduleCountStep({
         onChange={(e) => onCompressedScheduleChange(e.currentTarget.checked)}
       />
       {error && (
-        <Alert color="red" variant="light" radius="sm">
+        <Alert color="red" variant="light" radius={0}>
           <Stack gap="xs">
             <Text size="sm">{error}</Text>
             {errorDetails && errorDetails.emptyPools.length > 0 && (
@@ -176,13 +176,13 @@ export function ScheduleCountStep({
         </Alert>
       )}
       {needMore && (
-        <Alert color="violet" variant="light" radius="sm">
+        <Alert color="violet" variant="light" radius={0}>
           You selected {selectedCount} course(s). We will suggest additional
           courses from your remaining requirements to fill your schedule.
         </Alert>
       )}
       {disableGenerate && disableGenerateReason && (
-        <Alert color="yellow" variant="light" radius="sm">
+        <Alert color="yellow" variant="light" radius={0}>
           {disableGenerateReason}
         </Alert>
       )}

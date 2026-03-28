@@ -49,7 +49,7 @@ export function ScheduleCard({
         <Paper
           key={`${enrollment.courseCode}-empty`}
           p="xs"
-          radius="sm"
+          radius={0}
           bg="var(--mantine-color-dark-5)"
           style={{ gridColumn: 1, gridRow: 1, fontSize: '0.75rem' }}
         >
@@ -87,7 +87,7 @@ export function ScheduleCard({
   });
 
   return (
-    <Paper p="sm" withBorder radius="sm" style={{ background: 'var(--mantine-color-dark-6)' }}>
+    <Paper p="sm" withBorder radius={0} style={{ background: 'var(--mantine-color-dark-6)' }}>
       <Stack gap="xs">
         <SimpleGrid
           cols={7}

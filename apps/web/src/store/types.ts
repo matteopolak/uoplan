@@ -89,6 +89,7 @@ export interface AppActions {
     requirementId: string,
     optionIndex: number,
   ) => void;
+  clearSelectedOptionForRequirement: (requirementId: string) => void;
   setCoursesThisSemester: (n: number) => void;
   setGenerationMinStartMinutes: (minutes: number) => void;
   setGenerationMaxEndMinutes: (minutes: number) => void;
