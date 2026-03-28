@@ -1,5 +1,9 @@
 import { Box, Group, Stack, Text } from "@mantine/core";
 import { IconCheck } from "@tabler/icons-react";
+import {
+  isWizardStepSkipped,
+  skippedWizardStepIsPassed,
+} from "../../lib/wizardSteps";
 
 export const STEPS = [
   { label: "Term", description: "Choose term" },
@@ -14,26 +18,82 @@ export const STEPS = [
 export type Step = (typeof STEPS)[number];
 
 interface StepNavProps {
+  /** Indices into {@link STEPS}; pass every step (0–6) so optional rows can show as skipped. */
+  visibleStepIndices: readonly number[];
   active: number;
-  onStepClick: (idx: number) => void;
+  /** Max visible-row index the user has reached; steps before this stay checked when revisiting earlier rows. */
+  furthestDisplayIndex: number;
+  furthestActualStep: number;
+  needsOptionsStep: boolean;
+  needsAssignStep: boolean;
+  onStepClick: (stepIndex: number) => void;
   isMobile: boolean;
 }
 
 function StepItem({
   step,
-  idx,
+  displayIdx,
+  actualIdx,
   active,
+  furthestDisplayIndex,
+  furthestActualStep,
+  needsOptionsStep,
+  needsAssignStep,
+  visibleCount,
   onStepClick,
   isMobile,
 }: {
   step: Step;
-  idx: number;
+  displayIdx: number;
+  actualIdx: number;
   active: number;
-  onStepClick: (idx: number) => void;
+  furthestDisplayIndex: number;
+  furthestActualStep: number;
+  needsOptionsStep: boolean;
+  needsAssignStep: boolean;
+  visibleCount: number;
+  onStepClick: (stepIndex: number) => void;
   isMobile: boolean;
 }) {
-  const isActive = idx === active;
-  const isComplete = idx < active;
+  const isActive = actualIdx === active;
+  const isSkipped = isWizardStepSkipped(
+    actualIdx,
+    needsOptionsStep,
+    needsAssignStep,
+  );
+  const skippedPassed = skippedWizardStepIsPassed(
+    actualIdx,
+    furthestActualStep,
+    needsOptionsStep,
+    needsAssignStep,
+  );
+  const isComplete = !isSkipped && displayIdx < furthestDisplayIndex;
+  /** Completed rows, plus the next row after them (same as pressing Next from the last completed). Skipped rows are never clickable. */
+  const isClickable =
+    !isSkipped &&
+    !isActive &&
+    displayIdx <= furthestDisplayIndex;
+
+  const borderColor = isActive
+    ? "#B197FC"
+    : skippedPassed
+      ? "#6C757D"
+      : isComplete
+        ? "#2F9E44"
+        : "#2C2E33";
+  const backgroundColor = skippedPassed
+    ? "#343A40"
+    : isComplete
+      ? "#2F9E44"
+      : "#141517";
+
+  const labelColor = isActive
+    ? "#F8F9FA"
+    : skippedPassed
+      ? "#909296"
+      : isComplete
+        ? "#A6A7AB"
+        : "#868E96";
 
   return (
     <Box
@@ -42,13 +102,13 @@ function StepItem({
         flexDirection: isMobile ? "column" : "row",
         alignItems: isMobile ? "center" : "flex-start",
         gap: 10,
-        paddingBottom: !isMobile && idx < STEPS.length - 1 ? 16 : 0,
-        cursor: isComplete ? "pointer" : "default",
+        paddingBottom: !isMobile && displayIdx < visibleCount - 1 ? 16 : 0,
+        cursor: isClickable ? "pointer" : "default",
         position: "relative",
         zIndex: 1,
       }}
       onClick={() => {
-        if (isComplete) onStepClick(idx);
+        if (isClickable) onStepClick(actualIdx);
       }}
     >
       <Box
@@ -57,8 +117,8 @@ function StepItem({
           height: 20,
           flexShrink: 0,
           borderRadius: "50%",
-          border: `2px solid ${isActive ? "#B197FC" : isComplete ? "#2F9E44" : "#2C2E33"}`,
-          backgroundColor: isComplete ? "#2F9E44" : "#141517",
+          border: `2px solid ${borderColor}`,
+          backgroundColor,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -66,6 +126,7 @@ function StepItem({
         }}
       >
         {isComplete && <IconCheck size={11} color="#fff" />}
+        {skippedPassed && <IconCheck size={11} color="#ADB5BD" />}
         {isActive && !isComplete && (
           <Box
             style={{
@@ -87,7 +148,7 @@ function StepItem({
           size="xs"
           fw={isActive ? 600 : 400}
           style={{
-            color: isActive ? "#F8F9FA" : isComplete ? "#A6A7AB" : "#868E96",
+            color: labelColor,
             lineHeight: 1.3,
           }}
         >
@@ -98,7 +159,18 @@ function StepItem({
   );
 }
 
-export function StepNav({ active, onStepClick, isMobile }: StepNavProps) {
+export function StepNav({
+  visibleStepIndices,
+  active,
+  furthestDisplayIndex,
+  furthestActualStep,
+  needsOptionsStep,
+  needsAssignStep,
+  onStepClick,
+  isMobile,
+}: StepNavProps) {
+  const visibleCount = visibleStepIndices.length;
+
   if (isMobile) {
     return (
       <Box style={{ width: "100%" }}>
@@ -115,7 +187,7 @@ export function StepNav({ active, onStepClick, isMobile }: StepNavProps) {
           Steps
         </Text>
         <Box style={{ position: "relative", width: "100%" }}>
-          {STEPS.length > 1 && (
+          {visibleCount > 1 && (
             <Box
               style={{
                 position: "absolute",
@@ -138,12 +210,18 @@ export function StepNav({ active, onStepClick, isMobile }: StepNavProps) {
               zIndex: 1,
             }}
           >
-            {STEPS.map((step, idx) => (
+            {visibleStepIndices.map((actualIdx, displayIdx) => (
               <StepItem
-                key={step.label}
-                step={step}
-                idx={idx}
+                key={actualIdx}
+                step={STEPS[actualIdx]}
+                displayIdx={displayIdx}
+                actualIdx={actualIdx}
                 active={active}
+                furthestDisplayIndex={furthestDisplayIndex}
+                furthestActualStep={furthestActualStep}
+                needsOptionsStep={needsOptionsStep}
+                needsAssignStep={needsAssignStep}
+                visibleCount={visibleCount}
                 onStepClick={onStepClick}
                 isMobile={isMobile}
               />
@@ -169,7 +247,7 @@ export function StepNav({ active, onStepClick, isMobile }: StepNavProps) {
         Steps
       </Text>
       <Box style={{ position: "relative" }}>
-        {STEPS.length > 1 && (
+        {visibleCount > 1 && (
           <Box
             style={{
               position: "absolute",
@@ -183,12 +261,18 @@ export function StepNav({ active, onStepClick, isMobile }: StepNavProps) {
           />
         )}
         <Stack gap={0}>
-          {STEPS.map((step, idx) => (
+          {visibleStepIndices.map((actualIdx, displayIdx) => (
             <StepItem
-              key={step.label}
-              step={step}
-              idx={idx}
+              key={actualIdx}
+              step={STEPS[actualIdx]}
+              displayIdx={displayIdx}
+              actualIdx={actualIdx}
               active={active}
+              furthestDisplayIndex={furthestDisplayIndex}
+              furthestActualStep={furthestActualStep}
+              needsOptionsStep={needsOptionsStep}
+              needsAssignStep={needsAssignStep}
+              visibleCount={visibleCount}
               onStepClick={onStepClick}
               isMobile={isMobile}
             />

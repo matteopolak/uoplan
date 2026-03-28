@@ -123,9 +123,11 @@ export function AssignStep({
 
   if (!hasTree) {
     return (
-      <Text c="dimmed">
-        Select a program and complete the previous steps to see requirements.
-      </Text>
+      <Alert color="blue" variant="light" radius={0}>
+        <Text size="sm">
+          Select a program and complete the previous steps to see requirements.
+        </Text>
+      </Alert>
     );
   }
 
@@ -160,10 +162,12 @@ export function AssignStep({
         </Alert>
       )}
 
-      <Text size="sm" c="dimmed">
-        For each requirement below, assign the completed courses that satisfy
-        it. Only your completed courses are shown in the dropdowns.
-      </Text>
+      <Alert color="blue" variant="light" radius={0}>
+        <Text size="sm">
+          For each requirement below, assign the completed courses that satisfy
+          it. Only your completed courses are shown in the dropdowns.
+        </Text>
+      </Alert>
 
       <ExpandRegistryContext.Provider value={registryRef.current}>
         <Stack gap="md">
@@ -197,10 +201,12 @@ export function AssignStep({
               );
             })
           ) : (
-            <Text size="sm" c="dimmed">
-              All requirements are currently satisfied by your completed
-              courses.
-            </Text>
+            <Alert color="blue" variant="light" radius={0}>
+              <Text size="sm">
+                All requirements are currently satisfied by your completed
+                courses.
+              </Text>
+            </Alert>
           )}
         </Stack>
       </ExpandRegistryContext.Provider>

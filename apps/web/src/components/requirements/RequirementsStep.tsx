@@ -243,9 +243,11 @@ export function RequirementsStep({
 
   if (!hasTree) {
     return (
-      <Text c="dimmed">
-        Select a program and complete the previous steps to see requirements.
-      </Text>
+      <Alert color="blue" variant="light" radius={0}>
+        <Text size="sm">
+          Select a program and complete the previous steps to see requirements.
+        </Text>
+      </Alert>
     );
   }
 
@@ -351,11 +353,13 @@ export function RequirementsStep({
         </Stack>
       </Paper>
 
-      <Text size="sm" c="dimmed">
-        For each requirement below, select the courses you want this semester.
-        Requirements with only one option are pre-selected. Expand options in
-        &quot;or&quot; blocks to see which part your selection satisfies.
-      </Text>
+      <Alert color="blue" variant="light" radius={0}>
+        <Text size="sm">
+          For each requirement below, select the courses you want this semester.
+          Requirements with only one option are pre-selected. Expand options in
+          &quot;or&quot; blocks to see which part your selection satisfies.
+        </Text>
+      </Alert>
 
       {missingSelections.length > 0 && (
         <Alert
@@ -428,10 +432,12 @@ export function RequirementsStep({
               );
             })
           ) : (
-            <Text size="sm" c="dimmed">
-              All requirements are currently satisfied by your completed
-              courses.
-            </Text>
+            <Alert color="blue" variant="light" radius={0}>
+              <Text size="sm">
+                All requirements are currently satisfied by your completed
+                courses.
+              </Text>
+            </Alert>
           )}
         </Stack>
       </ExpandRegistryContext.Provider>
@@ -517,10 +523,12 @@ export function RequirementsStep({
       )}
 
       {hasTree && !hasRemaining && !hasCompleted && (
-        <Text c="dimmed" size="sm">
-          No remaining requirements. You may have completed all courses for your
-          program.
-        </Text>
+        <Alert color="blue" variant="light" radius={0}>
+          <Text size="sm">
+            No remaining requirements. You may have completed all courses for your
+            program.
+          </Text>
+        </Alert>
       )}
     </Stack>
   );

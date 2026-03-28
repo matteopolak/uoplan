@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Stack, Text } from "@mantine/core";
+import { Alert, Stack, Text } from "@mantine/core";
 import type { RequirementWithStatus } from "schedule";
 import { ExpandRegistryContext, getStableNodeKey, type ExpandRegistry } from "./RequirementNode";
 import { OptionsDrilldown } from "./OptionsDrilldown";
@@ -37,18 +37,22 @@ export function OptionsStep({
 
   if (relevantNodes.length === 0) {
     return (
-      <Text c="dimmed">
-        No options to configure for this program. Click Next to continue.
-      </Text>
+      <Alert color="blue" variant="light" radius={0}>
+        <Text size="sm">
+          No options to configure for this program. Click Next to continue.
+        </Text>
+      </Alert>
     );
   }
 
   return (
     <Stack gap="md" data-tour="options">
-      <Text size="sm" c="dimmed">
-        Step through each choice below. Tap an option to continue; use the back
-        arrow to change a path and pick a different branch.
-      </Text>
+      <Alert color="blue" variant="light" radius={0}>
+        <Text size="sm">
+          Step through each choice below. Tap an option to continue; use the back
+          arrow to change a path and pick a different branch.
+        </Text>
+      </Alert>
 
       <ExpandRegistryContext.Provider value={registryRef.current}>
         <Stack gap="md">
