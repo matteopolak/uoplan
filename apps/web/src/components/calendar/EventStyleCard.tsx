@@ -161,7 +161,7 @@ export function EventStyleCard({
                   style={{
                     width: 10,
                     height: 10,
-                    borderRadius: 2,
+                    borderRadius: 0,
                     backgroundColor: ratingColorToCssVar(ratingToColor(ratingValue)),
                     border: "1px solid rgba(0,0,0,0.45)",
                     boxShadow: "0 0 0 1px rgba(255,255,255,0.08) inset",

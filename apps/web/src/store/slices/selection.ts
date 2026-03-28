@@ -2,6 +2,7 @@ import { StateCreator } from "zustand";
 import type { AppStore } from "../types";
 import { recomputeStateForProgram, getDisciplineCodesForProgram } from "../requirementCompute";
 import { buildDataCache, normalizeCourseCode, withExtraCourses, isOptCourse } from "schedule";
+import { pruneOptionSelectionsForClear } from "../../components/requirements/requirementUtils";
 
 function getMergedCatalogue(
   catalogue: any,
@@ -41,6 +42,7 @@ export interface SelectionSlice {
   setSelectedForRequirement: AppStore["setSelectedForRequirement"];
   setConstrainedForRequirement: AppStore["setConstrainedForRequirement"];
   setSelectedOptionForRequirement: AppStore["setSelectedOptionForRequirement"];
+  clearSelectedOptionForRequirement: AppStore["clearSelectedOptionForRequirement"];
   setCoursesThisSemester: AppStore["setCoursesThisSemester"];
   setLevelBuckets: AppStore["setLevelBuckets"];
   setLanguageBuckets: AppStore["setLanguageBuckets"];
@@ -268,6 +270,37 @@ export const createSelectionSlice: StateCreator<
       ...get().selectedOptionsPerRequirement,
       [requirementId]: optionIndex,
     };
+    const {
+      program,
+      cache,
+      completedCourses,
+      selectedPerRequirement,
+      levelBuckets,
+      languageBuckets,
+      includeClosedComponents,
+      studentPrograms,
+      requirementSlotsUserTouched,
+    } = get();
+    const state = recomputeStateForProgram(
+      program,
+      completedCourses,
+      cache,
+      selectedPerRequirement,
+      selectedOptionsPerRequirementNext,
+      levelBuckets,
+      languageBuckets,
+      includeClosedComponents,
+      studentPrograms,
+      requirementSlotsUserTouched,
+    );
+    set(state);
+  },
+
+  clearSelectedOptionForRequirement: (requirementId) => {
+    const selectedOptionsPerRequirementNext = pruneOptionSelectionsForClear(
+      get().selectedOptionsPerRequirement,
+      requirementId,
+    );
     const {
       program,
       cache,

@@ -223,7 +223,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
             variant="light"
             color="gray"
             size="sm"
-            radius="sm"
+            radius={0}
             leftSection={<IconArrowBackUp size={14} />}
             onClick={() => undoLastSwap()}
           >
@@ -239,7 +239,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
               variant="filled"
               color="dark"
               size="sm"
-              radius="sm"
+              radius={0}
               leftSection={<IconShare size={14} />}
               onClick={() => setShareModalOpen(true)}
               style={{ backgroundColor: "#141517" }}
@@ -251,7 +251,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
             variant="filled"
             color="dark"
             size="sm"
-            radius="sm"
+            radius={0}
             leftSection={<IconRefresh size={14} />}
             onClick={() => setResetModalOpen(true)}
             style={{ backgroundColor: "#141517" }}
@@ -278,14 +278,14 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
           )}
           onChange={(v) => setSelectedScheduleIndex(Number(v ?? 0))}
           size="md"
-          radius="sm"
+          radius={0}
         />
 
         <Button
           variant="light"
           color="violet"
           size="sm"
-          radius="sm"
+          radius={0}
           loading={generatingOneMore}
           disabled={generatingOneMore}
           onClick={handleGenerateOneMore}
@@ -294,7 +294,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
         </Button>
 
         {generationError && (
-          <Alert color="red" variant="light" radius="sm" py="xs">
+          <Alert color="red" variant="light" radius={0} py="xs">
             <Stack gap="xs">
               <Text size="sm">{generationError}</Text>
               {generationErrorDetails && generationErrorDetails.emptyPools.length > 0 && (
@@ -338,7 +338,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
           size="sm"
           color="violet"
           variant="filled"
-          radius="sm"
+          radius={0}
           disabled={!dateRangeOk}
           onClick={handleDownloadIcs}
         >
@@ -361,7 +361,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
           variant="filled"
           color="dark"
           size="sm"
-          radius="sm"
+          radius={0}
           onClick={onBack}
           style={{ backgroundColor: "#141517", alignSelf: "stretch" }}
         >

@@ -5,7 +5,10 @@ import {
   useMemo,
   memo,
   createContext,
+  type CSSProperties,
   type MouseEvent,
+  type KeyboardEvent,
+  type ReactNode,
 } from "react";
 import {
   Stack,
@@ -18,6 +21,7 @@ import {
   Collapse,
   Radio,
 } from "@mantine/core";
+import type { PaperProps } from "@mantine/core";
 import { IconCheck, IconChevronDown, IconX } from "@tabler/icons-react";
 import type { ComboboxItem } from "@mantine/core";
 import type { DataCache } from "schedule";
@@ -25,12 +29,21 @@ import { normalizeCourseCode } from "schedule";
 import { courseMatchesFilters } from "schedule";
 import { getEffectiveSchedule } from "schedule";
 import type { RequirementWithStatus } from "schedule";
+import {
+  getOptionSecondarySummaryLine,
+  simplifySingleChildChain,
+} from "./requirementUtils";
 
 export const REQUIREMENT_INDENT_PX = 12;
 export const REQUIREMENT_BASE_PADDING_PX = 10;
 
 const TITLE_FLEX = { flex: 1, minWidth: 0 } as const;
 const BADGE_NO_SHRINK = { flexShrink: 0 } as const;
+
+const OPTION_CARD_BORDER_UNSELECTED = "var(--mantine-color-dark-4)";
+const OPTION_CARD_BORDER_SELECTED = "var(--mantine-color-violet-6)";
+const OPTION_CARD_BG_SELECTED = "var(--mantine-color-violet-light)";
+const OPTION_CARD_HOVER_BG = "var(--mantine-color-dark-5)";
 
 export function getStableNodeKey(
   node: RequirementWithStatus,
@@ -53,10 +66,6 @@ function getSelectedCredits(
   );
 }
 
-function normalizeTitleForCompare(title: string | undefined): string {
-  return (title ?? "").trim().replace(/\s+/g, " ").toLowerCase();
-}
-
 export function getNodeDisplayTitle(node: RequirementWithStatus): string {
   const rawTitle = (node.title ?? "").trim();
   const fallback = rawTitle || node.code || `${node.type} requirement`;
@@ -69,41 +78,12 @@ export function getNodeDisplayTitle(node: RequirementWithStatus): string {
   return fallback;
 }
 
-/**
- * UX helper: reduce "dropdown inside dropdown" when a node is just a wrapper
- * around a single child. This keeps the top label, but uses the child's body.
- */
-function simplifySingleChildChain(node: RequirementWithStatus): {
-  node: RequirementWithStatus;
-  autoExpanded: boolean;
-} {
-  let current = node;
-  let changed = false;
-
-  while (
-    current.requirementId == null &&
-    current.options &&
-    current.options.length === 1 &&
-    current.options[0] &&
-    (current.options[0].options?.length ?? 0) > 0 &&
-    (() => {
-      const parentT = normalizeTitleForCompare(current.title);
-      const childT = normalizeTitleForCompare(current.options![0].title);
-      const parentGeneric = parentT === "" || parentT === "or";
-      const childGeneric = childT === "" || childT === "or";
-      return parentGeneric || childGeneric || parentT === childT;
-    })()
-  ) {
-    const child = current.options[0];
-    current = {
-      ...child,
-      title: (current.title ?? "").trim() ? current.title : child.title,
-      code: current.code ?? child.code,
-    };
-    changed = true;
-  }
-
-  return { node: current, autoExpanded: changed };
+function optionsStepOptionCardAriaLabel(node: RequirementWithStatus): string {
+  return (
+    getOptionSecondarySummaryLine(node) ??
+    getNodeDisplayTitle(node) ??
+    "Select this requirement option"
+  );
 }
 
 export interface ExpandRegistry {
@@ -150,6 +130,93 @@ export interface RequirementNodeProps {
   completedOnly?: boolean;
   /** When true, hide the course-selection dropdown and credits prompts (Options step). */
   hideSelection?: boolean;
+  /**
+   * When true with `hideSelection` + option `radio`, hides catalogue-style titles on
+   * option cards; body (nested groups, summaries) stays visible.
+   */
+  optionsStepHideCardTitle?: boolean;
+}
+
+type RadioConfig = NonNullable<RequirementNodeProps["radio"]>;
+
+export type OptionCardRadioConfig = RadioConfig;
+
+type SelectableOptionPaperProps = Omit<PaperProps, "children"> & {
+  radio: OptionCardRadioConfig;
+  node: RequirementWithStatus;
+  optionsStepHideCardTitle: boolean;
+  children: ReactNode;
+};
+
+/** Options step: entire card is clickable; hover feedback; nested cards stopPropagation. */
+function SelectableOptionPaper({
+  radio,
+  node,
+  optionsStepHideCardTitle,
+  style,
+  children,
+  ...paperProps
+}: SelectableOptionPaperProps) {
+  const [hover, setHover] = useState(false);
+  const flatStyle = (style ?? {}) as CSSProperties;
+  const { backgroundColor: bgFromStyle, ...restFlat } = flatStyle;
+  const idleBg =
+    (typeof bgFromStyle === "string" && bgFromStyle) ||
+    "var(--mantine-color-dark-6)";
+  const visualBg = radio.checked
+    ? OPTION_CARD_BG_SELECTED
+    : hover && !radio.disabled
+      ? OPTION_CARD_HOVER_BG
+      : idleBg;
+
+  return (
+    <Paper
+      {...paperProps}
+      withBorder={false}
+      radius={0}
+      role="radio"
+      aria-checked={radio.checked}
+      aria-disabled={radio.disabled}
+      aria-label={
+        optionsStepHideCardTitle
+          ? optionsStepOptionCardAriaLabel(node)
+          : undefined
+      }
+      tabIndex={radio.disabled ? -1 : 0}
+      onMouseEnter={() => {
+        if (!radio.disabled) setHover(true);
+      }}
+      onMouseLeave={() => setHover(false)}
+      onClick={(e: MouseEvent<HTMLDivElement>) => {
+        e.stopPropagation();
+        if (!radio.disabled) radio.onChange();
+      }}
+      onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => {
+        if (radio.disabled) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          radio.onChange();
+        }
+      }}
+      style={{
+        ...restFlat,
+        backgroundColor: visualBg,
+        cursor: radio.disabled ? undefined : "pointer",
+        borderWidth: 1,
+        borderStyle: "solid",
+        borderColor: radio.checked
+          ? OPTION_CARD_BORDER_SELECTED
+          : OPTION_CARD_BORDER_UNSELECTED,
+        transition: "background-color 120ms ease, border-color 120ms ease",
+        boxShadow: hover && !radio.disabled && !radio.checked
+          ? "0 0 0 1px var(--mantine-color-dark-3)"
+          : undefined,
+      }}
+    >
+      {children}
+    </Paper>
+  );
 }
 
 export const RequirementNode = memo(function RequirementNode({
@@ -175,6 +242,7 @@ export const RequirementNode = memo(function RequirementNode({
   includeClosedComponents,
   completedOnly = false,
   hideSelection = false,
+  optionsStepHideCardTitle = false,
 }: RequirementNodeProps) {
   // If a parent (like an option) is responsible for selection UX, don't remove it,
   // but we still want to reduce *nested* single-child wrappers inside it.
@@ -228,12 +296,14 @@ export const RequirementNode = memo(function RequirementNode({
     hasNiceTitle || hasCode || hasCreditsInfo || hasSatisfiedInfo;
 
   const [opened, setOpened] = useState(
-    () => depth === 0 && (autoExpanded || !hasSummary),
+    () => hideSelection || (depth === 0 && (autoExpanded || !hasSummary)),
   );
+
+  const collapseIn = hideSelection || opened;
 
   const toggleLocal = (e: MouseEvent) => {
     e.stopPropagation();
-    if (!hasOptions) return;
+    if (hideSelection || !hasOptions) return;
     setOpened((o) => !o);
   };
 
@@ -511,63 +581,25 @@ export const RequirementNode = memo(function RequirementNode({
       ? "One of the following must be completed"
       : title;
 
-    return (
-      <Paper
-        p="sm"
-        withBorder
-        radius={0}
-        mt="xs"
-        data-missing-selection={showError ? "true" : undefined}
-        style={{
-          paddingLeft:
-            depth * REQUIREMENT_INDENT_PX + REQUIREMENT_BASE_PADDING_PX,
-          backgroundColor: opened
-            ? "var(--mantine-color-dark-6)"
-            : "var(--mantine-color-dark-8)",
-        }}
-      >
-        <Group
-          justify="space-between"
-          align="center"
-          wrap="nowrap"
-          mb={0}
-          onClick={toggleLocal}
-          style={{ cursor: "pointer" }}
-        >
-          <Group gap="xs" align="center" style={TITLE_FLEX}>
-            {radio && (
-              <Radio
-                checked={radio.checked}
-                onChange={radio.onChange}
-                name={radio.name}
-                value={radio.value}
-                disabled={radio.disabled}
-                onClick={(e) => e.stopPropagation()}
-              />
-            )}
-            <IconChevronDown
-              size={14}
-              style={{
-                flexShrink: 0,
-                transform: opened ? "rotate(0deg)" : "rotate(-90deg)",
-                transition: "transform 150ms ease",
-              }}
-            />
+    const orGroupShared = (
+      <>
+        {radio && hideSelection && !optionsStepHideCardTitle && (
+          <Group justify="space-between" align="center" wrap="nowrap" mb={4}>
             <Text fw={500} size="sm" lh={1.25} style={{ minWidth: 0 }}>
               {groupLabel}
             </Text>
+            {node.complete && node.satisfiedOptionIndex != null && (
+              <Badge
+                color="green"
+                variant="light"
+                size="sm"
+                style={BADGE_NO_SHRINK}
+              >
+                Complete
+              </Badge>
+            )}
           </Group>
-          {node.complete && node.satisfiedOptionIndex != null && (
-            <Badge
-              color="green"
-              variant="light"
-              size="sm"
-              style={BADGE_NO_SHRINK}
-            >
-              Complete
-            </Badge>
-          )}
-        </Group>
+        )}
         {showError && (
           <Text size="xs" c="red" mt={4}>
             Select exactly one option in this group.
@@ -578,7 +610,7 @@ export const RequirementNode = memo(function RequirementNode({
             Satisfied by: {node.satisfiedBy.join(", ")}
           </Text>
         )}
-        <Collapse in={opened}>
+        <Collapse in={collapseIn}>
           <Stack gap="xs">
             {node.options!.map((opt, idx) => {
               const isSatisfiedOption =
@@ -599,8 +631,17 @@ export const RequirementNode = memo(function RequirementNode({
                 opt,
                 `${getStableNodeKey(node, "parent")}:opt:${idx}`,
               );
+              const summaryLine =
+                hideSelection && !optionsStepHideCardTitle
+                  ? getOptionSecondarySummaryLine(opt)
+                  : null;
               return (
                 <Box key={childKey}>
+                  {summaryLine && (
+                    <Text size="xs" c="dimmed" mb={4}>
+                      {summaryLine}
+                    </Text>
+                  )}
                   <RequirementNode
                     nodeKey={childKey}
                     node={opt}
@@ -627,6 +668,7 @@ export const RequirementNode = memo(function RequirementNode({
                     includeClosedComponents={includeClosedComponents}
                     completedOnly={completedOnly}
                     hideSelection={hideSelection}
+                    optionsStepHideCardTitle={optionsStepHideCardTitle}
                     radio={
                       node.requirementId != null && !node.complete
                         ? {
@@ -661,6 +703,89 @@ export const RequirementNode = memo(function RequirementNode({
             })}
           </Stack>
         </Collapse>
+      </>
+    );
+
+    if (radio && hideSelection) {
+      return (
+        <SelectableOptionPaper
+          radio={radio}
+          node={node}
+          optionsStepHideCardTitle={optionsStepHideCardTitle}
+          p="sm"
+          mt="xs"
+          data-missing-selection={showError ? "true" : undefined}
+          style={{
+            paddingLeft:
+              depth * REQUIREMENT_INDENT_PX + REQUIREMENT_BASE_PADDING_PX,
+          }}
+        >
+          {orGroupShared}
+        </SelectableOptionPaper>
+      );
+    }
+
+    return (
+      <Paper
+        p="sm"
+        withBorder
+        radius={0}
+        mt="xs"
+        data-missing-selection={showError ? "true" : undefined}
+        style={{
+          paddingLeft:
+            depth * REQUIREMENT_INDENT_PX + REQUIREMENT_BASE_PADDING_PX,
+          backgroundColor:
+            hideSelection || opened
+              ? "var(--mantine-color-dark-6)"
+              : "var(--mantine-color-dark-8)",
+        }}
+      >
+        <Group
+          justify="space-between"
+          align="center"
+          wrap="nowrap"
+          mb={0}
+          onClick={hideSelection ? undefined : toggleLocal}
+          style={{ cursor: hideSelection ? undefined : "pointer" }}
+        >
+          <Group gap="xs" align="center" style={TITLE_FLEX}>
+            {radio && (
+              <Radio
+                checked={radio.checked}
+                onChange={radio.onChange}
+                name={radio.name}
+                value={radio.value}
+                disabled={radio.disabled}
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
+            {!hideSelection && (
+              <IconChevronDown
+                size={14}
+                style={{
+                  flexShrink: 0,
+                  transform: opened ? "rotate(0deg)" : "rotate(-90deg)",
+                  transition: "transform 150ms ease",
+                }}
+              />
+            )}
+            <Text fw={500} size="sm" lh={1.25} style={{ minWidth: 0 }}>
+              {groupLabel}
+            </Text>
+          </Group>
+          {node.complete && node.satisfiedOptionIndex != null && (
+            <Badge
+              color="green"
+              variant="light"
+              size="sm"
+              style={BADGE_NO_SHRINK}
+            >
+              Complete
+            </Badge>
+          )}
+        </Group>
+        {orGroupShared}
       </Paper>
     );
   }
@@ -676,63 +801,25 @@ export const RequirementNode = memo(function RequirementNode({
       selectedOptionIndex == null &&
       !node.complete;
 
-    return (
-      <Paper
-        p="sm"
-        withBorder
-        radius={0}
-        mt="xs"
-        data-missing-selection={showError ? "true" : undefined}
-        style={{
-          paddingLeft:
-            depth * REQUIREMENT_INDENT_PX + REQUIREMENT_BASE_PADDING_PX,
-          backgroundColor: opened
-            ? "var(--mantine-color-dark-6)"
-            : "var(--mantine-color-dark-8)",
-        }}
-      >
-        <Group
-          justify="space-between"
-          align="center"
-          wrap="nowrap"
-          mb={0}
-          onClick={toggleLocal}
-          style={{ cursor: "pointer" }}
-        >
-          <Group gap="xs" align="center" style={TITLE_FLEX}>
-            {radio && (
-              <Radio
-                checked={radio.checked}
-                onChange={radio.onChange}
-                name={radio.name}
-                value={radio.value}
-                disabled={radio.disabled}
-                onClick={(e) => e.stopPropagation()}
-              />
-            )}
-            <IconChevronDown
-              size={14}
-              style={{
-                flexShrink: 0,
-                transform: opened ? "rotate(0deg)" : "rotate(-90deg)",
-                transition: "transform 150ms ease",
-              }}
-            />
+    const optionsGroupShared = (
+      <>
+        {radio && hideSelection && !optionsStepHideCardTitle && (
+          <Group justify="space-between" align="center" wrap="nowrap" mb={4}>
             <Text fw={500} size="sm" lh={1.25} style={{ minWidth: 0 }}>
               {title}
             </Text>
+            {node.complete && (
+              <Badge
+                color="green"
+                variant="light"
+                size="sm"
+                style={BADGE_NO_SHRINK}
+              >
+                Complete
+              </Badge>
+            )}
           </Group>
-          {node.complete && (
-            <Badge
-              color="green"
-              variant="light"
-              size="sm"
-              style={BADGE_NO_SHRINK}
-            >
-              Complete
-            </Badge>
-          )}
-        </Group>
+        )}
         {showError && (
           <Text size="xs" c="red" mt={4}>
             Select exactly one option in this group.
@@ -743,7 +830,7 @@ export const RequirementNode = memo(function RequirementNode({
             Satisfied by option: {node.satisfiedBy.join(", ")}
           </Text>
         )}
-        <Collapse in={opened}>
+        <Collapse in={collapseIn}>
           <Stack gap="xs">
             {node.options!.map((opt, idx) => {
               const isSelected =
@@ -764,8 +851,17 @@ export const RequirementNode = memo(function RequirementNode({
                 opt,
                 `${getStableNodeKey(node, "parent")}:opt:${idx}`,
               );
+              const summaryLine =
+                hideSelection && !optionsStepHideCardTitle
+                  ? getOptionSecondarySummaryLine(opt)
+                  : null;
               return (
                 <Box key={childKey}>
+                  {summaryLine && (
+                    <Text size="xs" c="dimmed" mb={4}>
+                      {summaryLine}
+                    </Text>
+                  )}
                   <RequirementNode
                     nodeKey={childKey}
                     node={opt}
@@ -792,6 +888,7 @@ export const RequirementNode = memo(function RequirementNode({
                     includeClosedComponents={includeClosedComponents}
                     completedOnly={completedOnly}
                     hideSelection={hideSelection}
+                    optionsStepHideCardTitle={optionsStepHideCardTitle}
                     radio={
                       node.requirementId != null && !node.complete
                         ? {
@@ -814,11 +911,171 @@ export const RequirementNode = memo(function RequirementNode({
             })}
           </Stack>
         </Collapse>
+      </>
+    );
+
+    if (radio && hideSelection) {
+      return (
+        <SelectableOptionPaper
+          radio={radio}
+          node={node}
+          optionsStepHideCardTitle={optionsStepHideCardTitle}
+          p="sm"
+          mt="xs"
+          data-missing-selection={showError ? "true" : undefined}
+          style={{
+            paddingLeft:
+              depth * REQUIREMENT_INDENT_PX + REQUIREMENT_BASE_PADDING_PX,
+          }}
+        >
+          {optionsGroupShared}
+        </SelectableOptionPaper>
+      );
+    }
+
+    return (
+      <Paper
+        p="sm"
+        withBorder
+        radius={0}
+        mt="xs"
+        data-missing-selection={showError ? "true" : undefined}
+        style={{
+          paddingLeft:
+            depth * REQUIREMENT_INDENT_PX + REQUIREMENT_BASE_PADDING_PX,
+          backgroundColor:
+            hideSelection || opened
+              ? "var(--mantine-color-dark-6)"
+              : "var(--mantine-color-dark-8)",
+        }}
+      >
+        <Group
+          justify="space-between"
+          align="center"
+          wrap="nowrap"
+          mb={0}
+          onClick={hideSelection ? undefined : toggleLocal}
+          style={{ cursor: hideSelection ? undefined : "pointer" }}
+        >
+          <Group gap="xs" align="center" style={TITLE_FLEX}>
+            {radio && (
+              <Radio
+                checked={radio.checked}
+                onChange={radio.onChange}
+                name={radio.name}
+                value={radio.value}
+                disabled={radio.disabled}
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
+            {!hideSelection && (
+              <IconChevronDown
+                size={14}
+                style={{
+                  flexShrink: 0,
+                  transform: opened ? "rotate(0deg)" : "rotate(-90deg)",
+                  transition: "transform 150ms ease",
+                }}
+              />
+            )}
+            <Text fw={500} size="sm" lh={1.25} style={{ minWidth: 0 }}>
+              {title}
+            </Text>
+          </Group>
+          {node.complete && (
+            <Badge
+              color="green"
+              variant="light"
+              size="sm"
+              style={BADGE_NO_SHRINK}
+            >
+              Complete
+            </Badge>
+          )}
+        </Group>
+        {optionsGroupShared}
       </Paper>
     );
   }
 
   if (isAnd && hasOptions) {
+    const andCollapse = (
+      <Collapse in={collapseIn}>
+        <Stack gap="xs">
+          {node.options!.map((child, idx) => {
+            const childKey = getStableNodeKey(
+              child,
+              `${getStableNodeKey(node, "parent")}:child:${idx}`,
+            );
+            return (
+              <RequirementNode
+                key={childKey}
+                nodeKey={childKey}
+                node={child}
+                cache={cache}
+                completedCourses={completedCourses}
+                selectedPerRequirement={selectedPerRequirement}
+                onSelect={onSelect}
+                selectedOptionsPerRequirement={selectedOptionsPerRequirement}
+                onSelectOption={onSelectOption}
+                ancestorSelections={ancestorSelections}
+                activeBranch={activeBranch}
+                depth={depth + 1}
+                prereqEligible={prereqEligible}
+                levelBuckets={levelBuckets}
+                languageBuckets={languageBuckets}
+                electiveLevelBuckets={electiveLevelBuckets}
+                unassignedCompletedSet={unassignedCompletedSet}
+                unassignedCompletedSetNormalized={
+                  unassignedCompletedSetNormalized
+                }
+                allAssignedCoursesNormalized={allAssignedCoursesNormalized}
+                includeClosedComponents={includeClosedComponents}
+                completedOnly={completedOnly}
+                hideSelection={hideSelection}
+                optionsStepHideCardTitle={optionsStepHideCardTitle}
+              />
+            );
+          })}
+        </Stack>
+      </Collapse>
+    );
+
+    if (radio && hideSelection) {
+      return (
+        <SelectableOptionPaper
+          radio={radio}
+          node={node}
+          optionsStepHideCardTitle={optionsStepHideCardTitle}
+          p="sm"
+          mt="xs"
+          style={{
+            paddingLeft:
+              depth * REQUIREMENT_INDENT_PX + REQUIREMENT_BASE_PADDING_PX,
+          }}
+        >
+          {title && !optionsStepHideCardTitle && (
+            <Group justify="space-between" align="center" wrap="nowrap" mb={4}>
+              <Text fw={500} size="sm" lh={1.25} style={{ minWidth: 0 }}>
+                {title}
+              </Text>
+              {node.complete && (
+                <Badge
+                  color="green"
+                  variant="light"
+                  size="sm"
+                  style={BADGE_NO_SHRINK}
+                >
+                  Complete
+                </Badge>
+              )}
+            </Group>
+          )}
+          {andCollapse}
+        </SelectableOptionPaper>
+      );
+    }
+
     return (
       <Paper
         p="sm"
@@ -828,9 +1085,10 @@ export const RequirementNode = memo(function RequirementNode({
         style={{
           paddingLeft:
             depth * REQUIREMENT_INDENT_PX + REQUIREMENT_BASE_PADDING_PX,
-          backgroundColor: opened
-            ? "var(--mantine-color-dark-6)"
-            : "var(--mantine-color-dark-8)",
+          backgroundColor:
+            hideSelection || opened
+              ? "var(--mantine-color-dark-6)"
+              : "var(--mantine-color-dark-8)",
         }}
       >
         {title && (
@@ -839,8 +1097,8 @@ export const RequirementNode = memo(function RequirementNode({
             align="center"
             wrap="nowrap"
             mb={0}
-            onClick={toggleLocal}
-            style={{ cursor: "pointer" }}
+            onClick={hideSelection ? undefined : toggleLocal}
+            style={{ cursor: hideSelection ? undefined : "pointer" }}
           >
             <Group gap="xs" align="center" style={TITLE_FLEX}>
               {radio && (
@@ -853,14 +1111,16 @@ export const RequirementNode = memo(function RequirementNode({
                   onClick={(e) => e.stopPropagation()}
                 />
               )}
-              <IconChevronDown
-                size={14}
-                style={{
-                  flexShrink: 0,
-                  transform: opened ? "rotate(0deg)" : "rotate(-90deg)",
-                  transition: "transform 150ms ease",
-                }}
-              />
+              {!hideSelection && (
+                <IconChevronDown
+                  size={14}
+                  style={{
+                    flexShrink: 0,
+                    transform: opened ? "rotate(0deg)" : "rotate(-90deg)",
+                    transition: "transform 150ms ease",
+                  }}
+                />
+              )}
               <Text fw={500} size="sm" lh={1.25} style={{ minWidth: 0 }}>
                 {title}
               </Text>
@@ -877,44 +1137,7 @@ export const RequirementNode = memo(function RequirementNode({
             )}
           </Group>
         )}
-        <Collapse in={opened}>
-          <Stack gap="xs">
-            {node.options!.map((child, idx) => {
-              const childKey = getStableNodeKey(
-                child,
-                `${getStableNodeKey(node, "parent")}:child:${idx}`,
-              );
-              return (
-                <RequirementNode
-                  key={childKey}
-                  nodeKey={childKey}
-                  node={child}
-                  cache={cache}
-                  completedCourses={completedCourses}
-                  selectedPerRequirement={selectedPerRequirement}
-                  onSelect={onSelect}
-                  selectedOptionsPerRequirement={selectedOptionsPerRequirement}
-                  onSelectOption={onSelectOption}
-                  ancestorSelections={ancestorSelections}
-                  activeBranch={activeBranch}
-                  depth={depth + 1}
-                  prereqEligible={prereqEligible}
-                  levelBuckets={levelBuckets}
-                  languageBuckets={languageBuckets}
-                  electiveLevelBuckets={electiveLevelBuckets}
-                  unassignedCompletedSet={unassignedCompletedSet}
-                  unassignedCompletedSetNormalized={
-                    unassignedCompletedSetNormalized
-                  }
-                  allAssignedCoursesNormalized={allAssignedCoursesNormalized}
-                  includeClosedComponents={includeClosedComponents}
-                  completedOnly={completedOnly}
-                  hideSelection={hideSelection}
-                />
-              );
-            })}
-          </Stack>
-        </Collapse>
+        {andCollapse}
       </Paper>
     );
   }
@@ -923,6 +1146,142 @@ export const RequirementNode = memo(function RequirementNode({
     creditsNeeded > 0 && !showAsComplete
       ? `${title} (${creditsRemaining} credit${creditsRemaining !== 1 ? "s" : ""} needed)`
       : title;
+
+  const leafPickCollapse =
+    hasOptions && (node.type === "pick" || node.type === "group") ? (
+      <Collapse in={collapseIn}>
+        <Stack gap="xs" pl="xs">
+          {node.options!.map((child, idx) => {
+            const childKey = getStableNodeKey(
+              child,
+              `${getStableNodeKey(node, "parent")}:child:${idx}`,
+            );
+            return (
+              <RequirementNode
+                key={childKey}
+                nodeKey={childKey}
+                node={child}
+                cache={cache}
+                completedCourses={completedCourses}
+                selectedPerRequirement={selectedPerRequirement}
+                onSelect={onSelect}
+                selectedOptionsPerRequirement={
+                  selectedOptionsPerRequirement
+                }
+                onSelectOption={onSelectOption}
+                ancestorSelections={ancestorSelections}
+                activeBranch={activeBranch}
+                depth={depth + 1}
+                prereqEligible={prereqEligible}
+                levelBuckets={levelBuckets}
+                languageBuckets={languageBuckets}
+                electiveLevelBuckets={electiveLevelBuckets}
+                unassignedCompletedSet={unassignedCompletedSet}
+                unassignedCompletedSetNormalized={
+                  unassignedCompletedSetNormalized
+                }
+                allAssignedCoursesNormalized={allAssignedCoursesNormalized}
+                includeClosedComponents={includeClosedComponents}
+                completedOnly={completedOnly}
+                hideSelection={hideSelection}
+                optionsStepHideCardTitle={optionsStepHideCardTitle}
+              />
+            );
+          })}
+        </Stack>
+      </Collapse>
+    ) : null;
+
+  const leafBadgeRow =
+    satisfiedBySelection && allSelectedTaken ? (
+      <Badge color="green" variant="light" size="sm" style={BADGE_NO_SHRINK}>
+        Complete
+      </Badge>
+    ) : satisfiedBySelection ? (
+      <Badge color="teal" variant="light" size="sm" style={BADGE_NO_SHRINK}>
+        Satisfied
+      </Badge>
+    ) : hasRequirementId && creditsRemaining > 0 && !hideSelection ? (
+      <Badge color="blue" variant="light" size="sm" style={BADGE_NO_SHRINK}>
+        {creditsRemaining} credit{creditsRemaining !== 1 ? "s" : ""} needed
+      </Badge>
+    ) : null;
+
+  const leafPrimaryText = !optionsStepHideCardTitle ? (
+    <Text
+      fw={500}
+      size="sm"
+      lh={1.3}
+      lineClamp={2}
+      style={{ minWidth: 0, flex: 1 }}
+    >
+      {label}
+    </Text>
+  ) : (() => {
+      const line = getOptionSecondarySummaryLine(node);
+      if (line) {
+        return (
+          <Text
+            size="xs"
+            c="dimmed"
+            lh={1.35}
+            style={{ minWidth: 0, flex: 1 }}
+          >
+            {line}
+          </Text>
+        );
+      }
+      if (hasRequirementId && creditsRemaining > 0) {
+        return (
+          <Text size="xs" c="dimmed" style={{ minWidth: 0, flex: 1 }}>
+            {creditsRemaining} credit{creditsRemaining !== 1 ? "s" : ""}{" "}
+            needed
+          </Text>
+        );
+      }
+      return (
+        <Text size="xs" c="dimmed" style={{ minWidth: 0, flex: 1 }}>
+          Tap to select
+        </Text>
+      );
+    })();
+
+  const defaultPaperBg = hasOptions
+    ? hideSelection || opened
+      ? "var(--mantine-color-dark-6)"
+      : "var(--mantine-color-dark-8)"
+    : "var(--mantine-color-dark-7)";
+
+  if (radio && hideSelection) {
+    return (
+      <SelectableOptionPaper
+        radio={radio}
+        node={node}
+        optionsStepHideCardTitle={optionsStepHideCardTitle}
+        p="sm"
+        mt="xs"
+        style={{
+          paddingLeft:
+            depth * REQUIREMENT_INDENT_PX + REQUIREMENT_BASE_PADDING_PX,
+          backgroundColor: defaultPaperBg,
+        }}
+      >
+        <Stack gap="xs">
+          <Group
+            justify="space-between"
+            wrap="nowrap"
+            align="flex-start"
+            gap="xs"
+            style={{ width: "100%" }}
+          >
+            {leafPrimaryText}
+            {leafBadgeRow}
+          </Group>
+          {leafPickCollapse}
+        </Stack>
+      </SelectableOptionPaper>
+    );
+  }
 
   return (
     <Paper
@@ -933,11 +1292,7 @@ export const RequirementNode = memo(function RequirementNode({
       style={{
         paddingLeft:
           depth * REQUIREMENT_INDENT_PX + REQUIREMENT_BASE_PADDING_PX,
-        backgroundColor: hasOptions
-          ? opened
-            ? "var(--mantine-color-dark-6)"
-            : "var(--mantine-color-dark-8)"
-          : "var(--mantine-color-dark-7)",
+        backgroundColor: defaultPaperBg,
       }}
     >
       <Stack gap="xs">
@@ -945,8 +1300,10 @@ export const RequirementNode = memo(function RequirementNode({
           justify="space-between"
           wrap="nowrap"
           align="flex-start"
-          onClick={hasOptions ? toggleLocal : undefined}
-          style={hasOptions ? { cursor: "pointer" } : undefined}
+          onClick={hasOptions && !hideSelection ? toggleLocal : undefined}
+          style={
+            hasOptions && !hideSelection ? { cursor: "pointer" } : undefined
+          }
         >
           <Group gap="xs" align="flex-start" style={TITLE_FLEX}>
             {radio && (
@@ -959,7 +1316,7 @@ export const RequirementNode = memo(function RequirementNode({
                 onClick={(e) => e.stopPropagation()}
               />
             )}
-            {hasOptions && (
+            {hasOptions && !hideSelection && (
               <IconChevronDown
                 size={16}
                 style={{
@@ -974,78 +1331,10 @@ export const RequirementNode = memo(function RequirementNode({
               {label}
             </Text>
           </Group>
-          {satisfiedBySelection && allSelectedTaken ? (
-            <Badge
-              color="green"
-              variant="light"
-              size="sm"
-              style={BADGE_NO_SHRINK}
-            >
-              Complete
-            </Badge>
-          ) : satisfiedBySelection ? (
-            <Badge
-              color="teal"
-              variant="light"
-              size="sm"
-              style={BADGE_NO_SHRINK}
-            >
-              Satisfied
-            </Badge>
-          ) : hasRequirementId && creditsRemaining > 0 && !hideSelection ? (
-            <Badge
-              color="blue"
-              variant="light"
-              size="sm"
-              style={BADGE_NO_SHRINK}
-            >
-              {creditsRemaining} credit{creditsRemaining !== 1 ? "s" : ""}{" "}
-              needed
-            </Badge>
-          ) : null}
+          {leafBadgeRow}
         </Group>
         {!hideSelection && multiSelectBlock}
-        {hasOptions && (node.type === "pick" || node.type === "group") && (
-          <Collapse in={opened}>
-            <Stack gap="xs" pl="xs">
-              {node.options!.map((child, idx) => {
-                const childKey = getStableNodeKey(
-                  child,
-                  `${getStableNodeKey(node, "parent")}:child:${idx}`,
-                );
-                return (
-                  <RequirementNode
-                    key={childKey}
-                    nodeKey={childKey}
-                    node={child}
-                    cache={cache}
-                    completedCourses={completedCourses}
-                    selectedPerRequirement={selectedPerRequirement}
-                    onSelect={onSelect}
-                    selectedOptionsPerRequirement={
-                      selectedOptionsPerRequirement
-                    }
-                    onSelectOption={onSelectOption}
-                    ancestorSelections={ancestorSelections}
-                    activeBranch={activeBranch}
-                    depth={depth + 1}
-                    prereqEligible={prereqEligible}
-                    levelBuckets={levelBuckets}
-                    languageBuckets={languageBuckets}
-                    electiveLevelBuckets={electiveLevelBuckets}
-                    unassignedCompletedSet={unassignedCompletedSet}
-                    unassignedCompletedSetNormalized={
-                      unassignedCompletedSetNormalized
-                    }
-                    allAssignedCoursesNormalized={allAssignedCoursesNormalized}
-                    includeClosedComponents={includeClosedComponents}
-                    completedOnly={completedOnly}
-                  />
-                );
-              })}
-            </Stack>
-          </Collapse>
-        )}
+        {leafPickCollapse}
       </Stack>
     </Paper>
   );

@@ -1,5 +1,11 @@
 @import '@mantine/core/styles.css';
 
+/* Reserve space for the vertical scrollbar so layout width stays stable when
+   overflow appears/disappears (avoids horizontal shift). */
+html {
+  scrollbar-gutter: stable;
+}
+
 /* FullCalendar v6 injects its own CSS; we only override below for dark theme */
 
 body {

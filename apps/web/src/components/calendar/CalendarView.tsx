@@ -280,7 +280,7 @@ export function CalendarView({
                               style={{
                                 width: 10,
                                 height: 10,
-                                borderRadius: 2,
+                                borderRadius: 0,
                                 backgroundColor: ratingColorToCssVar(
                                   ratingToColor(ext.professorRatingValue),
                                 ),

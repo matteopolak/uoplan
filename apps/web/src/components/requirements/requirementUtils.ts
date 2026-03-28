@@ -1,6 +1,65 @@
 import type { DataCache, RequirementWithStatus } from "schedule";
 import { normalizeCourseCode } from "schedule";
 
+function normalizeTitleForCompare(title: string | undefined): string {
+  return (title ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+/**
+ * UX helper: reduce "dropdown inside dropdown" when a node is just a wrapper
+ * around a single child. Matches {@link RequirementNode} behavior.
+ */
+export function simplifySingleChildChain(node: RequirementWithStatus): {
+  node: RequirementWithStatus;
+  autoExpanded: boolean;
+} {
+  let current = node;
+  let changed = false;
+
+  while (
+    current.requirementId == null &&
+    current.options &&
+    current.options.length === 1 &&
+    current.options[0] &&
+    (current.options[0].options?.length ?? 0) > 0 &&
+    (() => {
+      const parentT = normalizeTitleForCompare(current.title);
+      const childT = normalizeTitleForCompare(current.options![0].title);
+      const parentGeneric = parentT === "" || parentT === "or";
+      const childGeneric = childT === "" || childT === "or";
+      return parentGeneric || childGeneric || parentT === childT;
+    })()
+  ) {
+    const child = current.options[0];
+    current = {
+      ...child,
+      title: (current.title ?? "").trim() ? current.title : child.title,
+      code: current.code ?? child.code,
+    };
+    changed = true;
+  }
+
+  return { node: current, autoExpanded: changed };
+}
+
+/**
+ * Removes `requirementId` and descendant option keys (req-0-0 under req-0)
+ * from a selection map. Used when backing out of a branch.
+ */
+export function pruneOptionSelectionsForClear(
+  selected: Record<string, number>,
+  requirementId: string,
+): Record<string, number> {
+  const prefix = `${requirementId}-`;
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(selected)) {
+    if (k === requirementId) continue;
+    if (k.startsWith(prefix)) continue;
+    out[k] = v;
+  }
+  return out;
+}
+
 /**
  * Returns true if the node (or any non-complete descendant) is an
  * or_group/options_group with a requirementId, i.e. it needs user selection.
@@ -14,6 +73,25 @@ export function nodeHasOptionGroups(node: RequirementWithStatus): boolean {
     return true;
   }
   return node.options?.some(nodeHasOptionGroups) ?? false;
+}
+
+/** One-line hint under an option in the Options step (credits, pool size, nested groups). */
+export function getOptionSecondarySummaryLine(
+  opt: RequirementWithStatus,
+): string | null {
+  const parts: string[] = [];
+  const credits = opt.creditsNeeded ?? 0;
+  if (credits > 0) {
+    parts.push(`${credits} credit${credits !== 1 ? "s" : ""} required`);
+  }
+  const n = opt.candidateCourses?.length ?? 0;
+  if (n > 0) {
+    parts.push(`${n} possible course${n !== 1 ? "s" : ""}`);
+  }
+  if (nodeHasOptionGroups(opt)) {
+    parts.push("Further choices below");
+  }
+  return parts.length > 0 ? parts.join(" · ") : null;
 }
 
 /**
