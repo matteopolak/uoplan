@@ -50,7 +50,7 @@ export interface AppState {
   selectedScheduleIndex: number;
   generationError: string | null;
   generationErrorDetails: {
-    emptyPools: Array<{ label: string }>;
+    emptyPools: Array<{ label: string; requirementId?: string }>;
     totalAvailable: number;
     totalNeeded: number;
   } | null;

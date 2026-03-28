@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { computeCoursesPerPool, type RequirementPool } from "./scheduleHelpers";
+import {
+  computeCoursesPerPool,
+  reorderGeneralPoolForDisciplineDiversity,
+  type RequirementPool,
+} from "./scheduleHelpers";
 
 const cache = {} as import("schedule").DataCache;
 
@@ -41,5 +45,40 @@ describe("computeCoursesPerPool", () => {
     expect(m.get("a")).toBe(1);
     expect(m.get("b")).toBe(1);
     expect(m.get("c")).toBe(2);
+  });
+
+  it("fills structured pools before broad electives when caps allow", () => {
+    const pools = [
+      pool("a", 3, { type: "course" }),
+      pool("b", 3, { type: "course" }),
+      pool("c", 12, { type: "free_elective" }),
+    ];
+    const m = computeCoursesPerPool(pools, 5, cache);
+    expect(m.get("a")).toBe(1);
+    expect(m.get("b")).toBe(1);
+    expect(m.get("c")).toBe(3);
+  });
+
+  it("uses only structured pools when they cover the semester", () => {
+    const pools = [
+      pool("a", 3, { type: "course" }),
+      pool("b", 3, { type: "course" }),
+      pool("c", 3, { type: "course" }),
+      pool("d", 12, { type: "elective" }),
+    ];
+    const m = computeCoursesPerPool(pools, 3, cache);
+    expect(m.get("a")).toBe(1);
+    expect(m.get("b")).toBe(1);
+    expect(m.get("c")).toBe(1);
+    expect(m.get("d")).toBe(0);
+  });
+});
+
+describe("reorderGeneralPoolForDisciplineDiversity", () => {
+  it("orders unseen disciplines before disciplines already in the schedule", () => {
+    const codes = ["MAT 1000", "PHY 1000", "MAT 2000"];
+    const chosen = new Set<string>(["MAT 1100"]);
+    reorderGeneralPoolForDisciplineDiversity(codes, chosen);
+    expect(codes[0]).toBe("PHY 1000");
   });
 });

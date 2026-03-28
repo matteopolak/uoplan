@@ -38,10 +38,24 @@ export interface GenerationConstraints {
   compressedSchedule?: boolean;
 }
 
+/** Default when the UI clears “days allowed” (empty array): same as initial app state (weekdays). */
+const DEFAULT_ALLOWED_DAYS: DayOfWeek[] = [
+  "Mo",
+  "Tu",
+  "We",
+  "Th",
+  "Fr",
+];
+
+function effectiveAllowedDays(c: GenerationConstraints): DayOfWeek[] {
+  return c.allowedDays.length > 0 ? c.allowedDays : DEFAULT_ALLOWED_DAYS;
+}
+
 /** Time bounds are inclusive: a class starting at minStartMinutes or ending at maxEndMinutes is allowed. */
 function timeSlotSatisfiesConstraints(slot: TimeSlot, c: GenerationConstraints): boolean {
+  const allowedDays = effectiveAllowedDays(c);
   return (
-    c.allowedDays.includes(slot.day) &&
+    allowedDays.includes(slot.day) &&
     slot.startMinutes >= c.minStartMinutes &&
     slot.endMinutes <= c.maxEndMinutes
   );

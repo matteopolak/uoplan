@@ -145,6 +145,16 @@ describe('getValidSectionCombos', () => {
     expect(comboWithM01).toBeDefined();
     expect(comboWithM02).toBeUndefined();
   });
+
+  it('treats empty allowedDays as Mon–Fri so clearing the day filter does not exclude all sections', () => {
+    const sched = makeSchedule("X 1000", [{ day: "Mo", start: 480, end: 570 }]);
+    const combos = getValidSectionCombos(sched, {
+      minStartMinutes: 0,
+      maxEndMinutes: 24 * 60,
+      allowedDays: [],
+    });
+    expect(combos.length).toBeGreaterThanOrEqual(1);
+  });
 });
 
 describe('generateSchedules', () => {

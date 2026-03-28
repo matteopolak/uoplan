@@ -12,7 +12,14 @@ import {
 import { cacheWithClosedFilter, getEffectiveSchedule } from "schedule";
 import { courseMatchesFilters } from "schedule";
 import { normalizeCourseCode } from "schedule";
-import { buildRequirementPools, computeCoursesPerPool, shuffleInPlace, type RequirementPool } from "../store/scheduleHelpers";
+import {
+  buildRequirementPools,
+  computeCoursesPerPool,
+  isBroadElectivePoolType,
+  reorderGeneralPoolForDisciplineDiversity,
+  shuffleInPlace,
+  type RequirementPool,
+} from "../store/scheduleHelpers";
 import {
   isHonoursProject,
   mergeGlobalExplicitRule,
@@ -89,7 +96,7 @@ export interface GenerateSchedulesResult {
   swapHistory: never[];
   generationError: string | null;
   generationErrorDetails: {
-    emptyPools: Array<{ label: string }>;
+    emptyPools: Array<{ label: string; requirementId?: string }>;
     totalAvailable: number;
     totalNeeded: number;
   } | null;
@@ -367,7 +374,7 @@ export async function generateSchedulesAction(
   let lastChosenFromPool: Record<string, string> = {};
   let finalPoolMaps: Record<string, string>[] = [];
   let poolDiagnostics: {
-    emptyPools: Array<{ label: string }>;
+    emptyPools: Array<{ label: string; requirementId?: string }>;
     totalAvailable: number;
     totalNeeded: number;
   } | null = null;
@@ -496,11 +503,13 @@ export async function generateSchedulesAction(
       }
     }
 
-    const poolsWithCandidates = pools.filter((p) =>
-      candidatesByRequirement.has(p.requirementId),
+    const poolsWithNoEligibleCandidates = pools.filter(
+      (p) => !candidatesByRequirement.has(p.requirementId),
     );
+    pools = pools.filter((p) => candidatesByRequirement.has(p.requirementId));
+
     const coursesPerPool = computeCoursesPerPool(
-      poolsWithCandidates,
+      pools,
       remainingNeeded,
       cacheVal,
     );
@@ -552,6 +561,9 @@ export async function generateSchedulesAction(
           GAvail = GAvail.filter((code) => explicitSet.has(code));
         }
         shuffleInPlace(GAvail, rng);
+        if (isBroadElectivePoolType(pool.type)) {
+          reorderGeneralPoolForDisciplineDiversity(GAvail, chosenCodes);
+        }
 
         const { userPicks, generalPicks, ok } = pickFromUserAndGeneralPools({
           need,
@@ -582,6 +594,11 @@ export async function generateSchedulesAction(
 
       const slotsFromOptional = coursesThisSemester - pinned.length;
       if (optionalPool.length < slotsFromOptional) {
+        // Keep the best partial pick so diagnostics and swapPool reflect optional
+        // courses we could schedule, not an empty list after `break`.
+        if (optionalPool.length > lastFilteredPool.length) {
+          lastFilteredPool = optionalPool;
+        }
         break;
       }
 
@@ -625,12 +642,10 @@ export async function generateSchedulesAction(
 
     filteredOptionalPool = lastFilteredPool;
 
-    const emptyPools = pools
-      .filter(
-        (p) =>
-          (candidatesByRequirement.get(p.requirementId) ?? []).length === 0,
-      )
-      .map((p) => ({ label: p.label }));
+    const emptyPools = poolsWithNoEligibleCandidates.map((p) => ({
+      label: p.label,
+      requirementId: p.requirementId,
+    }));
     poolDiagnostics = {
       emptyPools,
       totalAvailable: pinned.length + filteredOptionalPool.length,

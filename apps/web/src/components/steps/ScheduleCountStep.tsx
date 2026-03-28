@@ -49,7 +49,7 @@ interface ScheduleCountStepProps {
   generating?: boolean;
   error?: string | null;
   errorDetails?: {
-    emptyPools: Array<{ label: string }>;
+    emptyPools: Array<{ label: string; requirementId?: string }>;
     totalAvailable: number;
     totalNeeded: number;
   } | null;
@@ -83,6 +83,10 @@ export function ScheduleCountStep({
   disableGenerateReason,
 }: ScheduleCountStepProps) {
   const needMore = selectedCount < coursesThisSemester;
+  const summarizeEmptyPools =
+    errorDetails &&
+    errorDetails.emptyPools.length > 4 &&
+    errorDetails.totalAvailable < errorDetails.totalNeeded;
   const ratingOptions = [
     { value: '2', label: '2.0+' },
     { value: '2.5', label: '2.5+' },
@@ -117,6 +121,7 @@ export function ScheduleCountStep({
       </Group>
       <MultiSelect
         label="Days of the week allowed"
+        description="If you clear this, weekdays (Mon–Fri) are used for generation."
         placeholder="Select days"
         data={DAY_OPTIONS}
         value={allowedDays}
@@ -156,22 +161,46 @@ export function ScheduleCountStep({
         <Alert color="red" variant="light" radius={0}>
           <Stack gap="xs">
             <Text size="sm">{error}</Text>
-            {errorDetails && errorDetails.emptyPools.length > 0 && (
-              <>
-                <Text size="sm" fw={500}>Requirements with no eligible courses this term:</Text>
-                <List size="sm" spacing={2}>
-                  {errorDetails.emptyPools.map((p) => (
-                    <List.Item key={p.label}>{p.label}</List.Item>
-                  ))}
-                </List>
-              </>
-            )}
-            {errorDetails && errorDetails.totalAvailable < errorDetails.totalNeeded && (
-              <Text size="sm">
-                Only {errorDetails.totalAvailable} course{errorDetails.totalAvailable !== 1 ? 's' : ''} available this term.
-                Try reducing to {errorDetails.totalAvailable} course{errorDetails.totalAvailable !== 1 ? 's' : ''} for this semester.
-              </Text>
-            )}
+            {errorDetails &&
+              errorDetails.totalAvailable < errorDetails.totalNeeded && (
+                <Text size="sm" fw={500}>
+                  Only {errorDetails.totalAvailable} course
+                  {errorDetails.totalAvailable !== 1 ? "s" : ""} can be scheduled
+                  with your current filters this term. Try reducing how many
+                  courses you want this semester to {errorDetails.totalAvailable}{" "}
+                  or relax time, day, level, or prerequisite constraints.
+                </Text>
+              )}
+            {errorDetails &&
+              errorDetails.emptyPools.length > 0 &&
+              summarizeEmptyPools && (
+                <Text size="sm" c="dimmed">
+                  {errorDetails.emptyPools.length} other requirements have no
+                  eligible courses this term (missing schedule, prerequisites, or
+                  level filters). That is common for future-term courses with no
+                  timetable yet; it is not the main limit on how many courses you
+                  can take now.
+                </Text>
+              )}
+            {errorDetails &&
+              errorDetails.emptyPools.length > 0 &&
+              !summarizeEmptyPools && (
+                <>
+                  <Text size="sm" fw={500}>
+                    Requirements with no eligible courses this term:
+                  </Text>
+                  <List size="sm" spacing={2}>
+                    {errorDetails.emptyPools.map((p) => (
+                      <List.Item key={p.requirementId ?? p.label}>
+                        {p.requirementId &&
+                        (p.label === "course" || p.label === "or_course")
+                          ? p.requirementId
+                          : `${p.label}${p.requirementId ? ` (${p.requirementId})` : ""}`}
+                      </List.Item>
+                    ))}
+                  </List>
+                </>
+              )}
           </Stack>
         </Alert>
       )}
