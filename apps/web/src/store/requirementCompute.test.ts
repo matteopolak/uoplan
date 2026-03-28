@@ -59,6 +59,62 @@ const overlappingProgram: Program = {
   ],
 };
 
+describe("recomputeStateForProgram single-candidate schedule handling", () => {
+  it("does not auto-assign the only schedulable candidate when no courses are completed", () => {
+    const catalogue: Catalogue = {
+      courses: [mkCourse("ENG 1100")],
+      programs: [],
+    };
+    const schedulesData: SchedulesData = {
+      termId: "2261",
+      schedules: [
+        {
+          subject: "ENG",
+          catalogNumber: "1100",
+          courseCode: "ENG 1100",
+          title: "Literature",
+          timeZone: "America/Toronto",
+          components: {
+            LEC: [
+              {
+                section: "A00-LEC",
+                sectionCode: "A00",
+                component: "LEC",
+                session: null,
+                times: [{ day: "Mo", startMinutes: 480, endMinutes: 570 }],
+                instructors: ["TBA"],
+                meetingDates: ["2026-01-12", "2026-04-15"],
+                status: "Open",
+              },
+            ],
+          },
+        },
+      ],
+    };
+    const cache = buildDataCache(catalogue, schedulesData);
+    const program: Program = {
+      title: "One fixed course",
+      url: "https://example.com",
+      requirements: [{ type: "course", code: "ENG 1100", credits: 3 }],
+    };
+
+    const state = recomputeStateForProgram(
+      program,
+      [],
+      cache,
+      {},
+      {},
+      ["undergrad"],
+      ["en", "other"],
+      false,
+      ["ENG"],
+      {},
+    );
+
+    expect(state.selectedPerRequirement).toEqual({});
+  });
+});
+
 describe("recomputeStateForProgram completed-course auto-assignment", () => {
   it("prefers the narrower CSI-4000 elective over the broader pick for a CSI 4xxx course (MRV fills pick with 3xxx first)", () => {
     const cache = buildDataCache(overlappingElectivesCatalogue, emptySchedules);

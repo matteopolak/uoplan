@@ -1,4 +1,4 @@
-import { MultiSelect, Text, Stack } from '@mantine/core';
+import { Alert, MultiSelect, Text, Stack } from '@mantine/core';
 import type { ComboboxItem } from '@mantine/core';
 import { createCourseOptions, renderCourseOption } from '../shared/CourseSelect';
 import type { DataCache } from 'schedule';
@@ -28,7 +28,9 @@ export function CompletedCoursesStep({
 
   if (!hasProgram) {
     return (
-      <Text c="dimmed">Select a program in Step 1 first.</Text>
+      <Alert color="blue" variant="light" radius={0}>
+        <Text size="sm">Select a program in Step 1 first.</Text>
+      </Alert>
     );
   }
 

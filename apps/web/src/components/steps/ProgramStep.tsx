@@ -199,8 +199,8 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
           size="md"
         />
       )}
-      <Alert color="violet" variant="light" radius={0}>
-        <Text size="sm" c="dimmed">
+      <Alert color="blue" variant="light" radius={0}>
+        <Text size="sm">
           <strong>Optional.</strong> Uploading your transcript saves you from manually selecting
           your start year, program, and completed courses — everything is auto-detected. Your PDF
           is processed entirely on your device and is never sent to any server.

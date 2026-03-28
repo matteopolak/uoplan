@@ -93,10 +93,21 @@ export function useNavHistory() {
     setStateInternal(newState);
   }, []);
 
+  /**
+   * Sets the wizard step without pushing a history entry (replaces current).
+   * Use when correcting an invalid step index (e.g. skipped steps).
+   */
+  const replaceActive = useCallback((step: number) => {
+    const newState: NavHistoryState = { step, showCalendar: false };
+    window.history.replaceState(newState, "");
+    setStateInternal(newState);
+  }, []);
+
   return {
     active: state.step,
     showCalendar: state.showCalendar,
     setActive,
+    replaceActive,
     setShowCalendar,
     resetNav,
   };

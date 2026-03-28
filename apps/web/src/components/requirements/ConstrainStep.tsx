@@ -254,9 +254,11 @@ export function ConstrainStep({
 
   if (!hasTree) {
     return (
-      <Text c="dimmed">
-        Select a program and complete the previous steps to see requirements.
-      </Text>
+      <Alert color="blue" variant="light" radius={0}>
+        <Text size="sm">
+          Select a program and complete the previous steps to see requirements.
+        </Text>
+      </Alert>
     );
   }
 
@@ -340,15 +342,17 @@ export function ConstrainStep({
         </Stack>
       </Paper>
 
-      <Text size="sm" c="dimmed">
-        Optionally choose courses you want considered for each requirement.
-        Leave a requirement empty to let the generator pick any eligible
-        course. For each requirement, up to min(needed, your picks) courses
-        are chosen only from your list; any remaining slots for that
-        requirement come from other eligible courses. If you list at least as
-        many picks as there are courses in your term, schedules use only those
-        courses.
-      </Text>
+      <Alert color="blue" variant="light" radius={0}>
+        <Text size="sm">
+          <strong>Optional.</strong> Choose courses you want considered for each requirement.
+          Leave a requirement empty to let the generator pick any eligible
+          course. For each requirement, up to min(needed, your picks) courses
+          are chosen only from your list; any remaining slots for that
+          requirement come from other eligible courses. If you list at least as
+          many picks as there are courses in your term, schedules use only those
+          courses.
+        </Text>
+      </Alert>
 
       {missingSelections.length > 0 && (
         <Alert
@@ -419,10 +423,12 @@ export function ConstrainStep({
               );
             })
           ) : (
-            <Text size="sm" c="dimmed">
-              All requirements are currently satisfied by your completed
-              courses. Nothing to constrain.
-            </Text>
+            <Alert color="blue" variant="light" radius={0}>
+              <Text size="sm">
+                All requirements are currently satisfied by your completed
+                courses. Nothing to constrain.
+              </Text>
+            </Alert>
           )}
         </Stack>
       </ExpandRegistryContext.Provider>

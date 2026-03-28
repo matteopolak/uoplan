@@ -176,7 +176,7 @@ export function ScheduleCountStep({
         </Alert>
       )}
       {needMore && (
-        <Alert color="violet" variant="light" radius={0}>
+        <Alert color="blue" variant="light" radius={0}>
           You selected {selectedCount} course(s). We will suggest additional
           courses from your remaining requirements to fill your schedule.
         </Alert>

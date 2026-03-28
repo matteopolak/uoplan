@@ -6,7 +6,6 @@ import type {
 } from "schedule";
 import { computeRequirementsState } from "schedule";
 import { normalizeCourseCode, type DataCache } from "schedule";
-import { getEffectiveSchedule } from "schedule";
 import { buildPrereqContext, canTakeCourse } from "schedule";
 import {
   courseMatchesFilters,
@@ -58,53 +57,25 @@ export const GROUP_STYLE_TYPES = [
   "non_discipline_elective",
 ] as const;
 
+/**
+ * Preserves user-touched requirement selections that are still valid candidates.
+ * Does not auto-fill untouched slots (schedule generation / Constrain handle picks).
+ */
 function getAutoSelectedForRequirements(
   remaining: RemainingRequirement[],
   existing: Record<string, string[]>,
   cache: DataCache | null,
-  includeClosedComponents: boolean,
 ): Record<string, string[]> {
   if (!cache) {
     return {};
   }
 
-  const hasSchedule = (code: string) =>
-    !!getEffectiveSchedule(cache, code, includeClosedComponents);
-  const isHonoursProject = (code: string): boolean => {
-    const course = cache.getCourse(code);
-    const component = course?.component?.trim().toLowerCase() ?? "";
-    return component.startsWith("recherche / research");
-  };
-  const scheduledOnlyByReq = new Map<string, Set<string>>();
-  const allCandidatesByReq = new Map<string, Set<string>>();
-
-  for (const req of remaining) {
-    const scheduled = req.candidateCourses.filter(hasSchedule);
-    scheduledOnlyByReq.set(req.requirementId, new Set(scheduled));
-    allCandidatesByReq.set(req.requirementId, new Set(req.candidateCourses));
-  }
-
   const out: Record<string, string[]> = {};
   for (const req of remaining) {
-    const scheduledSet = scheduledOnlyByReq.get(req.requirementId)!;
-    const scheduledCandidates = Array.from(scheduledSet);
-    const allCandidatesSet = allCandidatesByReq.get(req.requirementId)!;
-
-    if (scheduledCandidates.length === 1) {
-      // Avoid auto-selecting honours/research courses; users should opt in explicitly.
-      const only = scheduledCandidates[0];
-      // Only auto-assign if the user has never interacted with this requirement.
-      // If the key exists (even as []), the user explicitly set or cleared it — respect that.
-      if (!isHonoursProject(only) && !(req.requirementId in existing)) {
-        out[req.requirementId] = [only];
-      }
-    } else {
-      const prev = existing[req.requirementId] ?? [];
-      // Keep existing selection if each course is in the requirement's candidate list
-      // (including courses without schedule, e.g. completed)
-      const valid = prev.filter((c) => allCandidatesSet.has(c));
-      if (valid.length) out[req.requirementId] = valid;
-    }
+    const allCandidatesSet = new Set(req.candidateCourses);
+    const prev = existing[req.requirementId] ?? [];
+    const valid = prev.filter((c) => allCandidatesSet.has(c));
+    if (valid.length) out[req.requirementId] = valid;
   }
 
   return out;
@@ -316,7 +287,6 @@ export function recomputeStateForProgram(
     remaining,
     userLockedSelections,
     cache,
-    includeClosedComponents,
   );
 
   // Unassigned completed = completed minus exact-match minus courses locked to user-touched slots.

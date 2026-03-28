@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Badge,
@@ -26,7 +26,18 @@ import { CompletedCoursesStep } from "./components/steps/CompletedCoursesStep";
 import { AssignStep } from "./components/requirements/AssignStep";
 import { ConstrainStep } from "./components/requirements/ConstrainStep";
 import { OptionsStep } from "./components/requirements/OptionsStep";
-import { hasMissingOptionSelections } from "./components/requirements/requirementUtils";
+import {
+  hasMissingOptionSelections,
+  nodeHasOptionGroups,
+} from "./components/requirements/requirementUtils";
+import {
+  ALL_WIZARD_STEP_INDICES,
+  buildVisibleStepIndices,
+  furthestReachedDisplayIndex,
+  getNextStep,
+  getPrevStep,
+  normalizeActiveStep,
+} from "./lib/wizardSteps";
 import { ScheduleCountStep } from "./components/steps/ScheduleCountStep";
 import { usePersistState } from "./hooks/usePersistState";
 import { useNavHistory } from "./hooks/useNavHistory";
@@ -42,6 +53,7 @@ function App() {
     error,
     terms,
     selectedTermId,
+    firstYear,
     program,
     completedCourses,
     remainingRequirements,
@@ -75,6 +87,7 @@ function App() {
       error: s.error,
       terms: s.terms,
       selectedTermId: s.selectedTermId,
+      firstYear: s.firstYear,
       program: s.program,
       completedCourses: s.completedCourses,
       remainingRequirements: s.remainingRequirements,
@@ -127,12 +140,13 @@ function App() {
   const setGenerationCompressedSchedule = useAppStore((s) => s.setGenerationCompressedSchedule);
   const resetToDefault = useAppStore((s) => s.resetToDefault);
 
-  const { active, setActive, showCalendar, setShowCalendar, resetNav } =
+  const { active, setActive, replaceActive, showCalendar, setShowCalendar, resetNav } =
     useNavHistory();
   const [generating, setGenerating] = useState(false);
   const [resetModalOpen, setResetModalOpen] = useState(false);
 
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
 
   // Use extracted hooks
   const { shareCopied, handleCopyShare } = useShareUrl(getShareUrl);
@@ -152,12 +166,88 @@ function App() {
     [requirementTreeWithStatus, selectedOptionsPerRequirement],
   );
 
+  const needsOptionsStep = useMemo(
+    () => requirementTreeWithStatus.some(nodeHasOptionGroups),
+    [requirementTreeWithStatus],
+  );
+
+  const needsAssignStep = unassignedCompletedCourses.length > 0;
+
+  const navVisibleStepIndices = useMemo(
+    () => buildVisibleStepIndices(needsOptionsStep, needsAssignStep),
+    [needsOptionsStep, needsAssignStep],
+  );
+
+  const effectiveActive = useMemo(
+    () => normalizeActiveStep(active, needsOptionsStep, needsAssignStep),
+    [active, needsOptionsStep, needsAssignStep],
+  );
+
+  const stepDisplayIndex = Math.max(
+    0,
+    navVisibleStepIndices.indexOf(effectiveActive),
+  );
+  const visibleStepCount = navVisibleStepIndices.length;
+
+  const [furthestActualStep, setFurthestActualStep] = useState(0);
+  useEffect(() => {
+    setFurthestActualStep((m) => Math.max(m, effectiveActive));
+  }, [effectiveActive]);
+
+  const sidebarFurthestDisplayIndex = useMemo(
+    () => furthestReachedDisplayIndex(ALL_WIZARD_STEP_INDICES, furthestActualStep),
+    [furthestActualStep],
+  );
+
+  useEffect(() => {
+    if (effectiveActive !== active) replaceActive(effectiveActive);
+  }, [active, effectiveActive, replaceActive]);
+
   const canProceedFromStep = (() => {
-    if (active === 0) return hasTerms && Boolean(selectedTermId) && Boolean(cache);
-    if (active === 3) return !missingOptions;
-    if (active === 4) return unassignedCompletedCourses.length === 0;
+    if (effectiveActive === 0) return hasTerms && Boolean(selectedTermId) && Boolean(cache);
+    if (effectiveActive === 1) return firstYear !== null && program !== null;
+    if (effectiveActive === 3) return !missingOptions;
+    if (effectiveActive === 4) return unassignedCompletedCourses.length === 0;
     return true;
   })();
+
+  const [nextUnlockCue, setNextUnlockCue] = useState(false);
+  const prevStepProgressRef = useRef<{
+    step: number;
+    canProceed: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    if (prevStepProgressRef.current === null) {
+      prevStepProgressRef.current = {
+        step: effectiveActive,
+        canProceed: canProceedFromStep,
+      };
+      return;
+    }
+    const was = prevStepProgressRef.current;
+    if (was.step !== effectiveActive) {
+      prevStepProgressRef.current = {
+        step: effectiveActive,
+        canProceed: canProceedFromStep,
+      };
+      return;
+    }
+    if (!was.canProceed && canProceedFromStep && effectiveActive !== 6) {
+      setNextUnlockCue(true);
+    }
+    prevStepProgressRef.current = {
+      step: effectiveActive,
+      canProceed: canProceedFromStep,
+    };
+  }, [effectiveActive, canProceedFromStep]);
+
+  useEffect(() => {
+    if (!nextUnlockCue) return;
+    const ms = prefersReducedMotion ? 700 : 650;
+    const t = window.setTimeout(() => setNextUnlockCue(false), ms);
+    return () => window.clearTimeout(t);
+  }, [nextUnlockCue, prefersReducedMotion]);
 
   const handleGenerate = () => {
     setGenerating(true);
@@ -256,7 +346,7 @@ function App() {
       component="main"
       style={{
         minHeight: "100vh",
-        padding: isMobile ? "24px 16px 60px" : "40px 24px 60px",
+        padding: isMobile ? "20px 12px 48px" : "28px 20px 48px",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -271,6 +361,7 @@ function App() {
         onConfirm={() => {
           resetToDefault();
           resetNav();
+          setFurthestActualStep(0);
           setResetModalOpen(false);
         }}
       />
@@ -309,12 +400,17 @@ function App() {
           style={{
             display: "flex",
             justifyContent: isMobile ? "flex-start" : "flex-end",
-            paddingRight: isMobile ? 0 : 40,
+            paddingRight: isMobile ? 0 : 28,
             paddingTop: 4,
           }}
         >
           <StepNav
-            active={active}
+            visibleStepIndices={ALL_WIZARD_STEP_INDICES}
+            active={effectiveActive}
+            furthestDisplayIndex={sidebarFurthestDisplayIndex}
+            furthestActualStep={furthestActualStep}
+            needsOptionsStep={needsOptionsStep}
+            needsAssignStep={needsAssignStep}
             onStepClick={setActive}
             isMobile={isMobile ?? false}
           />
@@ -326,13 +422,13 @@ function App() {
             style={{
               backgroundColor: "#1E1E20",
               ...(isMobile
-                ? { border: "none", padding: 16 }
-                : { border: "2px solid #2C2E33", padding: 40 }),
+                ? { border: "none", padding: 12 }
+                : { border: "2px solid #2C2E33", padding: 24 }),
             }}
           >
             <AnimatePresence mode="wait">
               <motion.div
-                key={active}
+                key={effectiveActive}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
@@ -349,8 +445,8 @@ function App() {
                       color: "#A6A7AB",
                     }}
                   >
-                    STEP {active + 1} OF {STEPS.length} –{" "}
-                    {STEPS[active].description.toUpperCase()}
+                    STEP {stepDisplayIndex + 1} OF {visibleStepCount} –{" "}
+                    {STEPS[effectiveActive].description.toUpperCase()}
                   </Text>
                   <Group gap="xs">
                     {indices && (
@@ -387,7 +483,7 @@ function App() {
                 </Group>
 
                 {/* Step content */}
-                {active === 0 && terms && (
+                {effectiveActive === 0 && terms && (
                   <Stack gap="md">
                     <TermStep
                       terms={terms}
@@ -396,7 +492,7 @@ function App() {
                     />
                   </Stack>
                 )}
-                {active === 1 && (
+                {effectiveActive === 1 && (
                   <Stack gap="md">
                     <ProgramStep
                       programs={programs}
@@ -405,7 +501,7 @@ function App() {
                     />
                   </Stack>
                 )}
-                {active === 2 && (
+                {effectiveActive === 2 && (
                   <Stack gap="md">
                     <CompletedCoursesStep
                       cache={cache}
@@ -416,7 +512,7 @@ function App() {
                     />
                   </Stack>
                 )}
-                {active === 3 && (
+                {effectiveActive === 3 && (
                   <Stack gap="md">
                     <OptionsStep
                       requirementTreeWithStatus={requirementTreeWithStatus}
@@ -427,7 +523,7 @@ function App() {
                     />
                   </Stack>
                 )}
-                {active === 4 && (
+                {effectiveActive === 4 && (
                   <Stack gap="md">
                     <AssignStep
                       cache={cache}
@@ -444,7 +540,7 @@ function App() {
                     />
                   </Stack>
                 )}
-                {active === 5 && (
+                {effectiveActive === 5 && (
                   <Stack gap="md">
                     <ConstrainStep
                       cache={cache}
@@ -469,7 +565,7 @@ function App() {
                     />
                   </Stack>
                 )}
-                {active === 6 && (
+                {effectiveActive === 6 && (
                   <Stack gap="md">
                     <ScheduleCountStep
                       coursesThisSemester={coursesThisSemester}
@@ -504,38 +600,72 @@ function App() {
                     />
                   </Stack>
                 )}
+              </motion.div>
+            </AnimatePresence>
 
-                {/* Back / Next navigation */}
-                <Group justify="space-between" mt={30}>
+            {/* Outside motion.div so position:sticky works (transform breaks sticky). */}
+            <Box
+              style={{
+                position: "sticky",
+                bottom: 0,
+                zIndex: 10,
+                marginTop: 24,
+                marginLeft: isMobile ? -12 : -24,
+                marginRight: isMobile ? -12 : -24,
+                paddingInline: isMobile ? 12 : 24,
+                paddingTop: 16,
+                paddingBottom: "max(12px, env(safe-area-inset-bottom))",
+                backgroundColor: "#1E1E20",
+                borderTop: "1px solid #2C2E33",
+              }}
+            >
+              <Group justify="space-between">
+                <Button
+                  variant="subtle"
+                  color="gray"
+                  radius={0}
+                  onClick={() =>
+                    setActive(
+                      getPrevStep(
+                        effectiveActive,
+                        needsOptionsStep,
+                        needsAssignStep,
+                      ),
+                    )
+                  }
+                  disabled={effectiveActive === 0}
+                  style={{ border: "none" }}
+                >
+                  Back
+                </Button>
+                <motion.div
+                  style={{ display: "inline-block" }}
+                  animate={
+                    nextUnlockCue && !prefersReducedMotion
+                      ? { x: [0, -6, 6, -5, 5, -3, 3, 0] }
+                      : { x: 0 }
+                  }
+                  transition={{ duration: 0.45, ease: "easeInOut" }}
+                >
                   <Button
-                    variant="subtle"
-                    color="gray"
+                    color={nextUnlockCue ? "violet" : "constructBlack"}
                     radius={0}
                     onClick={() =>
-                      setActive((current) => Math.max(0, current - 1))
-                    }
-                    disabled={active === 0}
-                    style={{ border: "none" }}
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    color="constructBlack"
-                    radius={0}
-                    onClick={() =>
-                      setActive((current) =>
-                        Math.min(STEPS.length - 1, current + 1),
+                      setActive(
+                        getNextStep(
+                          effectiveActive,
+                          needsOptionsStep,
+                          needsAssignStep,
+                        ),
                       )
                     }
-                    disabled={
-                      active === STEPS.length - 1 || !canProceedFromStep
-                    }
+                    disabled={effectiveActive === 6 || !canProceedFromStep}
                   >
                     Next
                   </Button>
-                </Group>
-              </motion.div>
-            </AnimatePresence>
+                </motion.div>
+              </Group>
+            </Box>
           </Box>
 
           {/* Footer */}

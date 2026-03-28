@@ -1,4 +1,4 @@
-import { Select, Stack, Text } from '@mantine/core';
+import { Alert, Select, Stack, Text } from '@mantine/core';
 import type { Term } from 'schemas';
 
 interface TermStepProps {
@@ -24,9 +24,11 @@ export function TermStep({ terms, value, onChange }: TermStepProps) {
         searchable
         size="md"
       />
-      <Text size="sm" c="dimmed">
-        Term selection changes which course sections are available for schedule generation.
-      </Text>
+      <Alert color="blue" variant="light" radius={0}>
+        <Text size="sm">
+          Term selection changes which course sections are available for schedule generation.
+        </Text>
+      </Alert>
     </Stack>
   );
 }

@@ -5,9 +5,10 @@ import { getEffectiveSchedule, isHonoursProject, normalizeCourseCode } from "sch
 export type ImplicitHonoursPick = { code: string; requirementId: string };
 
 /**
- * When Assign auto-select skips honours (only schedulable option) and Constrain
- * does not list it, we still infer one honours thesis for schedule generation if
- * the requirement has no timetable-eligible non-honours candidates.
+ * When Assign does not pin a non-honours course and Constrain does not list one,
+ * we still infer a single honours thesis for schedule generation if the
+ * requirement has timetable-eligible honours candidates but no timetable-eligible
+ * non-honours candidates.
  *
  * Mutates `seenHonoursNorm` with normalized codes for added implicit honours.
  */
