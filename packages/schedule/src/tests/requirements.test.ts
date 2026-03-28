@@ -3,8 +3,8 @@ import {
   computeRemainingRequirements,
   computeRequirementTreeWithStatus,
   collectCompletedRequirements,
-} from './requirements';
-import { buildDataCache } from './dataCache';
+} from '../requirements';
+import { buildDataCache } from '../dataCache';
 import type { Catalogue, Program } from 'schemas';
 import type { SchedulesData } from 'schemas';
 

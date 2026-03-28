@@ -3,7 +3,7 @@ import {
   CatalogueSchema,
   CourseSchema,
   ProgramRequirementSchema,
-} from './catalogue';
+} from '../catalogue';
 
 const minimalCourse = {
   code: 'AMM 5101',

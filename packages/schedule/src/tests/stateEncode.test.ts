@@ -9,7 +9,7 @@ import {
   urlToSlug,
   type EncodeInput,
   type CatalogueLike,
-} from './stateEncode';
+} from '../stateEncode';
 import type { Indices } from 'schemas';
 import type { Program } from 'schemas';
 

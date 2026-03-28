@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { buildScheduleIcs } from './ics';
-import type { GeneratedSchedule } from './scheduleGenerator';
-import type { DataCache } from './dataCache';
+import { buildScheduleIcs } from '../ics';
+import type { GeneratedSchedule } from '../scheduleGenerator';
+import type { DataCache } from '../dataCache';
 
 describe('buildScheduleIcs', () => {
   it('creates weekly recurring events with bounded UNTIL and escapes fields', () => {

@@ -3,7 +3,7 @@ import { buildDataCache } from 'schedule';
 import type { Catalogue, Program } from 'schemas';
 import type { SchedulesData } from 'schemas';
 import { computeRequirementsState } from 'schedule';
-import { useAppStore } from './appStore';
+import { useAppStore } from '../appStore';
 
 const testCatalogue: Catalogue = {
   courses: [

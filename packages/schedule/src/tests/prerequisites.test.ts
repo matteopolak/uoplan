@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import type { Course, CoursePrereqNode } from 'schemas';
-import type { DataCache } from './dataCache';
-import { buildPrereqContext, canTakeCourse, meetsCoursePrereq } from './prerequisites';
+import type { DataCache } from '../dataCache';
+import { buildPrereqContext, canTakeCourse, meetsCoursePrereq } from '../prerequisites';
 import {
   CourseFilters,
   courseMatchesFilters,
   getCourseLanguageBucket,
   getCourseLevelBucket,
   isGraduateCourse,
-} from './courseFilters';
+} from '../courseFilters';
 
 function makeMockCache(courses: Array<{ code: string; credits: number; discipline?: string }>): DataCache {
   const map = new Map<string, { code: string; credits: number; component?: string }>();

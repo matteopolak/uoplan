@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "pnpm --filter web dev",
     "build": "pnpm --filter web build",
-    "test": "pnpm --filter web test",
+    "test": "pnpm run -r test",
     "test:watch": "pnpm --filter web test:watch",
     "scrape:catalogue": "pnpm --filter scrapers scrape:catalogue",
     "scrape:schedules": "pnpm --filter scrapers scrape:schedules",

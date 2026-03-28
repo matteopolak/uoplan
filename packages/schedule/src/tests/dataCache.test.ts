@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildDataCache, normalizeCourseCode } from './dataCache';
+import { buildDataCache, normalizeCourseCode } from '../dataCache';
 import type { Catalogue } from 'schemas';
 import type { SchedulesData } from 'schemas';
 

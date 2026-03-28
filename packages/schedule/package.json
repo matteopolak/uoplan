@@ -4,6 +4,9 @@
   "private": true,
   "main": "src/index.ts",
   "types": "src/index.ts",
+  "scripts": {
+    "test": "vitest run"
+  },
   "dependencies": {
     "date-fns": "^4.1.0",
     "pdfjs-dist": "^5.5.207",

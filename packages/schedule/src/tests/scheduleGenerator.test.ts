@@ -4,8 +4,8 @@ import {
   generateSchedules,
   getEnrollmentsForCourse,
   getValidSectionCombos,
-} from './scheduleGenerator';
-import { buildDataCache } from './dataCache';
+} from '../scheduleGenerator';
+import { buildDataCache } from '../dataCache';
 import type { Catalogue } from 'schemas';
 import type { SchedulesData, CourseSchedule, DayOfWeek } from 'schemas';
 
