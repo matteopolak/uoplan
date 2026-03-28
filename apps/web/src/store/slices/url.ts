@@ -54,6 +54,7 @@ export const createUrlSlice: StateCreator<
       decoded.languageBuckets,
       decoded.includeClosedComponents ?? true,
       studentPrograms,
+      {},
     );
     const orderedReqIds = requirementIdsFromTree(firstPass.requirementTreeWithStatus);
     const reqIndexToId = new Map<number, string>();
@@ -88,6 +89,10 @@ export const createUrlSlice: StateCreator<
       if (valid.length) constrainedPerRequirement[reqId] = valid;
     }
 
+    const requirementSlotsUserTouched: Record<string, true> = Object.fromEntries(
+      Object.keys(selectedPerRequirement).map((k) => [k, true as const]),
+    );
+
     const full = recomputeStateForProgram(
       program,
       decoded.completedCourseCodes,
@@ -98,6 +103,7 @@ export const createUrlSlice: StateCreator<
       decoded.languageBuckets,
       decoded.includeClosedComponents ?? true,
       studentPrograms,
+      requirementSlotsUserTouched,
     );
 
     set({
@@ -118,6 +124,7 @@ export const createUrlSlice: StateCreator<
       constrainedPerRequirement,
       ...(decoded.selectedTermId != null ? { selectedTermId: decoded.selectedTermId } : {}),
       ...(decoded.firstYear != null ? { firstYear: decoded.firstYear } : {}),
+      requirementSlotsUserTouched,
       ...full,
     });
   },

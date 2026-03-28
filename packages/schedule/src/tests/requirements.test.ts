@@ -434,6 +434,68 @@ describe('computeRequirementTreeWithStatus', () => {
     expect(tree[0].complete).toBe(false);
     expect(tree[0].satisfiedBy).toEqual([]);
   });
+
+  it('emits nested remaining requirements for the selected options_group branch only', () => {
+    const cat: Catalogue = {
+      ...minimalCatalogue,
+      courses: [
+        ...minimalCatalogue.courses,
+        {
+          code: 'SEG 3100',
+          title: 'SEG 3100',
+          credits: 3,
+          description: '',
+          component: 'LEC',
+        },
+      ],
+    };
+    const segCache = buildDataCache(cat, emptySchedules);
+    const program: Program = {
+      title: 'Test',
+      url: '',
+      requirements: [
+        {
+          type: 'options_group',
+          title: 'Choose',
+          options: [
+            {
+              type: 'and',
+              options: [
+                {
+                  type: 'discipline_elective',
+                  title: 'SEG 3000',
+                  credits: 3,
+                  disciplineLevels: [{ discipline: 'SEG', levels: [3000] }],
+                },
+              ],
+            },
+            {
+              type: 'and',
+              options: [{ type: 'course', code: 'ESL 2100', credits: 3 }],
+            },
+          ],
+        },
+        {
+          type: 'free_elective',
+          title: 'Free',
+          credits: 3,
+        },
+      ],
+    };
+
+    const noSelection = computeRemainingRequirements(program, [], segCache);
+    expect(noSelection.some((r) => r.requirementId === 'req-0-0-0')).toBe(
+      false,
+    );
+
+    const withSelection = computeRemainingRequirements(program, [], segCache, {
+      'req-0': 0,
+    });
+    expect(withSelection.some((r) => r.requirementId === 'req-0-0-0')).toBe(
+      true,
+    );
+    expect(withSelection.some((r) => r.requirementId === 'req-1')).toBe(true);
+  });
 });
 
 describe('collectCompletedRequirements', () => {

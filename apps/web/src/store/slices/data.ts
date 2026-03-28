@@ -84,6 +84,7 @@ export const createDataSlice: StateCreator<
         s.languageBuckets,
         s.includeClosedComponents,
         s.studentPrograms,
+        s.requirementSlotsUserTouched,
       );
 
       set({

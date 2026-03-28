@@ -33,6 +33,8 @@ export interface AppState {
   requirementTreeWithStatus: RequirementWithStatus[];
   completedRequirementsList: CompletedRequirementItem[];
   selectedPerRequirement: Record<string, string[]>;
+  /** Requirement ids the user explicitly set via Assign (not auto-filled). */
+  requirementSlotsUserTouched: Record<string, true>;
   selectedOptionsPerRequirement: Record<string, number>;
   constrainedPerRequirement: Record<string, string[]>;
   coursesThisSemester: number;

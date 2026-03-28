@@ -1,4 +1,5 @@
-import type { RequirementWithStatus } from "schedule";
+import type { DataCache, RequirementWithStatus } from "schedule";
+import { normalizeCourseCode } from "schedule";
 
 /**
  * Returns true if the node (or any non-complete descendant) is an
@@ -113,4 +114,95 @@ export function applyOptionSelections(
     }
   }
   return out;
+}
+
+/**
+ * Counts every node that carries a `requirementId` in the given tree (for
+ * diagnostics or slot totals). Not used for the completed-requirements badge;
+ * that uses {@link countSatisfiedTopLevelRoots} / root count instead.
+ */
+export function countRequirementIdSlots(
+  nodes: RequirementWithStatus[],
+): number {
+  let n = 0;
+  for (const node of nodes) {
+    if (node.requirementId != null) n++;
+    if (node.options?.length) n += countRequirementIdSlots(node.options);
+  }
+  return n;
+}
+
+/**
+ * Adjust a requirement tree node to reflect manual course assignments from the
+ * Assign step (`selectedPerRequirement`). For each node with a requirementId:
+ * - If assigned credits >= creditsNeeded → mark complete, zero out creditsNeeded
+ * - If partially assigned → reduce creditsNeeded by assigned credits
+ * Children are adjusted recursively; an and_group is marked complete when all
+ * its children become complete.
+ */
+export function adjustNodeForAssignments(
+  node: RequirementWithStatus,
+  selectedPerRequirement: Record<string, string[]>,
+  cache: DataCache | null,
+): RequirementWithStatus {
+  const assigned = node.requirementId
+    ? (selectedPerRequirement[node.requirementId] ?? [])
+    : [];
+  const assignedCredits = assigned.reduce(
+    (sum, code) =>
+      sum + (cache?.getCourse(normalizeCourseCode(code))?.credits ?? 3),
+    0,
+  );
+  const origCredits = node.creditsNeeded ?? 0;
+
+  if (origCredits > 0 && assignedCredits >= origCredits) {
+    return { ...node, complete: true, creditsNeeded: 0, satisfiedBy: assigned };
+  }
+
+  const newCredits =
+    origCredits > 0 && assignedCredits > 0
+      ? origCredits - assignedCredits
+      : origCredits;
+
+  const adjustedOptions = node.options?.map((child) =>
+    adjustNodeForAssignments(child, selectedPerRequirement, cache),
+  );
+
+  const isOrLike = node.type === "or_group" || node.type === "options_group";
+  const anyChildComplete =
+    isOrLike &&
+    adjustedOptions != null &&
+    adjustedOptions.some((c) => c.complete);
+  const allChildrenComplete =
+    !isOrLike &&
+    adjustedOptions != null &&
+    adjustedOptions.length > 0 &&
+    adjustedOptions.every((c) => c.complete);
+
+  return {
+    ...node,
+    creditsNeeded: newCredits,
+    ...(anyChildComplete || allChildrenComplete ? { complete: true } : {}),
+    ...(adjustedOptions ? { options: adjustedOptions } : {}),
+  };
+}
+
+/**
+ * Number of top-level program requirements (roots of `requirementTreeWithStatus`)
+ * that are satisfied: engine completion and/or enough assigned credits per
+ * {@link adjustNodeForAssignments}. Matches the badge denominator
+ * (`roots.length`).
+ */
+export function countSatisfiedTopLevelRoots(
+  roots: RequirementWithStatus[],
+  selectedPerRequirement: Record<string, string[]>,
+  cache: DataCache | null,
+): number {
+  let n = 0;
+  for (const root of roots) {
+    if (adjustNodeForAssignments(root, selectedPerRequirement, cache).complete) {
+      n++;
+    }
+  }
+  return n;
 }

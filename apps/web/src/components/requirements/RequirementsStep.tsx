@@ -26,6 +26,10 @@ import {
   getStableNodeKey,
   type ExpandRegistry,
 } from "./RequirementNode";
+import {
+  applyOptionSelections,
+  countSatisfiedTopLevelRoots,
+} from "./requirementUtils";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -145,7 +149,7 @@ function findFirstMissingPath(
 
 export function RequirementsStep({
   cache,
-  remainingRequirements,
+  remainingRequirements: _remainingRequirements,
   requirementTreeWithStatus,
   completedRequirementsList,
   completedCourses,
@@ -186,6 +190,25 @@ export function RequirementsStep({
     unassignedCompletedCourses.map((c) => normalizeCourseCode(c)),
   );
 
+  const flattenedTree = useMemo(
+    () =>
+      applyOptionSelections(
+        requirementTreeWithStatus,
+        selectedOptionsPerRequirement,
+      ),
+    [requirementTreeWithStatus, selectedOptionsPerRequirement],
+  );
+  const satisfiedTopLevelCount = useMemo(
+    () =>
+      countSatisfiedTopLevelRoots(
+        requirementTreeWithStatus,
+        selectedPerRequirement,
+        cache,
+      ),
+    [requirementTreeWithStatus, selectedPerRequirement, cache],
+  );
+  const topLevelRequirementCount = requirementTreeWithStatus.length;
+
   const allAssignedCoursesNormalized = useMemo(() => {
     const set = new Set<string>();
     const walk = (nodes: RequirementWithStatus[]) => {
@@ -215,9 +238,8 @@ export function RequirementsStep({
     selectedOptionsPerRequirement,
   );
   const hasRemaining = incompleteNodes.length > 0;
-  const hasCompleted = completedRequirementsList.length > 0;
-  const totalRequirements =
-    completedRequirementsList.length + remainingRequirements.length;
+  const hasCompleted =
+    satisfiedTopLevelCount > 0 || completedRequirementsList.length > 0;
 
   if (!hasTree) {
     return (
@@ -444,7 +466,7 @@ export function RequirementsStep({
                 }}
               />
               <Text fw={600} size="sm">
-                {completedRequirementsList.length}/{totalRequirements || "—"}{" "}
+                {satisfiedTopLevelCount}/{topLevelRequirementCount || "—"}{" "}
                 completed requirements
               </Text>
             </Group>

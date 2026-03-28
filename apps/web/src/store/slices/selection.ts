@@ -55,7 +55,12 @@ export const createSelectionSlice: StateCreator<
 > = (set, get) => ({
   setProgram: (program) => {
     const studentPrograms = getDisciplineCodesForProgram(program);
-    set({ program, studentPrograms, constrainedPerRequirement: {} });
+    set({
+      program,
+      studentPrograms,
+      constrainedPerRequirement: {},
+      requirementSlotsUserTouched: {},
+    });
     const {
       cache,
       completedCourses,
@@ -73,6 +78,7 @@ export const createSelectionSlice: StateCreator<
       languageBuckets,
       includeClosedComponents,
       studentPrograms,
+      {},
     );
     set(state);
   },
@@ -88,6 +94,7 @@ export const createSelectionSlice: StateCreator<
       levelBuckets,
       languageBuckets,
       includeClosedComponents,
+      requirementSlotsUserTouched,
     } = get();
     const state = recomputeStateForProgram(
       program,
@@ -99,6 +106,7 @@ export const createSelectionSlice: StateCreator<
       languageBuckets,
       includeClosedComponents,
       programs,
+      requirementSlotsUserTouched,
     );
     set(state);
   },
@@ -126,6 +134,7 @@ export const createSelectionSlice: StateCreator<
       languageBuckets,
       includeClosedComponents,
       studentPrograms,
+      requirementSlotsUserTouched,
     } = get();
 
     // Inject fake course entries for OPT transfer credit codes so they flow through
@@ -146,6 +155,7 @@ export const createSelectionSlice: StateCreator<
       languageBuckets,
       includeClosedComponents,
       studentPrograms,
+      requirementSlotsUserTouched,
     );
     set(state);
   },
@@ -164,6 +174,10 @@ export const createSelectionSlice: StateCreator<
   setSelectedForRequirement: (requirementId, courses) => {
     const prev = get().selectedPerRequirement;
     const selectedPerRequirementNext = { ...prev, [requirementId]: courses };
+    const requirementSlotsUserTouchedNext: Record<string, true> = {
+      ...get().requirementSlotsUserTouched,
+      [requirementId]: true as const,
+    };
     const {
       program,
       cache,
@@ -184,8 +198,9 @@ export const createSelectionSlice: StateCreator<
       languageBuckets,
       includeClosedComponents,
       studentPrograms,
+      requirementSlotsUserTouchedNext,
     );
-    set(state);
+    set({ ...state, requirementSlotsUserTouched: requirementSlotsUserTouchedNext });
   },
 
   setLevelBuckets: (buckets) => {
@@ -199,6 +214,7 @@ export const createSelectionSlice: StateCreator<
       languageBuckets,
       includeClosedComponents,
       studentPrograms,
+      requirementSlotsUserTouched,
     } = get();
     const state = recomputeStateForProgram(
       program,
@@ -210,6 +226,7 @@ export const createSelectionSlice: StateCreator<
       languageBuckets,
       includeClosedComponents,
       studentPrograms,
+      requirementSlotsUserTouched,
     );
     set(state);
   },
@@ -225,6 +242,7 @@ export const createSelectionSlice: StateCreator<
       levelBuckets,
       includeClosedComponents,
       studentPrograms,
+      requirementSlotsUserTouched,
     } = get();
     const state = recomputeStateForProgram(
       program,
@@ -236,6 +254,7 @@ export const createSelectionSlice: StateCreator<
       buckets,
       includeClosedComponents,
       studentPrograms,
+      requirementSlotsUserTouched,
     );
     set(state);
   },
@@ -245,12 +264,34 @@ export const createSelectionSlice: StateCreator<
   },
 
   setSelectedOptionForRequirement: (requirementId, optionIndex) => {
-    set((s) => ({
-      selectedOptionsPerRequirement: {
-        ...s.selectedOptionsPerRequirement,
-        [requirementId]: optionIndex,
-      },
-    }));
+    const selectedOptionsPerRequirementNext = {
+      ...get().selectedOptionsPerRequirement,
+      [requirementId]: optionIndex,
+    };
+    const {
+      program,
+      cache,
+      completedCourses,
+      selectedPerRequirement,
+      levelBuckets,
+      languageBuckets,
+      includeClosedComponents,
+      studentPrograms,
+      requirementSlotsUserTouched,
+    } = get();
+    const state = recomputeStateForProgram(
+      program,
+      completedCourses,
+      cache,
+      selectedPerRequirement,
+      selectedOptionsPerRequirementNext,
+      levelBuckets,
+      languageBuckets,
+      includeClosedComponents,
+      studentPrograms,
+      requirementSlotsUserTouched,
+    );
+    set(state);
   },
 
   setConstrainedForRequirement: (requirementId, courses) => {

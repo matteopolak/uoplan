@@ -130,8 +130,8 @@ export async function generateSchedulesAction(
   }
   const cacheVal = cache;
 
-  // Supplement remainingRequirements with requirements from within selected
-  // option branches (options_group / or_group children processed with dryRun).
+  // Supplement remainingRequirements with any branch slots still missing from the
+  // flat list (defensive; computeRequirementsState usually includes selected branches).
   const existingReqIds = new Set(
     remainingRequirements
       .map((r) => r.requirementId)

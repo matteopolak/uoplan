@@ -29,6 +29,9 @@ import type { RequirementWithStatus } from "schedule";
 export const REQUIREMENT_INDENT_PX = 12;
 export const REQUIREMENT_BASE_PADDING_PX = 10;
 
+const TITLE_FLEX = { flex: 1, minWidth: 0 } as const;
+const BADGE_NO_SHRINK = { flexShrink: 0 } as const;
+
 export function getStableNodeKey(
   node: RequirementWithStatus,
   fallback: string,
@@ -408,7 +411,12 @@ export const RequirementNode = memo(function RequirementNode({
           if (isUsedElsewhere) {
             return (
               <Group gap="xs" wrap="nowrap">
-                <Badge size="xs" color="gray" variant="light" style={{ flexShrink: 0 }}>
+                <Badge
+                  size="xs"
+                  color="gray"
+                  variant="light"
+                  style={BADGE_NO_SHRINK}
+                >
                   USED
                 </Badge>
                 <Text span size="sm" c="dimmed">
@@ -468,13 +476,18 @@ export const RequirementNode = memo(function RequirementNode({
         }}
       >
         <Group gap="xs" wrap="nowrap" align="center">
-          <Text size="sm" c="dimmed" lineClamp={1} style={{ flex: 1 }}>
+          <Text size="sm" c="dimmed" lineClamp={1} style={TITLE_FLEX}>
             {title}
           </Text>
-          <Text size="xs" c="dimmed">
+          <Text size="xs" c="dimmed" style={{ minWidth: 0 }}>
             {satisfiedByDisplayUnique.sort().join(", ")}
           </Text>
-          <Badge color="green" variant="light" size="sm">
+          <Badge
+            color="green"
+            variant="light"
+            size="sm"
+            style={BADGE_NO_SHRINK}
+          >
             Complete
           </Badge>
         </Group>
@@ -516,11 +529,12 @@ export const RequirementNode = memo(function RequirementNode({
         <Group
           justify="space-between"
           align="center"
+          wrap="nowrap"
           mb={0}
           onClick={toggleLocal}
           style={{ cursor: "pointer" }}
         >
-          <Group gap="xs" align="center">
+          <Group gap="xs" align="center" style={TITLE_FLEX}>
             {radio && (
               <Radio
                 checked={radio.checked}
@@ -534,16 +548,22 @@ export const RequirementNode = memo(function RequirementNode({
             <IconChevronDown
               size={14}
               style={{
+                flexShrink: 0,
                 transform: opened ? "rotate(0deg)" : "rotate(-90deg)",
                 transition: "transform 150ms ease",
               }}
             />
-            <Text fw={500} size="sm" lh={1.25}>
+            <Text fw={500} size="sm" lh={1.25} style={{ minWidth: 0 }}>
               {groupLabel}
             </Text>
           </Group>
           {node.complete && node.satisfiedOptionIndex != null && (
-            <Badge color="green" variant="light" size="sm">
+            <Badge
+              color="green"
+              variant="light"
+              size="sm"
+              style={BADGE_NO_SHRINK}
+            >
               Complete
             </Badge>
           )}
@@ -626,7 +646,12 @@ export const RequirementNode = memo(function RequirementNode({
                   />
                   {isSatisfiedOption && opt.satisfiedBy.length > 0 && (
                     <Box pl="sm" mt={4}>
-                      <Badge color="green" variant="light" size="sm">
+                      <Badge
+                        color="green"
+                        variant="light"
+                        size="sm"
+                        style={BADGE_NO_SHRINK}
+                      >
                         Satisfied by: {opt.satisfiedBy.join(", ")}
                       </Badge>
                     </Box>
@@ -669,11 +694,12 @@ export const RequirementNode = memo(function RequirementNode({
         <Group
           justify="space-between"
           align="center"
+          wrap="nowrap"
           mb={0}
           onClick={toggleLocal}
           style={{ cursor: "pointer" }}
         >
-          <Group gap="xs" align="center">
+          <Group gap="xs" align="center" style={TITLE_FLEX}>
             {radio && (
               <Radio
                 checked={radio.checked}
@@ -687,16 +713,22 @@ export const RequirementNode = memo(function RequirementNode({
             <IconChevronDown
               size={14}
               style={{
+                flexShrink: 0,
                 transform: opened ? "rotate(0deg)" : "rotate(-90deg)",
                 transition: "transform 150ms ease",
               }}
             />
-            <Text fw={500} size="sm" lh={1.25}>
+            <Text fw={500} size="sm" lh={1.25} style={{ minWidth: 0 }}>
               {title}
             </Text>
           </Group>
           {node.complete && (
-            <Badge color="green" variant="light" size="sm">
+            <Badge
+              color="green"
+              variant="light"
+              size="sm"
+              style={BADGE_NO_SHRINK}
+            >
               Complete
             </Badge>
           )}
@@ -805,11 +837,12 @@ export const RequirementNode = memo(function RequirementNode({
           <Group
             justify="space-between"
             align="center"
+            wrap="nowrap"
             mb={0}
             onClick={toggleLocal}
             style={{ cursor: "pointer" }}
           >
-            <Group gap="xs" align="center">
+            <Group gap="xs" align="center" style={TITLE_FLEX}>
               {radio && (
                 <Radio
                   checked={radio.checked}
@@ -823,16 +856,22 @@ export const RequirementNode = memo(function RequirementNode({
               <IconChevronDown
                 size={14}
                 style={{
+                  flexShrink: 0,
                   transform: opened ? "rotate(0deg)" : "rotate(-90deg)",
                   transition: "transform 150ms ease",
                 }}
               />
-              <Text fw={500} size="sm" lh={1.25}>
+              <Text fw={500} size="sm" lh={1.25} style={{ minWidth: 0 }}>
                 {title}
               </Text>
             </Group>
             {node.complete && (
-              <Badge color="green" variant="light" size="sm">
+              <Badge
+                color="green"
+                variant="light"
+                size="sm"
+                style={BADGE_NO_SHRINK}
+              >
                 Complete
               </Badge>
             )}
@@ -909,7 +948,7 @@ export const RequirementNode = memo(function RequirementNode({
           onClick={hasOptions ? toggleLocal : undefined}
           style={hasOptions ? { cursor: "pointer" } : undefined}
         >
-          <Group gap="xs" align="flex-start">
+          <Group gap="xs" align="flex-start" style={TITLE_FLEX}>
             {radio && (
               <Radio
                 checked={radio.checked}
@@ -924,26 +963,42 @@ export const RequirementNode = memo(function RequirementNode({
               <IconChevronDown
                 size={16}
                 style={{
+                  flexShrink: 0,
                   marginTop: 2,
                   transform: opened ? "rotate(0deg)" : "rotate(-90deg)",
                   transition: "transform 150ms ease",
                 }}
               />
             )}
-            <Text fw={500} size="sm" lh={1.3} lineClamp={2}>
+            <Text fw={500} size="sm" lh={1.3} lineClamp={2} style={{ minWidth: 0 }}>
               {label}
             </Text>
           </Group>
           {satisfiedBySelection && allSelectedTaken ? (
-            <Badge color="green" variant="light" size="sm">
+            <Badge
+              color="green"
+              variant="light"
+              size="sm"
+              style={BADGE_NO_SHRINK}
+            >
               Complete
             </Badge>
           ) : satisfiedBySelection ? (
-            <Badge color="teal" variant="light" size="sm">
+            <Badge
+              color="teal"
+              variant="light"
+              size="sm"
+              style={BADGE_NO_SHRINK}
+            >
               Satisfied
             </Badge>
           ) : hasRequirementId && creditsRemaining > 0 && !hideSelection ? (
-            <Badge color="blue" variant="light" size="sm">
+            <Badge
+              color="blue"
+              variant="light"
+              size="sm"
+              style={BADGE_NO_SHRINK}
+            >
               {creditsRemaining} credit{creditsRemaining !== 1 ? "s" : ""}{" "}
               needed
             </Badge>

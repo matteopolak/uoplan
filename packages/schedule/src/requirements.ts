@@ -130,7 +130,8 @@ type ProcessOptions = {
 function runRequirementPass(
   program: Program,
   completedCourses: string[],
-  cache: DataCache
+  cache: DataCache,
+  selectedOptionsPerRequirement: Record<string, number> = {},
 ): {
   remaining: RemainingRequirement[];
   tree: RequirementWithStatus[];
@@ -291,12 +292,24 @@ function runRequirementPass(
             node: { ...toStatusBase(req), complete: true, satisfiedBy: [], options: [] },
           };
         }
+        const requirementId = reqId(path);
+        const selectedIdx = !dryRun
+          ? selectedOptionsPerRequirement[requirementId]
+          : undefined;
+
         const allCandidates: string[] = [];
         const orChildNodes: RequirementWithStatus[] = [];
-        // Do not consume from pool: always process options in dryRun so user assigns explicitly.
+        // Without a branch selection, keep all options in dryRun. Once the user picks a branch,
+        // process that branch for real so nested requirements emit RemainingRequirement rows.
         for (let i = 0; i < req.options.length; i++) {
           const opt = req.options[i];
-          const { node } = process(opt, `${path}-${i}`, { ...opts, dryRun: true, forceRequirementId: true });
+          const childDryRun =
+            selectedIdx === undefined ? true : i !== selectedIdx ? true : dryRun;
+          const { node } = process(opt, `${path}-${i}`, {
+            ...opts,
+            dryRun: childDryRun,
+            forceRequirementId: true,
+          });
           orChildNodes.push(node);
           if (opt.type === 'course' && opt.code) {
             allCandidates.push(cache.getCourse(opt.code)?.code ?? opt.code);
@@ -312,8 +325,7 @@ function runRequirementPass(
         }
 
         if (allCandidates.length > 0) {
-          const requirementId = reqId(path);
-          if (!dryRun) {
+          if (!dryRun && selectedIdx === undefined) {
             result.push({
               requirementId,
               type: 'or_group',
@@ -406,11 +418,20 @@ function runRequirementPass(
             node: { ...toStatusBase(req), complete: true, satisfiedBy: [], options: [] },
           };
         }
-        // Do not consume from pool: process each option in dryRun so user assigns explicitly.
         const requirementId = opts.dryRun ? undefined : reqId(path);
+        const selectedIdx =
+          requirementId != null
+            ? selectedOptionsPerRequirement[requirementId]
+            : undefined;
+
         const optNodes: RequirementWithStatus[] = [];
         for (let i = 0; i < req.options.length; i++) {
-          const { node } = process(req.options[i], `${path}-${i}`, { ...opts, dryRun: true });
+          const childDryRun =
+            selectedIdx === undefined ? true : i !== selectedIdx ? true : dryRun;
+          const { node } = process(req.options[i], `${path}-${i}`, {
+            ...opts,
+            dryRun: childDryRun,
+          });
           optNodes.push(node);
         }
 
@@ -552,9 +573,15 @@ export function collectCompletedRequirements(
 export function computeRequirementTreeWithStatus(
   program: Program,
   completedCourses: string[],
-  cache: DataCache
+  cache: DataCache,
+  selectedOptionsPerRequirement?: Record<string, number>,
 ): RequirementWithStatus[] {
-  return runRequirementPass(program, completedCourses, cache).tree;
+  return runRequirementPass(
+    program,
+    completedCourses,
+    cache,
+    selectedOptionsPerRequirement,
+  ).tree;
 }
 
 export interface RequirementsState {
@@ -566,9 +593,15 @@ export interface RequirementsState {
 export function computeRequirementsState(
   program: Program,
   completedCourses: string[],
-  cache: DataCache
+  cache: DataCache,
+  selectedOptionsPerRequirement?: Record<string, number>,
 ): RequirementsState {
-  const { remaining, tree } = runRequirementPass(program, completedCourses, cache);
+  const { remaining, tree } = runRequirementPass(
+    program,
+    completedCourses,
+    cache,
+    selectedOptionsPerRequirement,
+  );
   return {
     remaining,
     tree,
@@ -579,7 +612,13 @@ export function computeRequirementsState(
 export function computeRemainingRequirements(
   program: Program,
   completedCourses: string[],
-  cache: DataCache
+  cache: DataCache,
+  selectedOptionsPerRequirement?: Record<string, number>,
 ): RemainingRequirement[] {
-  return runRequirementPass(program, completedCourses, cache).remaining;
+  return runRequirementPass(
+    program,
+    completedCourses,
+    cache,
+    selectedOptionsPerRequirement,
+  ).remaining;
 }

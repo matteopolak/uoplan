@@ -23,7 +23,10 @@ import {
   getStableNodeKey,
   type ExpandRegistry,
 } from "./RequirementNode";
-import { applyOptionSelections } from "./requirementUtils";
+import {
+  applyOptionSelections,
+  countSatisfiedTopLevelRoots,
+} from "./requirementUtils";
 import { useState } from "react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -46,7 +49,7 @@ export interface AssignStepProps {
 
 export function AssignStep({
   cache,
-  remainingRequirements,
+  remainingRequirements: _remainingRequirements,
   requirementTreeWithStatus,
   completedRequirementsList,
   completedCourses,
@@ -105,31 +108,18 @@ export function AssignStep({
     (node) => !node.complete,
   );
   const hasRemaining = incompleteNodes.length > 0;
-  const hasCompleted = completedRequirementsList.length > 0;
-
-  // Top-level tree nodes (e.g. or_group parents) that have a requirementId but
-  // aren't represented in either flat list need to be counted in the total.
-  const remainingReqIds = useMemo(
+  const satisfiedTopLevelCount = useMemo(
     () =>
-      new Set(
-        remainingRequirements
-          .map((r) => r.requirementId)
-          .filter((id): id is string => id != null),
+      countSatisfiedTopLevelRoots(
+        requirementTreeWithStatus,
+        selectedPerRequirement,
+        cache,
       ),
-    [remainingRequirements],
+    [requirementTreeWithStatus, selectedPerRequirement, cache],
   );
-  const extraNodeCount = useMemo(
-    () =>
-      flattenedTree.filter(
-        (n) =>
-          n.requirementId != null &&
-          !n.complete &&
-          !remainingReqIds.has(n.requirementId),
-      ).length,
-    [flattenedTree, remainingReqIds],
-  );
-  const totalRequirements =
-    completedRequirementsList.length + remainingRequirements.length + extraNodeCount;
+  const topLevelRequirementCount = requirementTreeWithStatus.length;
+  const hasCompleted =
+    satisfiedTopLevelCount > 0 || completedRequirementsList.length > 0;
 
   if (!hasTree) {
     return (
@@ -245,7 +235,7 @@ export function AssignStep({
                 }}
               />
               <Text fw={600} size="sm">
-                {completedRequirementsList.length}/{totalRequirements || "—"}{" "}
+                {satisfiedTopLevelCount}/{topLevelRequirementCount || "—"}{" "}
                 completed requirements
               </Text>
             </Group>

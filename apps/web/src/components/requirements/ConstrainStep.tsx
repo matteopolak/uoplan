@@ -14,7 +14,6 @@ import {
 } from "@mantine/core";
 import { IconChevronDown } from "@tabler/icons-react";
 import type { DataCache } from "schedule";
-import { normalizeCourseCode } from "schedule";
 import type {
   RemainingRequirement,
   RequirementWithStatus,
@@ -27,7 +26,11 @@ import {
   getNodeDisplayTitle,
   type ExpandRegistry,
 } from "./RequirementNode";
-import { applyOptionSelections } from "./requirementUtils";
+import {
+  applyOptionSelections,
+  adjustNodeForAssignments,
+  countSatisfiedTopLevelRoots,
+} from "./requirementUtils";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -143,66 +146,11 @@ function findFirstMissingPath(
   return null;
 }
 
-/**
- * Adjust a requirement tree node to reflect manual course assignments from the
- * Assign step (`selectedPerRequirement`). For each node with a requirementId:
- * - If assigned credits >= creditsNeeded → mark complete, zero out creditsNeeded
- * - If partially assigned → reduce creditsNeeded by assigned credits
- * Children are adjusted recursively; an and_group is marked complete when all
- * its children become complete.
- */
-function adjustNodeForAssignments(
-  node: RequirementWithStatus,
-  selectedPerRequirement: Record<string, string[]>,
-  cache: DataCache | null,
-): RequirementWithStatus {
-  const assigned = node.requirementId
-    ? (selectedPerRequirement[node.requirementId] ?? [])
-    : [];
-  const assignedCredits = assigned.reduce(
-    (sum, code) =>
-      sum + (cache?.getCourse(normalizeCourseCode(code))?.credits ?? 3),
-    0,
-  );
-  const origCredits = node.creditsNeeded ?? 0;
-
-  if (origCredits > 0 && assignedCredits >= origCredits) {
-    return { ...node, complete: true, creditsNeeded: 0, satisfiedBy: assigned };
-  }
-
-  const newCredits =
-    origCredits > 0 && assignedCredits > 0
-      ? origCredits - assignedCredits
-      : origCredits;
-
-  const adjustedOptions = node.options?.map((child) =>
-    adjustNodeForAssignments(child, selectedPerRequirement, cache),
-  );
-
-  const isOrLike = node.type === "or_group" || node.type === "options_group";
-  const anyChildComplete =
-    isOrLike &&
-    adjustedOptions != null &&
-    adjustedOptions.some((c) => c.complete);
-  const allChildrenComplete =
-    !isOrLike &&
-    adjustedOptions != null &&
-    adjustedOptions.length > 0 &&
-    adjustedOptions.every((c) => c.complete);
-
-  return {
-    ...node,
-    creditsNeeded: newCredits,
-    ...(anyChildComplete || allChildrenComplete ? { complete: true } : {}),
-    ...(adjustedOptions ? { options: adjustedOptions } : {}),
-  };
-}
-
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function ConstrainStep({
   cache,
-  remainingRequirements,
+  remainingRequirements: _remainingRequirements,
   requirementTreeWithStatus,
   completedRequirementsList,
   completedCourses,
@@ -293,29 +241,16 @@ export function ConstrainStep({
   const hasRemaining = incompleteNodes.length > 0;
   const hasCompleted = allCompletedItems.length > 0;
 
-  // Same extraNodeCount logic as AssignStep: top-level nodes with requirementId
-  // not in either flat list (e.g. or_group parents).
-  const remainingReqIds = useMemo(
+  const satisfiedTopLevelCount = useMemo(
     () =>
-      new Set(
-        remainingRequirements
-          .map((r) => r.requirementId)
-          .filter((id): id is string => id != null),
+      countSatisfiedTopLevelRoots(
+        requirementTreeWithStatus,
+        selectedPerRequirement,
+        cache,
       ),
-    [remainingRequirements],
+    [requirementTreeWithStatus, selectedPerRequirement, cache],
   );
-  const extraNodeCount = useMemo(
-    () =>
-      flattenedTree.filter(
-        (n) =>
-          n.requirementId != null &&
-          !n.complete &&
-          !remainingReqIds.has(n.requirementId),
-      ).length,
-    [flattenedTree, remainingReqIds],
-  );
-  const totalRequirements =
-    completedRequirementsList.length + remainingRequirements.length + extraNodeCount;
+  const topLevelRequirementCount = requirementTreeWithStatus.length;
 
   if (!hasTree) {
     return (
@@ -522,7 +457,7 @@ export function ConstrainStep({
                 }}
               />
               <Text fw={600} size="sm">
-                {allCompletedItems.length}/{totalRequirements || "—"}{" "}
+                {satisfiedTopLevelCount}/{topLevelRequirementCount || "—"}{" "}
                 completed requirements
               </Text>
             </Group>
