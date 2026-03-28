@@ -1,0 +1,293 @@
+import { useRef, useMemo, type MouseEvent } from "react";
+import {
+  Stack,
+  Text,
+  Paper,
+  Badge,
+  Group,
+  Box,
+  Collapse,
+  Alert,
+} from "@mantine/core";
+import { IconChevronDown } from "@tabler/icons-react";
+import type { DataCache } from "schedule";
+import { normalizeCourseCode } from "schedule";
+import type {
+  RemainingRequirement,
+  RequirementWithStatus,
+  CompletedRequirementItem,
+} from "schedule";
+import {
+  RequirementNode,
+  ExpandRegistryContext,
+  getStableNodeKey,
+  type ExpandRegistry,
+} from "./RequirementNode";
+import { useState } from "react";
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+export interface AssignStepProps {
+  cache: DataCache | null;
+  remainingRequirements: RemainingRequirement[];
+  requirementTreeWithStatus: RequirementWithStatus[];
+  completedRequirementsList: CompletedRequirementItem[];
+  completedCourses: string[];
+  unassignedCompletedCourses: string[];
+  selectedPerRequirement: Record<string, string[]>;
+  onSelect: (requirementId: string, courses: string[]) => void;
+  selectedOptionsPerRequirement: Record<string, number>;
+  onSelectOption: (requirementId: string, optionIndex: number) => void;
+  prereqEligibleCourses: string[];
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
+export function AssignStep({
+  cache,
+  remainingRequirements,
+  requirementTreeWithStatus,
+  completedRequirementsList,
+  completedCourses,
+  unassignedCompletedCourses,
+  selectedPerRequirement,
+  onSelect,
+  selectedOptionsPerRequirement,
+  onSelectOption,
+  prereqEligibleCourses,
+}: AssignStepProps) {
+  const [completedOpen, setCompletedOpen] = useState(false);
+  const openFnsRef = useRef(new Map<string, () => void>());
+  const registryRef = useRef<ExpandRegistry>({
+    register(key, open) {
+      openFnsRef.current.set(key, open);
+    },
+    unregister(key) {
+      openFnsRef.current.delete(key);
+    },
+  });
+
+  const completedSet = new Set(completedCourses);
+  const prereqEligible = new Set(prereqEligibleCourses);
+  const unassignedCompletedSet = new Set(unassignedCompletedCourses);
+  const unassignedCompletedSetNormalized = new Set(
+    unassignedCompletedCourses.map((c) => normalizeCourseCode(c)),
+  );
+
+  const allAssignedCoursesNormalized = useMemo(() => {
+    const set = new Set<string>();
+    const walk = (nodes: RequirementWithStatus[]) => {
+      for (const node of nodes) {
+        if (
+          (node.type === "course" || node.type === "or_course") &&
+          node.satisfiedBy?.length
+        ) {
+          for (const code of node.satisfiedBy) set.add(normalizeCourseCode(code));
+        }
+        if (node.options?.length) walk(node.options);
+      }
+    };
+    walk(requirementTreeWithStatus);
+    for (const codes of Object.values(selectedPerRequirement)) {
+      for (const code of codes) set.add(normalizeCourseCode(code));
+    }
+    return set;
+  }, [requirementTreeWithStatus, selectedPerRequirement]);
+
+  const hasTree = requirementTreeWithStatus.length > 0;
+  const incompleteNodes = requirementTreeWithStatus.filter(
+    (node) => !node.complete,
+  );
+  const hasRemaining = incompleteNodes.length > 0;
+  const hasCompleted = completedRequirementsList.length > 0;
+
+  // Top-level tree nodes (e.g. or_group parents) that have a requirementId but
+  // aren't represented in either flat list need to be counted in the total.
+  const remainingReqIds = useMemo(
+    () =>
+      new Set(
+        remainingRequirements
+          .map((r) => r.requirementId)
+          .filter((id): id is string => id != null),
+      ),
+    [remainingRequirements],
+  );
+  const extraNodeCount = useMemo(
+    () =>
+      requirementTreeWithStatus.filter(
+        (n) =>
+          n.requirementId != null &&
+          !n.complete &&
+          !remainingReqIds.has(n.requirementId),
+      ).length,
+    [requirementTreeWithStatus, remainingReqIds],
+  );
+  const totalRequirements =
+    completedRequirementsList.length + remainingRequirements.length + extraNodeCount;
+
+  if (!hasTree) {
+    return (
+      <Text c="dimmed">
+        Select a program and complete the previous steps to see requirements.
+      </Text>
+    );
+  }
+
+  const unassignedDisplay = [...new Set(unassignedCompletedCourses)]
+    .map((c) => cache?.getCourse(normalizeCourseCode(c))?.code ?? c)
+    .sort();
+
+  return (
+    <Stack gap="lg" data-tour="requirements">
+      {unassignedDisplay.length > 0 ? (
+        <Alert
+          color="yellow"
+          variant="light"
+          radius={0}
+          title="Assign all completed courses before continuing"
+        >
+          <Text size="sm">
+            You have {unassignedDisplay.length} completed course
+            {unassignedDisplay.length === 1 ? "" : "s"} not assigned to any
+            requirement: {unassignedDisplay.join(", ")}.
+          </Text>
+          <Text size="sm" mt={6}>
+            Assign each completed course to the requirement it satisfies.
+          </Text>
+        </Alert>
+      ) : (
+        <Alert color="green" variant="light" radius={0} title="All courses assigned">
+          <Text size="sm">
+            All completed courses are assigned to requirements. Click Next to
+            continue.
+          </Text>
+        </Alert>
+      )}
+
+      <Text size="sm" c="dimmed">
+        For each requirement below, assign the completed courses that satisfy
+        it. Only your completed courses are shown in the dropdowns.
+      </Text>
+
+      <ExpandRegistryContext.Provider value={registryRef.current}>
+        <Stack gap="md">
+          {hasRemaining ? (
+            incompleteNodes.map((node, idx) => {
+              const nodeKey = getStableNodeKey(node, `root:${idx}`);
+              return (
+                <RequirementNode
+                  key={nodeKey}
+                  nodeKey={nodeKey}
+                  node={node}
+                  cache={cache}
+                  completedCourses={completedSet}
+                  selectedPerRequirement={selectedPerRequirement}
+                  onSelect={onSelect}
+                  selectedOptionsPerRequirement={selectedOptionsPerRequirement}
+                  onSelectOption={onSelectOption}
+                  activeBranch
+                  prereqEligible={prereqEligible}
+                  levelBuckets={["undergrad", "grad"]}
+                  languageBuckets={["en", "fr", "other"]}
+                  electiveLevelBuckets={[]}
+                  unassignedCompletedSet={unassignedCompletedSet}
+                  unassignedCompletedSetNormalized={
+                    unassignedCompletedSetNormalized
+                  }
+                  allAssignedCoursesNormalized={allAssignedCoursesNormalized}
+                  includeClosedComponents
+                  completedOnly
+                />
+              );
+            })
+          ) : (
+            <Text size="sm" c="dimmed">
+              All requirements are currently satisfied by your completed
+              courses.
+            </Text>
+          )}
+        </Stack>
+      </ExpandRegistryContext.Provider>
+
+      {hasCompleted && (
+        <Paper
+          p="sm"
+          withBorder
+          radius={0}
+          style={{
+            backgroundColor: completedOpen
+              ? "var(--mantine-color-dark-6)"
+              : "var(--mantine-color-dark-8)",
+            cursor: "pointer",
+          }}
+          onClick={(e: MouseEvent) => {
+            e.stopPropagation();
+            setCompletedOpen((o) => !o);
+          }}
+        >
+          <Group
+            justify="space-between"
+            align="center"
+            mb={completedOpen ? "sm" : 0}
+          >
+            <Group gap="xs" align="center">
+              <IconChevronDown
+                size={14}
+                style={{
+                  transform: completedOpen ? "rotate(0deg)" : "rotate(-90deg)",
+                  transition: "transform 150ms ease",
+                }}
+              />
+              <Text fw={600} size="sm">
+                {completedRequirementsList.length}/{totalRequirements || "—"}{" "}
+                completed requirements
+              </Text>
+            </Group>
+            <Badge size="sm" variant="light" color="green">
+              {completedOpen ? "Hide details" : "Show details"}
+            </Badge>
+          </Group>
+          <Collapse in={completedOpen}>
+            <Stack gap={0} mt="sm">
+              {completedRequirementsList.map((item, idx) => (
+                <Box
+                  key={`${(item.title ?? "").trim()}:${item.satisfiedBy
+                    .slice()
+                    .sort()
+                    .join(",")}:${idx}`}
+                  px="sm"
+                  py={6}
+                  style={{
+                    backgroundColor:
+                      idx % 2 === 0
+                        ? "var(--mantine-color-dark-6)"
+                        : "var(--mantine-color-dark-7)",
+                    borderTop:
+                      idx === 0
+                        ? "1px solid var(--mantine-color-dark-4)"
+                        : "none",
+                    borderBottom: "1px solid var(--mantine-color-dark-4)",
+                  }}
+                >
+                  <Group justify="space-between" wrap="nowrap" align="center">
+                    <Text size="sm" lineClamp={2} style={{ flex: 1 }}>
+                      {item.title}
+                    </Text>
+                    <Group gap="xs" wrap="nowrap" align="center">
+                      <Text size="xs" c="dimmed">
+                        {item.satisfiedBy.sort().join(", ")}
+                      </Text>
+                      <Badge color="green" variant="light" size="sm">
+                        Complete
+                      </Badge>
+                    </Group>
+                  </Group>
+                </Box>
+              ))}
+            </Stack>
+          </Collapse>
+        </Paper>
+      )}
+    </Stack>
+  );
+}

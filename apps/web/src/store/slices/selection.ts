@@ -39,6 +39,7 @@ export interface SelectionSlice {
   addCompletedCourse: AppStore["addCompletedCourse"];
   removeCompletedCourse: AppStore["removeCompletedCourse"];
   setSelectedForRequirement: AppStore["setSelectedForRequirement"];
+  setConstrainedForRequirement: AppStore["setConstrainedForRequirement"];
   setSelectedOptionForRequirement: AppStore["setSelectedOptionForRequirement"];
   setCoursesThisSemester: AppStore["setCoursesThisSemester"];
   setLevelBuckets: AppStore["setLevelBuckets"];
@@ -54,7 +55,7 @@ export const createSelectionSlice: StateCreator<
 > = (set, get) => ({
   setProgram: (program) => {
     const studentPrograms = getDisciplineCodesForProgram(program);
-    set({ program, studentPrograms });
+    set({ program, studentPrograms, constrainedPerRequirement: {} });
     const {
       cache,
       completedCourses,
@@ -248,6 +249,15 @@ export const createSelectionSlice: StateCreator<
       selectedOptionsPerRequirement: {
         ...s.selectedOptionsPerRequirement,
         [requirementId]: optionIndex,
+      },
+    }));
+  },
+
+  setConstrainedForRequirement: (requirementId, courses) => {
+    set((s) => ({
+      constrainedPerRequirement: {
+        ...s.constrainedPerRequirement,
+        [requirementId]: courses,
       },
     }));
   },

@@ -78,6 +78,16 @@ export const createUrlSlice: StateCreator<
       if (valid.length) selectedPerRequirement[reqId] = valid;
     }
 
+    const constrainedPerRequirement: Record<string, string[]> = {};
+    for (const { reqIndex, courseCodes } of decoded.constrainedSelections) {
+      const reqId = reqIndexToId.get(reqIndex);
+      if (reqId == null) continue;
+      const valid = courseCodes.filter(
+        (code) => isOptCourse(normalizeCourseCode(code)) || inCatalogue.has(code),
+      );
+      if (valid.length) constrainedPerRequirement[reqId] = valid;
+    }
+
     const full = recomputeStateForProgram(
       program,
       decoded.completedCourseCodes,
@@ -105,6 +115,7 @@ export const createUrlSlice: StateCreator<
       generatedSchedules: [],
       generationError: null,
       generationErrorDetails: null,
+      constrainedPerRequirement,
       ...(decoded.selectedTermId != null ? { selectedTermId: decoded.selectedTermId } : {}),
       ...(decoded.firstYear != null ? { firstYear: decoded.firstYear } : {}),
       ...full,
@@ -127,6 +138,7 @@ export const createUrlSlice: StateCreator<
       generationSeed: s.generationSeed >>> 0,
       selectedPerRequirement: s.selectedPerRequirement,
       selectedOptionsPerRequirement: s.selectedOptionsPerRequirement,
+      constrainedPerRequirement: s.constrainedPerRequirement,
       requirementTreeWithStatus: s.requirementTreeWithStatus,
       remainingRequirements: s.remainingRequirements,
       includeClosedComponents: s.includeClosedComponents,
@@ -155,6 +167,7 @@ export const createUrlSlice: StateCreator<
       generationSeed: s.generationSeed >>> 0,
       selectedPerRequirement: s.selectedPerRequirement,
       selectedOptionsPerRequirement: s.selectedOptionsPerRequirement,
+      constrainedPerRequirement: s.constrainedPerRequirement,
       requirementTreeWithStatus: s.requirementTreeWithStatus,
       remainingRequirements: s.remainingRequirements,
       includeClosedComponents: s.includeClosedComponents,

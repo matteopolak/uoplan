@@ -245,7 +245,7 @@ describe('schedule generation respects per-category limits', () => {
 
     const store = useAppStore;
 
-    // Pin CSI 4101 via selectedPerRequirement to simulate the user explicitly
+    // Pin CSI 4101 via constrainedPerRequirement to simulate the user explicitly
     // choosing it. The generator should treat it as pinned and only pull one
     // additional CSI course from the pools, plus enough non-computing courses
     // to reach the term target. Use 3 courses so: 1 pinned CSI + 2 from pools.
@@ -259,7 +259,8 @@ describe('schedule generation respects per-category limits', () => {
       remainingRequirements: remaining,
       requirementTreeWithStatus: [],
       completedRequirementsList: [],
-      selectedPerRequirement: { [csiReqId]: ['CSI 4101'] },
+      selectedPerRequirement: {},
+      constrainedPerRequirement: { [csiReqId]: ['CSI 4101'] },
       selectedOptionsPerRequirement: {},
       prereqEligibleCourses: testCatalogue.courses.map((c) => c.code),
       filteredPrereqEligibleCourses: testCatalogue.courses.map((c) => c.code),

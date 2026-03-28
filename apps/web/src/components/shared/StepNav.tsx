@@ -5,7 +5,8 @@ export const STEPS = [
   { label: "Term", description: "Choose term" },
   { label: "Program", description: "Choose your program" },
   { label: "Completed", description: "Mark completed courses" },
-  { label: "Requirements", description: "Select courses" },
+  { label: "Assign", description: "Assign completed courses" },
+  { label: "Constrain", description: "Constrain schedule generation" },
   { label: "Generate", description: "Choose count and generate" },
 ] as const;
 

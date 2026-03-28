@@ -7,3 +7,4 @@
 | [schedule-generation.md](./schedule-generation.md) | Schedule generation algorithm and constraints |
 | [state-encoding.md](./state-encoding.md) | Binary state encoding for URL sharing and localStorage persistence |
 | [store-architecture.md](./store-architecture.md) | Zustand slice pattern and application state management |
+| [requirements-steps.md](./requirements-steps.md) | Assign and Constrain wizard steps — state, semantics, and how to change constraint logic |

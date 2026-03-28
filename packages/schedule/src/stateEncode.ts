@@ -32,7 +32,7 @@ function programSlug(p: Program): string {
   return (p as Program & { slug?: string }).slug ?? urlToSlug(p.url);
 }
 
-const VERSION = 6;
+const VERSION = 7;
 const MAX_U16 = 0xffff;
 const MAX_U32 = 0xffffffff;
 /** Sentinel base for OPT transfer credit codes. Level 1000 → 0xFFF1, 2000 → 0xFFF2, etc. */
@@ -51,6 +51,7 @@ export interface EncodeInput {
   generationSeed: number;
   selectedPerRequirement: Record<string, string[]>;
   selectedOptionsPerRequirement: Record<string, number>;
+  constrainedPerRequirement?: Record<string, string[]>;
   /** Full requirement tree; used to get stable ordering of all requirement IDs (including parents). */
   requirementTreeWithStatus: RequirementWithStatus[];
   remainingRequirements: RemainingRequirement[];
@@ -71,6 +72,7 @@ export interface DecodedState {
   generationSeed: number;
   optionSelections: Array<{ reqIndex: number; optionIndex: number }>;
   courseSelections: Array<{ reqIndex: number; courseCodes: string[] }>;
+  constrainedSelections: Array<{ reqIndex: number; courseCodes: string[] }>;
   includeClosedComponents: boolean;
   studentPrograms: string[];
 }
@@ -131,7 +133,7 @@ function readU32(view: DataView, offset: number): { value: number; next: number 
  * Encode user state to a compact binary format. Returns null if indices/catalogue
  * don't contain the current program or courses (e.g. program not in indices).
  *
- * Binary layout (VERSION 6):
+ * Binary layout (VERSION 7):
  *   U8  version
  *   U8  termId byte-length (0 = absent)
  *   [ASCII bytes for termId]
@@ -149,6 +151,7 @@ function readU32(view: DataView, offset: number): { value: number; next: number 
  *   U16 optionSelections count + [U16 reqIndex, U16 optionIndex × count]
  *   U16 courseSelections count + [U16 reqIndex, U16 count, U16 × count] × count
  *   U8  studentPrograms count + [U8 byteLen + ASCII bytes] × count
+ *   U16 constrainedSelections count + [U16 reqIndex, U16 count, U16 × count] × count
  */
 export function encodeState(
   input: EncodeInput,
@@ -193,7 +196,14 @@ export function encodeState(
       }
       return n;
     })()) +
-    (1 + input.studentPrograms.reduce((acc, p) => acc + 1 + p.length, 0));
+    (1 + input.studentPrograms.reduce((acc, p) => acc + 1 + p.length, 0)) +
+    (2 + (() => {
+      let n = 0;
+      for (const arr of Object.values(input.constrainedPerRequirement ?? {})) {
+        n += 2 + 2 + arr.length * 2;
+      }
+      return n;
+    })());
 
   const buffer = new ArrayBuffer(Math.max(256, size));
   const view = new DataView(buffer);
@@ -269,6 +279,26 @@ export function encodeState(
     for (let i = 0; i < code.length; i++) {
       off = writeU8(view, off, code.charCodeAt(i));
     }
+  }
+
+  // Constrained selections: same format as courseSelections.
+  const constrainedEntries: Array<{ reqIndex: number; courseIndices: number[] }> = [];
+  for (const [reqId, codes] of Object.entries(input.constrainedPerRequirement ?? {})) {
+    const reqIndex = reqIdToIndex.get(reqId);
+    if (reqIndex === undefined) continue;
+    const courseIndices = codes
+      .map((c) => {
+        if (isOptCourse(c)) return OPT_SENTINEL_BASE + Math.floor((getCourseLevel(c) ?? 1000) / 1000);
+        return courseCodeToIndex.get(c);
+      })
+      .filter((i): i is number => i !== undefined);
+    if (courseIndices.length) constrainedEntries.push({ reqIndex, courseIndices });
+  }
+  off = writeU16(view, off, constrainedEntries.length);
+  for (const { reqIndex, courseIndices } of constrainedEntries) {
+    off = writeU16(view, off, reqIndex);
+    off = writeU16(view, off, courseIndices.length);
+    for (const idx of courseIndices) off = writeU16(view, off, idx);
   }
 
   return new Uint8Array(buffer, 0, off);
@@ -479,6 +509,36 @@ export function decodeState(
     }
   }
 
+  // Constrained selections (VERSION 7+): same format as courseSelections.
+  const constrainedSelections: Array<{ reqIndex: number; courseCodes: string[] }> = [];
+  if (off + 2 <= buffer.length) {
+    const { value: constrainedCount, next: nCs } = readU16(view, off);
+    off = nCs;
+    const constrainedOptCounters = new Map<number, number>();
+    for (let i = 0; i < constrainedCount; i++) {
+      if (off + 2 + 2 > buffer.length) break;
+      const { value: reqIndex, next: nCr } = readU16(view, off);
+      off = nCr;
+      const { value: numCourses, next: nCn } = readU16(view, off);
+      off = nCn;
+      const courseCodes: string[] = [];
+      for (let j = 0; j < numCourses && off + 2 <= buffer.length; j++) {
+        const { value: idx, next: nCe } = readU16(view, off);
+        off = nCe;
+        if (idx > OPT_SENTINEL_BASE) {
+          const level = (idx - OPT_SENTINEL_BASE) * 1000;
+          const count = constrainedOptCounters.get(level) ?? 0;
+          constrainedOptCounters.set(level, count + 1);
+          courseCodes.push(`OPT ${level + count}`);
+        } else if (idx < indices.courses.length) {
+          const code = indices.courses[idx];
+          if (catalogue.courses.some((c) => c.code === code)) courseCodes.push(code);
+        }
+      }
+      constrainedSelections.push({ reqIndex, courseCodes });
+    }
+  }
+
   return {
     selectedTermId,
     firstYear,
@@ -492,6 +552,7 @@ export function decodeState(
     generationSeed,
     optionSelections,
     courseSelections,
+    constrainedSelections,
     includeClosedComponents,
     studentPrograms,
   };

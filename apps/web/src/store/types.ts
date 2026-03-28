@@ -34,6 +34,7 @@ export interface AppState {
   completedRequirementsList: CompletedRequirementItem[];
   selectedPerRequirement: Record<string, string[]>;
   selectedOptionsPerRequirement: Record<string, number>;
+  constrainedPerRequirement: Record<string, string[]>;
   coursesThisSemester: number;
   prereqEligibleCourses: string[];
   filteredPrereqEligibleCourses: string[];
@@ -81,6 +82,7 @@ export interface AppActions {
   addCompletedCourse: (code: string) => void;
   removeCompletedCourse: (code: string) => void;
   setSelectedForRequirement: (requirementId: string, courses: string[]) => void;
+  setConstrainedForRequirement: (requirementId: string, courses: string[]) => void;
   setSelectedOptionForRequirement: (
     requirementId: string,
     optionIndex: number,

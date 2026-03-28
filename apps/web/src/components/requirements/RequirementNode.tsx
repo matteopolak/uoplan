@@ -143,6 +143,8 @@ export interface RequirementNodeProps {
   /** Normalized course codes already assigned to any requirement (auto-matched or user-selected). */
   allAssignedCoursesNormalized: Set<string>;
   includeClosedComponents: boolean;
+  /** When true, restrict the dropdown to only courses in completedCourses (Assign step). */
+  completedOnly?: boolean;
 }
 
 export const RequirementNode = memo(function RequirementNode({
@@ -166,6 +168,7 @@ export const RequirementNode = memo(function RequirementNode({
   unassignedCompletedSetNormalized,
   allAssignedCoursesNormalized,
   includeClosedComponents,
+  completedOnly = false,
 }: RequirementNodeProps) {
   // If a parent (like an option) is responsible for selection UX, don't remove it,
   // but we still want to reduce *nested* single-child wrappers inside it.
@@ -277,12 +280,11 @@ export const RequirementNode = memo(function RequirementNode({
       node.candidateCourses
         ?.filter((c) => prereqEligible.has(c))
         .filter((c) => {
-          if (
+          const isCompleted =
             isCompletedCourse(c) ||
-            unassignedCompletedSetNormalized.has(normalizeCourseCode(c))
-          ) {
-            return true;
-          }
+            unassignedCompletedSetNormalized.has(normalizeCourseCode(c));
+          if (completedOnly) return isCompleted;
+          if (isCompleted) return true;
           if (!courseMatchesFilters(c, { levels: levelBuckets, languageBuckets }))
             return false;
           if (cache && !getEffectiveSchedule(cache, c, includeClosedComponents)) {
@@ -353,6 +355,7 @@ export const RequirementNode = memo(function RequirementNode({
     unassignedCompletedSetNormalized,
     allAssignedCoursesNormalized,
     includeClosedComponents,
+    completedOnly,
     selected,
   ]);
 
@@ -599,6 +602,7 @@ export const RequirementNode = memo(function RequirementNode({
                     }
                     allAssignedCoursesNormalized={allAssignedCoursesNormalized}
                     includeClosedComponents={includeClosedComponents}
+                    completedOnly={completedOnly}
                     radio={
                       node.requirementId != null && !node.complete
                         ? {
@@ -750,6 +754,7 @@ export const RequirementNode = memo(function RequirementNode({
                     }
                     allAssignedCoursesNormalized={allAssignedCoursesNormalized}
                     includeClosedComponents={includeClosedComponents}
+                    completedOnly={completedOnly}
                     radio={
                       node.requirementId != null && !node.complete
                         ? {
@@ -859,6 +864,7 @@ export const RequirementNode = memo(function RequirementNode({
                   }
                   allAssignedCoursesNormalized={allAssignedCoursesNormalized}
                   includeClosedComponents={includeClosedComponents}
+                  completedOnly={completedOnly}
                 />
               );
             })}
@@ -972,6 +978,7 @@ export const RequirementNode = memo(function RequirementNode({
                     }
                     allAssignedCoursesNormalized={allAssignedCoursesNormalized}
                     includeClosedComponents={includeClosedComponents}
+                    completedOnly={completedOnly}
                   />
                 );
               })}

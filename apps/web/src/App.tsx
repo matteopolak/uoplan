@@ -23,7 +23,8 @@ import { CalendarPage } from "./components/calendar/CalendarPage";
 import { TermStep } from "./components/steps/TermStep";
 import { ProgramStep } from "./components/steps/ProgramStep";
 import { CompletedCoursesStep } from "./components/steps/CompletedCoursesStep";
-import { RequirementsStep } from "./components/requirements/RequirementsStep";
+import { AssignStep } from "./components/requirements/AssignStep";
+import { ConstrainStep } from "./components/requirements/ConstrainStep";
 import { ScheduleCountStep } from "./components/steps/ScheduleCountStep";
 import { usePersistState } from "./hooks/usePersistState";
 import { useNavHistory } from "./hooks/useNavHistory";
@@ -46,6 +47,7 @@ function App() {
     completedRequirementsList,
     unassignedCompletedCourses,
     selectedPerRequirement,
+    constrainedPerRequirement,
     selectedOptionsPerRequirement,
     coursesThisSemester,
     generationMinStartMinutes,
@@ -78,6 +80,7 @@ function App() {
       completedRequirementsList: s.completedRequirementsList,
       unassignedCompletedCourses: s.unassignedCompletedCourses,
       selectedPerRequirement: s.selectedPerRequirement,
+      constrainedPerRequirement: s.constrainedPerRequirement,
       selectedOptionsPerRequirement: s.selectedOptionsPerRequirement,
       coursesThisSemester: s.coursesThisSemester,
       generationMinStartMinutes: s.generationMinStartMinutes,
@@ -103,6 +106,7 @@ function App() {
   const setSelectedTermId = useAppStore((s) => s.setSelectedTermId);
   const setCompletedCourses = useAppStore((s) => s.setCompletedCourses);
   const setSelectedForRequirement = useAppStore((s) => s.setSelectedForRequirement);
+  const setConstrainedForRequirement = useAppStore((s) => s.setConstrainedForRequirement);
   const setCoursesThisSemester = useAppStore((s) => s.setCoursesThisSemester);
   const setSelectedOptionForRequirement = useAppStore((s) => s.setSelectedOptionForRequirement);
   const generateSchedules = useAppStore((s) => s.generateSchedules);
@@ -138,7 +142,9 @@ function App() {
   const programs = catalogue?.programs ?? [];
   const hasTerms = (terms?.length ?? 0) > 0;
   const canProceedFromStep =
-    active !== 0 || (hasTerms && Boolean(selectedTermId) && Boolean(cache));
+    active === 3
+      ? unassignedCompletedCourses.length === 0
+      : active !== 0 || (hasTerms && Boolean(selectedTermId) && Boolean(cache));
 
   const handleGenerate = () => {
     setGenerating(true);
@@ -399,7 +405,7 @@ function App() {
                 )}
                 {active === 3 && (
                   <Stack gap="md">
-                    <RequirementsStep
+                    <AssignStep
                       cache={cache}
                       remainingRequirements={remainingRequirements}
                       requirementTreeWithStatus={requirementTreeWithStatus}
@@ -408,9 +414,24 @@ function App() {
                       unassignedCompletedCourses={unassignedCompletedCourses}
                       selectedPerRequirement={selectedPerRequirement}
                       onSelect={setSelectedForRequirement}
-                      selectedOptionsPerRequirement={
-                        selectedOptionsPerRequirement
-                      }
+                      selectedOptionsPerRequirement={selectedOptionsPerRequirement}
+                      onSelectOption={setSelectedOptionForRequirement}
+                      prereqEligibleCourses={filteredPrereqEligibleCourses}
+                    />
+                  </Stack>
+                )}
+                {active === 4 && (
+                  <Stack gap="md">
+                    <ConstrainStep
+                      cache={cache}
+                      remainingRequirements={remainingRequirements}
+                      requirementTreeWithStatus={requirementTreeWithStatus}
+                      completedRequirementsList={completedRequirementsList}
+                      completedCourses={completedCourses}
+                      selectedPerRequirement={selectedPerRequirement}
+                      constrainedPerRequirement={constrainedPerRequirement}
+                      onConstrain={setConstrainedForRequirement}
+                      selectedOptionsPerRequirement={selectedOptionsPerRequirement}
                       onSelectOption={setSelectedOptionForRequirement}
                       prereqEligibleCourses={filteredPrereqEligibleCourses}
                       levelBuckets={levelBuckets}
@@ -420,13 +441,11 @@ function App() {
                       electiveLevelBuckets={electiveLevelBuckets}
                       onChangeElectiveLevelBuckets={setElectiveLevelBuckets}
                       includeClosedComponents={includeClosedComponents}
-                      onIncludeClosedComponentsChange={
-                        setIncludeClosedComponents
-                      }
+                      onIncludeClosedComponentsChange={setIncludeClosedComponents}
                     />
                   </Stack>
                 )}
-                {active === 4 && (
+                {active === 5 && (
                   <Stack gap="md">
                     <ScheduleCountStep
                       coursesThisSemester={coursesThisSemester}
