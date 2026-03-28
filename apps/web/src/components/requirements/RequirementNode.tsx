@@ -145,6 +145,8 @@ export interface RequirementNodeProps {
   includeClosedComponents: boolean;
   /** When true, restrict the dropdown to only courses in completedCourses (Assign step). */
   completedOnly?: boolean;
+  /** When true, hide the course-selection dropdown and credits prompts (Options step). */
+  hideSelection?: boolean;
 }
 
 export const RequirementNode = memo(function RequirementNode({
@@ -169,6 +171,7 @@ export const RequirementNode = memo(function RequirementNode({
   allAssignedCoursesNormalized,
   includeClosedComponents,
   completedOnly = false,
+  hideSelection = false,
 }: RequirementNodeProps) {
   // If a parent (like an option) is responsible for selection UX, don't remove it,
   // but we still want to reduce *nested* single-child wrappers inside it.
@@ -603,6 +606,7 @@ export const RequirementNode = memo(function RequirementNode({
                     allAssignedCoursesNormalized={allAssignedCoursesNormalized}
                     includeClosedComponents={includeClosedComponents}
                     completedOnly={completedOnly}
+                    hideSelection={hideSelection}
                     radio={
                       node.requirementId != null && !node.complete
                         ? {
@@ -755,6 +759,7 @@ export const RequirementNode = memo(function RequirementNode({
                     allAssignedCoursesNormalized={allAssignedCoursesNormalized}
                     includeClosedComponents={includeClosedComponents}
                     completedOnly={completedOnly}
+                    hideSelection={hideSelection}
                     radio={
                       node.requirementId != null && !node.complete
                         ? {
@@ -865,6 +870,7 @@ export const RequirementNode = memo(function RequirementNode({
                   allAssignedCoursesNormalized={allAssignedCoursesNormalized}
                   includeClosedComponents={includeClosedComponents}
                   completedOnly={completedOnly}
+                  hideSelection={hideSelection}
                 />
               );
             })}
@@ -936,14 +942,14 @@ export const RequirementNode = memo(function RequirementNode({
             <Badge color="teal" variant="light" size="sm">
               Satisfied
             </Badge>
-          ) : hasRequirementId && creditsRemaining > 0 ? (
+          ) : hasRequirementId && creditsRemaining > 0 && !hideSelection ? (
             <Badge color="blue" variant="light" size="sm">
               {creditsRemaining} credit{creditsRemaining !== 1 ? "s" : ""}{" "}
               needed
             </Badge>
           ) : null}
         </Group>
-        {multiSelectBlock}
+        {!hideSelection && multiSelectBlock}
         {hasOptions && (node.type === "pick" || node.type === "group") && (
           <Collapse in={opened}>
             <Stack gap="xs" pl="xs">

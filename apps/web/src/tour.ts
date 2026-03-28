@@ -53,7 +53,7 @@ const TOUR_STEPS = [
   },
 ];
 
-const WIZARD_STEP_COUNT = 5;
+const WIZARD_STEP_COUNT = 6;
 
 /**
  * Runs the first-time user tour. Syncs the wizard step with tour progress so

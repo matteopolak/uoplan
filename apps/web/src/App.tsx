@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Badge,
@@ -25,6 +25,8 @@ import { ProgramStep } from "./components/steps/ProgramStep";
 import { CompletedCoursesStep } from "./components/steps/CompletedCoursesStep";
 import { AssignStep } from "./components/requirements/AssignStep";
 import { ConstrainStep } from "./components/requirements/ConstrainStep";
+import { OptionsStep } from "./components/requirements/OptionsStep";
+import { hasMissingOptionSelections } from "./components/requirements/requirementUtils";
 import { ScheduleCountStep } from "./components/steps/ScheduleCountStep";
 import { usePersistState } from "./hooks/usePersistState";
 import { useNavHistory } from "./hooks/useNavHistory";
@@ -141,10 +143,18 @@ function App() {
 
   const programs = catalogue?.programs ?? [];
   const hasTerms = (terms?.length ?? 0) > 0;
-  const canProceedFromStep =
-    active === 3
-      ? unassignedCompletedCourses.length === 0
-      : active !== 0 || (hasTerms && Boolean(selectedTermId) && Boolean(cache));
+
+  const missingOptions = useMemo(
+    () => hasMissingOptionSelections(requirementTreeWithStatus, selectedOptionsPerRequirement),
+    [requirementTreeWithStatus, selectedOptionsPerRequirement],
+  );
+
+  const canProceedFromStep = (() => {
+    if (active === 0) return hasTerms && Boolean(selectedTermId) && Boolean(cache);
+    if (active === 3) return !missingOptions;
+    if (active === 4) return unassignedCompletedCourses.length === 0;
+    return true;
+  })();
 
   const handleGenerate = () => {
     setGenerating(true);
@@ -405,6 +415,16 @@ function App() {
                 )}
                 {active === 3 && (
                   <Stack gap="md">
+                    <OptionsStep
+                      requirementTreeWithStatus={requirementTreeWithStatus}
+                      completedCourses={completedCourses}
+                      selectedOptionsPerRequirement={selectedOptionsPerRequirement}
+                      onSelectOption={setSelectedOptionForRequirement}
+                    />
+                  </Stack>
+                )}
+                {active === 4 && (
+                  <Stack gap="md">
                     <AssignStep
                       cache={cache}
                       remainingRequirements={remainingRequirements}
@@ -420,7 +440,7 @@ function App() {
                     />
                   </Stack>
                 )}
-                {active === 4 && (
+                {active === 5 && (
                   <Stack gap="md">
                     <ConstrainStep
                       cache={cache}
@@ -445,7 +465,7 @@ function App() {
                     />
                   </Stack>
                 )}
-                {active === 5 && (
+                {active === 6 && (
                   <Stack gap="md">
                     <ScheduleCountStep
                       coursesThisSemester={coursesThisSemester}
