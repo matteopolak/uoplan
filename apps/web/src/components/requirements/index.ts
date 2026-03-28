@@ -2,6 +2,7 @@
  * Requirements components index.
  */
 export { RequirementsStep } from "./RequirementsStep";
+export { OptionsStep } from "./OptionsStep";
 export {
   RequirementNode,
   ExpandRegistryContext,

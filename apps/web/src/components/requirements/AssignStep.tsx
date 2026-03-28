@@ -23,6 +23,7 @@ import {
   getStableNodeKey,
   type ExpandRegistry,
 } from "./RequirementNode";
+import { applyOptionSelections } from "./requirementUtils";
 import { useState } from "react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -74,6 +75,11 @@ export function AssignStep({
     unassignedCompletedCourses.map((c) => normalizeCourseCode(c)),
   );
 
+  const flattenedTree = useMemo(
+    () => applyOptionSelections(requirementTreeWithStatus, selectedOptionsPerRequirement),
+    [requirementTreeWithStatus, selectedOptionsPerRequirement],
+  );
+
   const allAssignedCoursesNormalized = useMemo(() => {
     const set = new Set<string>();
     const walk = (nodes: RequirementWithStatus[]) => {
@@ -87,15 +93,15 @@ export function AssignStep({
         if (node.options?.length) walk(node.options);
       }
     };
-    walk(requirementTreeWithStatus);
+    walk(flattenedTree);
     for (const codes of Object.values(selectedPerRequirement)) {
       for (const code of codes) set.add(normalizeCourseCode(code));
     }
     return set;
-  }, [requirementTreeWithStatus, selectedPerRequirement]);
+  }, [flattenedTree, selectedPerRequirement]);
 
-  const hasTree = requirementTreeWithStatus.length > 0;
-  const incompleteNodes = requirementTreeWithStatus.filter(
+  const hasTree = flattenedTree.length > 0;
+  const incompleteNodes = flattenedTree.filter(
     (node) => !node.complete,
   );
   const hasRemaining = incompleteNodes.length > 0;
@@ -114,13 +120,13 @@ export function AssignStep({
   );
   const extraNodeCount = useMemo(
     () =>
-      requirementTreeWithStatus.filter(
+      flattenedTree.filter(
         (n) =>
           n.requirementId != null &&
           !n.complete &&
           !remainingReqIds.has(n.requirementId),
       ).length,
-    [requirementTreeWithStatus, remainingReqIds],
+    [flattenedTree, remainingReqIds],
   );
   const totalRequirements =
     completedRequirementsList.length + remainingRequirements.length + extraNodeCount;

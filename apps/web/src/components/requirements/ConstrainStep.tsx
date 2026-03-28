@@ -27,6 +27,7 @@ import {
   getNodeDisplayTitle,
   type ExpandRegistry,
 } from "./RequirementNode";
+import { applyOptionSelections } from "./requirementUtils";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -238,13 +239,20 @@ export function ConstrainStep({
   const completedSet = new Set(completedCourses);
   const prereqEligible = new Set(prereqEligibleCourses);
 
+  // Flatten option selections so or_group/options_group parents are replaced
+  // by their selected child branch (chosen in the Options step).
+  const flattenedTree = useMemo(
+    () => applyOptionSelections(requirementTreeWithStatus, selectedOptionsPerRequirement),
+    [requirementTreeWithStatus, selectedOptionsPerRequirement],
+  );
+
   // Adjust tree to reflect manual assignments from the Assign step.
   const adjustedTree = useMemo(
     () =>
-      requirementTreeWithStatus.map((node) =>
+      flattenedTree.map((node) =>
         adjustNodeForAssignments(node, selectedPerRequirement, cache),
       ),
-    [requirementTreeWithStatus, selectedPerRequirement, cache],
+    [flattenedTree, selectedPerRequirement, cache],
   );
 
   const hasTree = adjustedTree.length > 0;
@@ -253,7 +261,7 @@ export function ConstrainStep({
   // Top-level tree nodes that were originally incomplete but became complete via adjustment.
   const newlyCompleteNodes = useMemo(() => {
     const originalCompleteIds = new Set(
-      requirementTreeWithStatus
+      flattenedTree
         .filter((n) => n.complete)
         .map((n) => n.requirementId)
         .filter((id): id is string => id != null),
@@ -264,7 +272,7 @@ export function ConstrainStep({
         node.requirementId != null &&
         !originalCompleteIds.has(node.requirementId),
     );
-  }, [adjustedTree, requirementTreeWithStatus]);
+  }, [adjustedTree, flattenedTree]);
 
   const assignmentCompletedItems: CompletedRequirementItem[] = useMemo(
     () =>
@@ -298,13 +306,13 @@ export function ConstrainStep({
   );
   const extraNodeCount = useMemo(
     () =>
-      requirementTreeWithStatus.filter(
+      flattenedTree.filter(
         (n) =>
           n.requirementId != null &&
           !n.complete &&
           !remainingReqIds.has(n.requirementId),
       ).length,
-    [requirementTreeWithStatus, remainingReqIds],
+    [flattenedTree, remainingReqIds],
   );
   const totalRequirements =
     completedRequirementsList.length + remainingRequirements.length + extraNodeCount;

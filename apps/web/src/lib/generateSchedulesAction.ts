@@ -6,12 +6,74 @@ import {
   getValidSectionCombos,
   type GeneratedSchedule,
   type GenerationConstraints,
+  type RequirementWithStatus,
+  type RemainingRequirement,
 } from "schedule";
 import { cacheWithClosedFilter, getEffectiveSchedule } from "schedule";
 import { courseMatchesFilters } from "schedule";
 import { normalizeCourseCode } from "schedule";
 import { buildRequirementPools, computeCoursesPerPool, shuffleInPlace, type RequirementPool } from "../store/scheduleHelpers";
 import { isHonoursProject } from "schedule";
+
+/**
+ * Walks the requirement tree following the user's option selections and
+ * collects requirements (with candidateCourses) that are inside selected
+ * option branches but NOT yet in remainingRequirements (because they were
+ * processed with dryRun:true and never added to the flat list).
+ */
+function collectRequirementsFromSelectedBranches(
+  nodes: RequirementWithStatus[],
+  selectedOptions: Record<string, number>,
+  existingIds: Set<string>,
+): RemainingRequirement[] {
+  const result: RemainingRequirement[] = [];
+  for (const node of nodes) {
+    if (node.complete) continue;
+    const isOrLike = node.type === "or_group" || node.type === "options_group";
+    if (isOrLike && node.requirementId != null) {
+      // Follow only the selected branch; skip if no selection yet.
+      const sel = selectedOptions[node.requirementId];
+      if (sel != null && node.options?.[sel]) {
+        result.push(
+          ...collectRequirementsFromSelectedBranches(
+            [node.options[sel]],
+            selectedOptions,
+            existingIds,
+          ),
+        );
+      }
+    } else {
+      // Add this node if it is a trackable leaf requirement.
+      if (
+        node.requirementId != null &&
+        !existingIds.has(node.requirementId) &&
+        node.candidateCourses?.length &&
+        (node.creditsNeeded ?? 0) > 0
+      ) {
+        existingIds.add(node.requirementId);
+        result.push({
+          requirementId: node.requirementId,
+          type: node.type,
+          title: node.title,
+          candidateCourses: node.candidateCourses,
+          creditsNeeded: node.creditsNeeded,
+          satisfiedBy: node.satisfiedBy ?? [],
+        });
+      }
+      // Always recurse into children of container nodes (e.g. and_group).
+      if (node.options?.length) {
+        result.push(
+          ...collectRequirementsFromSelectedBranches(
+            node.options,
+            selectedOptions,
+            existingIds,
+          ),
+        );
+      }
+    }
+  }
+  return result;
+}
 
 export interface GenerateSchedulesResult {
   generatedSchedules: GeneratedSchedule[];
@@ -60,6 +122,20 @@ export async function generateSchedulesAction(
 
   if (!cache) return null;
   const cacheVal = cache;
+
+  // Supplement remainingRequirements with requirements from within selected
+  // option branches (options_group / or_group children processed with dryRun).
+  const existingReqIds = new Set(
+    remainingRequirements
+      .map((r) => r.requirementId)
+      .filter((id): id is string => id != null),
+  );
+  const branchRequirements = collectRequirementsFromSelectedBranches(
+    requirementTreeWithStatus,
+    selectedOptionsPerRequirement,
+    existingReqIds,
+  );
+  const effectiveRemainingRequirements = [...remainingRequirements, ...branchRequirements];
   const effectiveCache = cacheWithClosedFilter(
     cacheVal,
     includeClosedComponents,
@@ -125,7 +201,7 @@ export async function generateSchedulesAction(
   // within budget (constrained count ≤ courses needed for that requirement).
   const globalPinned: string[] = [];
   for (const [reqId, constrainedCodes] of Object.entries(constrainedPerRequirement)) {
-    const req = remainingRequirements.find((r) => r.requirementId === reqId);
+    const req = effectiveRemainingRequirements.find((r) => r.requirementId === reqId);
     const creditsNeeded = req?.creditsNeeded ?? 3;
     const coursesNeeded = Math.ceil(creditsNeeded / 3);
     const constrainedSchedulable = constrainedCodes.filter(
@@ -296,7 +372,7 @@ export async function generateSchedulesAction(
   }
 
   if (remainingNeeded > 0) {
-    const allPools = buildRequirementPools(remainingRequirements);
+    const allPools = buildRequirementPools(effectiveRemainingRequirements);
 
     let pools: RequirementPool[] = allPools
       .map((pool) => {
