@@ -53,7 +53,7 @@ The helper `urlToSlug(url)` in `stateEncode.ts` performs this conversion. Progra
 
 - **Add a new field**: bump `VERSION`, add to `EncodeInput` and `DecodedState`, encode/decode it in `encodeState`/`decodeState`, and update `getEncodedStateBase64` + `getShareUrl` in `appStore.ts`. If the field is needed before catalogue load, also update `peekTermAndYear`.
 - **Change the program index format**: update `encodeState` (uses `programSlug()`), `decodeState` (uses slug lookup), and regenerate `indices.json` via `pnpm scrape:catalogue`.
-- **Regenerate indices.json**: run `pnpm scrape:catalogue` — `scripts/scraper.ts` now calls `generateIndices()` automatically after scraping the current year.
+- **Regenerate indices.json**: run `pnpm scrape:catalogue` — [`apps/scrapers/src/scraper.ts`](../apps/scrapers/src/scraper.ts) calls `generateIndices()` after the scrape. It **merges** with any existing `indices.json`: existing entries keep their order and indices; for each `catalogue.YYYY.json` present under `public/data` (academic years ascending), course codes and program slugs not already seen are **appended** in file order within each year (so encoded URLs and localStorage stay stable as catalogues grow). Years without a file are skipped.
 
 ## Dependencies
 
