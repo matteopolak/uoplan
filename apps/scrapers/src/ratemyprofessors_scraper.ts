@@ -131,7 +131,7 @@ async function main(): Promise<void> {
     }
 
     const nodes = teachers.edges.map((e) => ({
-      name: `${e.node.firstName} ${e.node.lastName}`,
+      name: `${e.node.firstName} ${e.node.lastName}`.trim().replace(/\s+/g, ' '),
       rating: e.node.avgRating,
       numRatings: e.node.numRatings,
     }));
