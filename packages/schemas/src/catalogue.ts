@@ -1,11 +1,21 @@
 import { z } from 'zod';
 
+/** Optional levels on non_course prerequisites (mirrors program discipline_elective shape). */
+export type CoursePrereqDisciplineLevel = {
+  discipline: string;
+  levels?: number[];
+};
+
 export type CoursePrereqNode = {
   type: 'course' | 'or_group' | 'and_group' | 'non_course';
   code?: string;
   text?: string;
   credits?: number;
   disciplines?: string[];
+  /** When set without disciplines: credits must be at these course levels (1000, 2000, …). */
+  levels?: number[];
+  /** Per-discipline level filters (e.g. CSI and SEG each at 3000/4000). */
+  disciplineLevels?: CoursePrereqDisciplineLevel[];
   programs?: string[];
   children?: CoursePrereqNode[];
 };
@@ -17,6 +27,15 @@ export const CoursePrereqNodeSchema: z.ZodType<CoursePrereqNode> = z.lazy(() =>
     text: z.string().optional(),
     credits: z.number().optional(),
     disciplines: z.array(z.string()).optional(),
+    levels: z.array(z.number()).optional(),
+    disciplineLevels: z
+      .array(
+        z.object({
+          discipline: z.string(),
+          levels: z.array(z.number()).optional(),
+        }),
+      )
+      .optional(),
     programs: z.array(z.string()).optional(),
     children: z.array(CoursePrereqNodeSchema).optional(),
   }),
