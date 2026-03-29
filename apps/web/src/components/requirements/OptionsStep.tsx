@@ -37,7 +37,7 @@ export function OptionsStep({
 
   if (relevantNodes.length === 0) {
     return (
-      <Alert color="blue" variant="light" radius={0}>
+      <Alert color="blue" variant="light" radius={0} data-tour="options">
         <Text size="sm">
           No options to configure for this program. Click Next to continue.
         </Text>

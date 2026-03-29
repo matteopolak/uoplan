@@ -111,8 +111,9 @@ function evaluateNonCourseRequirement(
   const credits = node.credits;
 
   if (credits == null) {
-    // Descriptive / unsupported non-course clauses should not block eligibility.
-    return true;
+    // Plain descriptive clauses (permission, standing, etc.) are not modeled;
+    // do not treat them as satisfied — course stays ineligible until we can evaluate.
+    return false;
   }
 
   return creditsMatchingNonCourse(node, ctx) >= credits;
@@ -138,6 +139,21 @@ export function meetsCoursePrereq(node: CoursePrereqNode, ctx: PrereqContext): b
     default:
       return true;
   }
+}
+
+/**
+ * True if the prerequisite tree contains any `non_course` node (standing,
+ * permission, etc.). Used to deprioritize those courses when sampling schedules.
+ */
+export function prerequisitesContainNonCourse(
+  node: CoursePrereqNode | undefined,
+): boolean {
+  if (!node) return false;
+  if (node.type === 'non_course') return true;
+  for (const child of node.children ?? []) {
+    if (prerequisitesContainNonCourse(child)) return true;
+  }
+  return false;
 }
 
 export function canTakeCourse(

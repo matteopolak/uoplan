@@ -11,24 +11,48 @@ import {
   type RequirementWithStatus,
   type RemainingRequirement,
 } from "schedule";
-import { cacheWithClosedFilter, getEffectiveSchedule } from "schedule";
+import { cacheWithClosedFilter, getCourseLevel, getEffectiveSchedule } from "schedule";
 import { courseMatchesFilters } from "schedule";
 import { normalizeCourseCode } from "schedule";
 import {
+  buildPoolCaps,
   buildRequirementPools,
   computeCoursesPerPool,
+  enumerateSingleRedistributions,
   isBroadElectivePoolType,
-  reorderGeneralPoolForDisciplineDiversity,
   shuffleInPlace,
+  weightedRandomPick,
   type RequirementPool,
 } from "../store/scheduleHelpers";
 import {
   isHonoursProject,
   mergeGlobalExplicitRule,
-  pickFromUserAndGeneralPools,
+  prerequisitesContainNonCourse,
+  splitRequiredAndGeneral,
 } from "schedule";
 import { collectImplicitHonoursForSchedule } from "./implicitHonours";
 import { diagnoseTimetableFailure, type TimetableFailureDiagnostics } from "schedule";
+
+const UNKNOWN_COURSE_LEVEL = 999_000;
+
+/** Each level tier is this many times less likely than the one below it. */
+const LEVEL_WEIGHT_BASE = 2;
+/** Penalty multiplier for courses with non-course prerequisites (e.g. "permission of instructor"). */
+const NON_COURSE_PREREQ_PENALTY = 0.3;
+/** Floor weight for courses whose level can't be parsed. */
+const UNKNOWN_LEVEL_FLOOR = 0.01;
+
+function levelSortKey(code: string): number {
+  return getCourseLevel(code) ?? UNKNOWN_COURSE_LEVEL;
+}
+
+function candidateWeight(level: number, hasNonCoursePrereq: boolean): number {
+  if (level >= UNKNOWN_COURSE_LEVEL) return UNKNOWN_LEVEL_FLOOR;
+  const tier = Math.max(1, Math.floor(level / 1000));
+  let w = 1 / Math.pow(LEVEL_WEIGHT_BASE, tier - 1);
+  if (hasNonCoursePrereq) w *= NON_COURSE_PREREQ_PENALTY;
+  return w;
+}
 
 /**
  * Walks the requirement tree following the user's option selections and
@@ -550,6 +574,31 @@ export async function generateSchedulesAction(
       remainingNeeded,
       cacheVal,
     );
+    const poolCaps = buildPoolCaps(pools);
+    const redistributionAlts = enumerateSingleRedistributions(
+      coursesPerPool,
+      pools,
+      poolCaps,
+    );
+
+    // Redistribution alternatives that specifically defer a higher-level required
+    // course (all its eligible candidates are 2000+) in favour of more electives.
+    // These are tried randomly on every attempt, not just on failure, so generated
+    // schedules sometimes omit the high-level requirement instead of always including it.
+    const highLevelPoolIds = new Set<string>();
+    for (const pool of pools) {
+      if (isBroadElectivePoolType(pool.type)) continue;
+      const candidates = candidatesByRequirement.get(pool.requirementId) ?? [];
+      if (candidates.length > 0 && candidates.every((c) => levelSortKey(c) >= 2000)) {
+        highLevelPoolIds.add(pool.requirementId);
+      }
+    }
+    const highLevelRedistAlts = redistributionAlts.filter((alt) =>
+      [...alt.entries()].some(
+        ([id, count]) =>
+          highLevelPoolIds.has(id) && count < (coursesPerPool.get(id) ?? 0),
+      ),
+    );
 
     const maxAttempts = appendFirstOnly ? 100 : 300;
     const targetUniqueSchedules = appendFirstOnly ? 1 : 5;
@@ -558,14 +607,53 @@ export async function generateSchedulesAction(
     const collectedPoolMaps: Record<string, string>[] = [];
     let lastFilteredPool: string[] = [];
 
-    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-      if (collectedSchedules.length >= targetUniqueSchedules) break;
-      if (attempt > 0 && attempt % 5 === 0) await yieldToMain();
+    type PoolPickFailureDetail = {
+      poolRequirementId: string;
+      poolLabel: string;
+      poolType: string;
+      need: number;
+      sAvailCount: number;
+      gAvailCount: number;
+      kUser: number;
+      kGeneral: number;
+      explicitOnly: boolean;
+    };
 
-      for (const list of candidatesByRequirement.values()) {
-        shuffleInPlace(list, rng);
-      }
+    type PoolPickPassResult =
+      | { ok: true; chosenFromPool: Record<string, string> }
+      | { ok: false; failure?: PoolPickFailureDetail };
 
+    function poolPickFailure(
+      pool: RequirementPool,
+      need: number,
+      sAvailLen: number,
+      gAvailLen: number,
+    ): PoolPickPassResult {
+      const { kUser, kGeneral } = splitRequiredAndGeneral(need, sAvailLen);
+      return {
+        ok: false,
+        failure: {
+          poolRequirementId: pool.requirementId,
+          poolLabel: pool.label,
+          poolType: String(pool.type),
+          need,
+          sAvailCount: sAvailLen,
+          gAvailCount: gAvailLen,
+          kUser,
+          kGeneral,
+          explicitOnly,
+        },
+      };
+    }
+
+    /**
+     * Picks courses across pools in level passes: exhaust 1000-level options
+     * first, then allow up to 2000, etc., then a final unrestricted pass
+     * (unparseable codes only match the last pass).
+     */
+    function runPoolPickPass(
+      perPoolNeed: Map<string, number>,
+    ): PoolPickPassResult {
       const chosenCodes = new Set<string>(pinned);
       const chosenFromPool: Record<string, string> = {};
       for (const code of pinned) {
@@ -574,11 +662,18 @@ export async function generateSchedulesAction(
         if (reqId) chosenFromPool[code] = reqId;
       }
 
-      let poolPickFailed = false;
+      const remaining = new Map<string, number>();
       for (const pool of pools) {
-        const need = coursesPerPool.get(pool.requirementId) ?? 0;
-        if (need <= 0) continue;
+        const n = perPoolNeed.get(pool.requirementId) ?? 0;
+        if (n > 0) remaining.set(pool.requirementId, n);
+      }
 
+      const totalRemaining = (): number =>
+        [...remaining.values()].reduce((a, b) => a + b, 0);
+
+      for (const pool of pools) {
+        const r = remaining.get(pool.requirementId) ?? 0;
+        if (r <= 0) continue;
         const constrainedForPool =
           constrainedPerRequirement[pool.requirementId] ?? [];
         const S = constrainedForPool.filter((code) =>
@@ -588,41 +683,168 @@ export async function generateSchedulesAction(
         const candidates =
           candidatesByRequirement.get(pool.requirementId) ?? [];
         const G = candidates.filter((code) => !sSet.has(code));
-
         const SAvail = S.filter((code) => !chosenCodes.has(code));
-        const sPick = [...SAvail];
-        shuffleInPlace(sPick, rng);
-
         let GAvail = G.filter((code) => !chosenCodes.has(code));
         if (explicitOnly) {
           GAvail = GAvail.filter((code) => explicitSet.has(code));
         }
-        shuffleInPlace(GAvail, rng);
-        if (isBroadElectivePoolType(pool.type)) {
-          reorderGeneralPoolForDisciplineDiversity(GAvail, chosenCodes);
-        }
-
-        const { userPicks, generalPicks, ok } = pickFromUserAndGeneralPools({
-          need,
-          sAvailOrdered: sPick,
-          gAvailOrdered: GAvail,
-        });
-        if (!ok) {
-          poolPickFailed = true;
-          break;
-        }
-        for (const code of userPicks) {
-          chosenCodes.add(code);
-          chosenFromPool[code] = pool.requirementId;
-        }
-        for (const code of generalPicks) {
-          chosenCodes.add(code);
-          chosenFromPool[code] = pool.requirementId;
+        const needS = Math.min(r, SAvail.length);
+        const needG = r - needS;
+        if (needG > GAvail.length) {
+          return poolPickFailure(pool, r, SAvail.length, GAvail.length);
         }
       }
 
-      if (poolPickFailed) {
+      type WeightedCand = {
+        pool: RequirementPool;
+        code: string;
+        weight: number;
+      };
+
+      while (totalRemaining() > 0) {
+        const cands: WeightedCand[] = [];
+
+        for (const pool of pools) {
+          const r = remaining.get(pool.requirementId) ?? 0;
+          if (r <= 0) continue;
+
+          const constrainedForPool =
+            constrainedPerRequirement[pool.requirementId] ?? [];
+          const S = constrainedForPool.filter((code) =>
+            isEligibleCandidate(code, pool.type),
+          );
+          const sSet = new Set(S);
+          const candidates =
+            candidatesByRequirement.get(pool.requirementId) ?? [];
+          const G = candidates.filter((code) => !sSet.has(code));
+
+          const SAvail = S.filter((code) => !chosenCodes.has(code));
+          let GAvail = G.filter((code) => !chosenCodes.has(code));
+          if (explicitOnly) {
+            GAvail = GAvail.filter((code) => explicitSet.has(code));
+          }
+
+          const needS = Math.min(r, SAvail.length);
+          const needG = r - needS;
+          if (needG > GAvail.length) {
+            return poolPickFailure(pool, r, SAvail.length, GAvail.length);
+          }
+
+          const pickFromS = needS > 0;
+          const list = pickFromS ? SAvail : GAvail;
+
+          // Count how many courses share each level bucket in this pool's list,
+          // so that the total weight per bucket is fixed regardless of how many
+          // courses exist at that level. Without this, a pool with 50 × 2000-level
+          // courses would dominate over 5 × 1000-level ones even with per-course
+          // level weights.
+          const levelCounts = new Map<number, number>();
+          for (const code of list) {
+            const lv = levelSortKey(code);
+            levelCounts.set(lv, (levelCounts.get(lv) ?? 0) + 1);
+          }
+
+          for (const code of list) {
+            const level = levelSortKey(code);
+            const hasNonCoursePrereq = prerequisitesContainNonCourse(
+              cacheVal.getCourse(code)?.prerequisites,
+            );
+            const bucketSize = levelCounts.get(level) ?? 1;
+            cands.push({
+              pool,
+              code,
+              weight: candidateWeight(level, hasNonCoursePrereq) / bucketSize,
+            });
+          }
+        }
+
+        if (cands.length === 0) {
+          break;
+        }
+
+        const picked = weightedRandomPick(
+          cands,
+          cands.map((c) => c.weight),
+          rng,
+        );
+
+        chosenCodes.add(picked.code);
+        chosenFromPool[picked.code] = picked.pool.requirementId;
+        const prev = remaining.get(picked.pool.requirementId) ?? 0;
+        remaining.set(picked.pool.requirementId, prev - 1);
+      }
+
+      if (totalRemaining() > 0) {
+        for (const pool of pools) {
+          const r = remaining.get(pool.requirementId) ?? 0;
+          if (r <= 0) continue;
+          const constrainedForPool =
+            constrainedPerRequirement[pool.requirementId] ?? [];
+          const S = constrainedForPool.filter((code) =>
+            isEligibleCandidate(code, pool.type),
+          );
+          const sSet = new Set(S);
+          const candidates =
+            candidatesByRequirement.get(pool.requirementId) ?? [];
+          const G = candidates.filter((code) => !sSet.has(code));
+          const SAvail = S.filter((code) => !chosenCodes.has(code));
+          let GAvail = G.filter((code) => !chosenCodes.has(code));
+          if (explicitOnly) {
+            GAvail = GAvail.filter((code) => explicitSet.has(code));
+          }
+          return poolPickFailure(pool, r, SAvail.length, GAvail.length);
+        }
+        return { ok: false };
+      }
+
+      return { ok: true, chosenFromPool };
+    }
+
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      if (collectedSchedules.length >= targetUniqueSchedules) break;
+      if (attempt > 0 && attempt % 5 === 0) await yieldToMain();
+
+      for (const list of candidatesByRequirement.values()) {
+        shuffleInPlace(list, rng);
+      }
+
+      // Randomly choose whether to defer a high-level required course to a later
+      // semester and instead take an extra elective. Each attempt picks uniformly
+      // from: [base allocation, ...high-level redistribution alternatives].
+      const allocationPool =
+        highLevelRedistAlts.length > 0
+          ? [coursesPerPool, ...highLevelRedistAlts]
+          : [coursesPerPool];
+      const firstAlloc =
+        allocationPool[Math.floor(rng() * allocationPool.length)];
+
+      let pickPass: PoolPickPassResult = runPoolPickPass(firstAlloc);
+
+      if (!pickPass.ok) {
+        // Try base allocation if we started with a redistribution
+        if (firstAlloc !== coursesPerPool) {
+          pickPass = runPoolPickPass(coursesPerPool);
+        }
+        // Try remaining redistribution alternatives
+        if (!pickPass.ok) {
+          for (const alt of redistributionAlts) {
+            if (alt === firstAlloc) continue;
+            pickPass = runPoolPickPass(alt);
+            if (pickPass.ok) {
+              break;
+            }
+          }
+        }
+      }
+
+      if (!pickPass.ok) {
         continue;
+      }
+
+      const chosenFromPool = pickPass.chosenFromPool;
+      const chosenCodes = new Set<string>(pinned);
+      for (const code of Object.keys(chosenFromPool)) {
+        chosenCodes.add(code);
       }
 
       const optionalPool = Array.from(chosenCodes).filter(
@@ -661,7 +883,9 @@ export async function generateSchedulesAction(
       const fullBatch = batch.filter(
         (s) => s.enrollments.length >= coursesThisSemester,
       );
-      if (fullBatch.length === 0) continue;
+      if (fullBatch.length === 0) {
+        continue;
+      }
 
       const fingerprint = fullBatch[0].enrollments
         .map((e) => e.courseCode)

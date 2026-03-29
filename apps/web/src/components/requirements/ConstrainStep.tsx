@@ -313,7 +313,12 @@ export function ConstrainStep({
 
   if (!hasTree) {
     return (
-      <Alert color="blue" variant="light" radius={0}>
+      <Alert
+        color="blue"
+        variant="light"
+        radius={0}
+        data-tour="constrain-schedule"
+      >
         <Text size="sm">
           Select a program and complete the previous steps to see requirements.
         </Text>
@@ -322,7 +327,7 @@ export function ConstrainStep({
   }
 
   return (
-    <Stack gap="lg">
+    <Stack gap="lg" data-tour="constrain-schedule">
       <Paper p="sm" withBorder radius={0}>
         <Stack gap="xs">
           <Group justify="space-between" align="center">

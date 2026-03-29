@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import type { Course, CoursePrereqNode } from 'schemas';
 import type { DataCache } from '../dataCache';
-import { buildPrereqContext, canTakeCourse, meetsCoursePrereq } from '../prerequisites';
+import {
+  buildPrereqContext,
+  canTakeCourse,
+  meetsCoursePrereq,
+  prerequisitesContainNonCourse,
+} from '../prerequisites';
 import {
   CourseFilters,
   courseMatchesFilters,
@@ -32,6 +37,28 @@ function makeMockCache(
     getAllSchedules: () => [],
   };
 }
+
+describe('prerequisitesContainNonCourse', () => {
+  it('is false when tree has only course/or/and nodes', () => {
+    const node: CoursePrereqNode = {
+      type: 'and_group',
+      children: [{ type: 'course', code: 'CSI 2101' }],
+    };
+    expect(prerequisitesContainNonCourse(node)).toBe(false);
+    expect(prerequisitesContainNonCourse(undefined)).toBe(false);
+  });
+
+  it('is true when tree includes non_course', () => {
+    const node: CoursePrereqNode = {
+      type: 'or_group',
+      children: [
+        { type: 'course', code: 'CSI 3105' },
+        { type: 'non_course', text: 'fourth-year standing' },
+      ],
+    };
+    expect(prerequisitesContainNonCourse(node)).toBe(true);
+  });
+});
 
 describe('prerequisites evaluation', () => {
   it('handles simple course prerequisite', () => {
@@ -104,14 +131,14 @@ describe('prerequisites evaluation', () => {
     expect(meetsCoursePrereq(node, ctxWrongDiscipline)).toBe(false);
   });
 
-  it('treats descriptive non_course without credits as non-blocking', () => {
+  it('non_course without credits is never satisfiable', () => {
     const node: CoursePrereqNode = {
       type: 'non_course',
       text: 'All 1000-, 2000-, and 3000-level core ADM courses completed',
     };
     const cache = makeMockCache([]);
     const ctx = buildPrereqContext([], cache);
-    expect(meetsCoursePrereq(node, ctx)).toBe(true);
+    expect(meetsCoursePrereq(node, ctx)).toBe(false);
   });
 
   it('merged discipline credit pool with disciplineLevels needs sum at allowed levels', () => {
