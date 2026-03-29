@@ -1,11 +1,13 @@
 import type { CoursePrereqNode } from 'schemas';
 import type { DataCache } from './dataCache';
-import { normalizeCourseCode } from './utils/courseUtils';
+import { getCourseLevel, normalizeCourseCode } from './utils/courseUtils';
 
 export interface TakenCourse {
   code: string;
   credits: number;
   discipline: string;
+  /** Thousands digit × 1000 from course code (e.g. CSI 3101 → 3000), or null if unparsable. */
+  level: number | null;
 }
 
 export interface PrereqContext {
@@ -35,7 +37,12 @@ export function buildPrereqContext(
     const credits = course.credits ?? 0;
     const discipline = getDiscipline(course.code);
 
-    taken.push({ code: normalizeCourseCode(course.code), credits, discipline });
+    taken.push({
+      code: normalizeCourseCode(course.code),
+      credits,
+      discipline,
+      level: getCourseLevel(course.code),
+    });
     totalCredits += credits;
     if (discipline) {
       disciplineCredits[discipline] = (disciplineCredits[discipline] ?? 0) + credits;
@@ -45,28 +52,70 @@ export function buildPrereqContext(
   return { taken, totalCredits, disciplineCredits, studentPrograms };
 }
 
+function creditsMatchingNonCourse(node: CoursePrereqNode, ctx: PrereqContext): number {
+  const taken = ctx.taken;
+
+  if (node.disciplineLevels?.length) {
+    let sum = 0;
+    for (const t of taken) {
+      for (const dl of node.disciplineLevels) {
+        if (dl.discipline.toUpperCase() !== t.discipline.toUpperCase()) continue;
+        const allowed = dl.levels;
+        if (!allowed?.length) {
+          sum += t.credits;
+          break;
+        }
+        if (t.level != null && allowed.includes(t.level)) {
+          sum += t.credits;
+          break;
+        }
+      }
+    }
+    return sum;
+  }
+
+  if (node.disciplines?.length && node.levels?.length) {
+    let sum = 0;
+    const dset = new Set(node.disciplines.map((d) => d.toUpperCase()));
+    const allowed = new Set(node.levels);
+    for (const t of taken) {
+      if (!dset.has(t.discipline.toUpperCase())) continue;
+      if (t.level != null && allowed.has(t.level)) sum += t.credits;
+    }
+    return sum;
+  }
+
+  if (node.levels?.length && (!node.disciplines || node.disciplines.length === 0)) {
+    const allowed = new Set(node.levels);
+    let sum = 0;
+    for (const t of taken) {
+      if (t.level != null && allowed.has(t.level)) sum += t.credits;
+    }
+    return sum;
+  }
+
+  if (node.disciplines?.length) {
+    return node.disciplines.reduce(
+      (acc, d) => acc + (ctx.disciplineCredits[d.toUpperCase()] ?? 0),
+      0,
+    );
+  }
+
+  return ctx.totalCredits;
+}
+
 function evaluateNonCourseRequirement(
   node: CoursePrereqNode,
   ctx: PrereqContext,
 ): boolean {
   const credits = node.credits;
-  const disciplines = node.disciplines;
 
   if (credits == null) {
     // Descriptive / unsupported non-course clauses should not block eligibility.
     return true;
   }
 
-  if (!disciplines || disciplines.length === 0) {
-    return ctx.totalCredits >= credits;
-  }
-
-  // Sum credits across any of the listed disciplines.
-  const sum = disciplines.reduce(
-    (acc, d) => acc + (ctx.disciplineCredits[d.toUpperCase()] ?? 0),
-    0,
-  );
-  return sum >= credits;
+  return creditsMatchingNonCourse(node, ctx) >= credits;
 }
 
 export function meetsCoursePrereq(node: CoursePrereqNode, ctx: PrereqContext): boolean {
