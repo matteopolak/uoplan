@@ -2,36 +2,6 @@
   "resultCount": 4664,
   "professors": [
     {
-      "name": " Armaghan  Rahimi",
-      "rating": 2.9,
-      "numRatings": 12
-    },
-    {
-      "name": " Claude Quevillon Lacasse Quevillon-Lacasse",
-      "rating": 5,
-      "numRatings": 1
-    },
-    {
-      "name": " Lucas  Jurkovic ",
-      "rating": 4.8,
-      "numRatings": 4
-    },
-    {
-      "name": " Maryam Onifade",
-      "rating": 2,
-      "numRatings": 4
-    },
-    {
-      "name": " Mohammad Rahman",
-      "rating": 4,
-      "numRatings": 2
-    },
-    {
-      "name": " Pouya  Safi",
-      "rating": 0,
-      "numRatings": 0
-    },
-    {
       "name": ", Martin Thibodeau",
       "rating": 2.9,
       "numRatings": 5
@@ -882,7 +852,7 @@
       "numRatings": 0
     },
     {
-      "name": "Alexandra  Potvin Dicaire ",
+      "name": "Alexandra  Potvin Dicaire",
       "rating": 0,
       "numRatings": 0
     },
@@ -917,7 +887,7 @@
       "numRatings": 2
     },
     {
-      "name": "Alexandre  Sauquet ",
+      "name": "Alexandre  Sauquet",
       "rating": 2.4,
       "numRatings": 6
     },
@@ -1177,7 +1147,7 @@
       "numRatings": 1
     },
     {
-      "name": "Allison  Clouthier ",
+      "name": "Allison  Clouthier",
       "rating": 5,
       "numRatings": 1
     },
@@ -1277,7 +1247,7 @@
       "numRatings": 1
     },
     {
-      "name": "Amanda Vandyk ",
+      "name": "Amanda Vandyk",
       "rating": 4.7,
       "numRatings": 7
     },
@@ -1287,7 +1257,7 @@
       "numRatings": 26
     },
     {
-      "name": "Amani  Ashqar ",
+      "name": "Amani  Ashqar",
       "rating": 4.5,
       "numRatings": 2
     },
@@ -1672,7 +1642,7 @@
       "numRatings": 1
     },
     {
-      "name": "Andrew  Wright ",
+      "name": "Andrew  Wright",
       "rating": 0,
       "numRatings": 0
     },
@@ -2237,6 +2207,11 @@
       "numRatings": 59
     },
     {
+      "name": "Armaghan  Rahimi",
+      "rating": 2.9,
+      "numRatings": 12
+    },
+    {
       "name": "Arnaud Montreuil",
       "rating": 5,
       "numRatings": 1
@@ -2367,7 +2342,7 @@
       "numRatings": 0
     },
     {
-      "name": "Audrey  Gagnon ",
+      "name": "Audrey  Gagnon",
       "rating": 3.3,
       "numRatings": 3
     },
@@ -2577,7 +2552,7 @@
       "numRatings": 90
     },
     {
-      "name": "Bartosova Lucie ",
+      "name": "Bartosova Lucie",
       "rating": 0,
       "numRatings": 0
     },
@@ -2703,13 +2678,13 @@
     },
     {
       "name": "Benjamin Noé",
-      "rating": 5,
-      "numRatings": 2
-    },
-    {
-      "name": "Benjamin Noé ",
       "rating": 4.8,
       "numRatings": 6
+    },
+    {
+      "name": "Benjamin Noé",
+      "rating": 5,
+      "numRatings": 2
     },
     {
       "name": "Benjamin Piper",
@@ -2812,7 +2787,7 @@
       "numRatings": 1
     },
     {
-      "name": "Bertrand Belhomme de Franqueville ",
+      "name": "Bertrand Belhomme de Franqueville",
       "rating": 3,
       "numRatings": 1
     },
@@ -3107,12 +3082,12 @@
       "numRatings": 5
     },
     {
-      "name": "britton  williams ",
+      "name": "britton  williams",
       "rating": 5,
       "numRatings": 7
     },
     {
-      "name": "britton  williams ",
+      "name": "britton  williams",
       "rating": 0,
       "numRatings": 0
     },
@@ -3447,7 +3422,7 @@
       "numRatings": 16
     },
     {
-      "name": "Cassandre Gratton ",
+      "name": "Cassandre Gratton",
       "rating": 5,
       "numRatings": 1
     },
@@ -3762,7 +3737,7 @@
       "numRatings": 0
     },
     {
-      "name": "Charles Brunette ",
+      "name": "Charles Brunette",
       "rating": 4.6,
       "numRatings": 12
     },
@@ -4172,7 +4147,7 @@
       "numRatings": 5
     },
     {
-      "name": "Christopher  Hagerman ",
+      "name": "Christopher  Hagerman",
       "rating": 3.9,
       "numRatings": 4
     },
@@ -4362,6 +4337,11 @@
       "numRatings": 0
     },
     {
+      "name": "Claude Quevillon Lacasse Quevillon-Lacasse",
+      "rating": 5,
+      "numRatings": 1
+    },
+    {
       "name": "Claude Rachid",
       "rating": 3.4,
       "numRatings": 31
@@ -4427,7 +4407,7 @@
       "numRatings": 89
     },
     {
-      "name": "Coleman Coleman ",
+      "name": "Coleman Coleman",
       "rating": 0,
       "numRatings": 0
     },
@@ -4542,7 +4522,7 @@
       "numRatings": 2
     },
     {
-      "name": "Cory Harris ",
+      "name": "Cory Harris",
       "rating": 3.4,
       "numRatings": 16
     },
@@ -5182,7 +5162,7 @@
       "numRatings": 53
     },
     {
-      "name": "David Hanseen ",
+      "name": "David Hanseen",
       "rating": 0,
       "numRatings": 0
     },
@@ -5797,7 +5777,7 @@
       "numRatings": 27
     },
     {
-      "name": "Dominique  Houle ",
+      "name": "Dominique  Houle",
       "rating": 1.3,
       "numRatings": 21
     },
@@ -6377,7 +6357,7 @@
       "numRatings": 2
     },
     {
-      "name": "Emile Khordoc ",
+      "name": "Emile Khordoc",
       "rating": 4.8,
       "numRatings": 8
     },
@@ -7672,7 +7652,7 @@
       "numRatings": 63
     },
     {
-      "name": "George Lafortune ",
+      "name": "George Lafortune",
       "rating": 3.5,
       "numRatings": 2
     },
@@ -8297,7 +8277,7 @@
       "numRatings": 12
     },
     {
-      "name": "Hannah  Rudderham ",
+      "name": "Hannah  Rudderham",
       "rating": 1.8,
       "numRatings": 5
     },
@@ -8478,13 +8458,13 @@
     },
     {
       "name": "Helen Abbot",
-      "rating": 2.9,
-      "numRatings": 35
-    },
-    {
-      "name": "Helen Abbot ",
       "rating": 3,
       "numRatings": 9
+    },
+    {
+      "name": "Helen Abbot",
+      "rating": 2.9,
+      "numRatings": 35
     },
     {
       "name": "Helena Zelinka",
@@ -8677,7 +8657,7 @@
       "numRatings": 2
     },
     {
-      "name": "Howard Martin ",
+      "name": "Howard Martin",
       "rating": 4,
       "numRatings": 1
     },
@@ -10322,7 +10302,7 @@
       "numRatings": 4
     },
     {
-      "name": "Jiliane  Sullivan ",
+      "name": "Jiliane  Sullivan",
       "rating": 0,
       "numRatings": 0
     },
@@ -10807,7 +10787,7 @@
       "numRatings": 1
     },
     {
-      "name": "Jonathan Parenteau ",
+      "name": "Jonathan Parenteau",
       "rating": 4.5,
       "numRatings": 4
     },
@@ -10907,7 +10887,7 @@
       "numRatings": 1
     },
     {
-      "name": "José  Morán ",
+      "name": "José  Morán",
       "rating": 0,
       "numRatings": 0
     },
@@ -11202,7 +11182,7 @@
       "numRatings": 0
     },
     {
-      "name": "Julia Kennedy ",
+      "name": "Julia Kennedy",
       "rating": 0,
       "numRatings": 0
     },
@@ -11212,7 +11192,7 @@
       "numRatings": 19
     },
     {
-      "name": "Julia Santos ",
+      "name": "Julia Santos",
       "rating": 4.5,
       "numRatings": 2
     },
@@ -12062,7 +12042,7 @@
       "numRatings": 24
     },
     {
-      "name": "Kiana Pilon ",
+      "name": "Kiana Pilon",
       "rating": 5,
       "numRatings": 1
     },
@@ -12592,7 +12572,7 @@
       "numRatings": 2
     },
     {
-      "name": "Laurie Weinstein ",
+      "name": "Laurie Weinstein",
       "rating": 0,
       "numRatings": 0
     },
@@ -12822,7 +12802,7 @@
       "numRatings": 2
     },
     {
-      "name": "Lina AlHassan ",
+      "name": "Lina AlHassan",
       "rating": 4.9,
       "numRatings": 10
     },
@@ -13240,6 +13220,11 @@
       "name": "Luc Turgeon",
       "rating": 4.6,
       "numRatings": 65
+    },
+    {
+      "name": "Lucas  Jurkovic",
+      "rating": 4.8,
+      "numRatings": 4
     },
     {
       "name": "Lucas Jurkovic",
@@ -13907,7 +13892,7 @@
       "numRatings": 0
     },
     {
-      "name": "Mariá Goma ",
+      "name": "Mariá Goma",
       "rating": 5,
       "numRatings": 1
     },
@@ -14307,7 +14292,7 @@
       "numRatings": 1
     },
     {
-      "name": "Marisa Lewis ",
+      "name": "Marisa Lewis",
       "rating": 0,
       "numRatings": 0
     },
@@ -14695,6 +14680,11 @@
       "name": "Maryam Jabbari",
       "rating": 2.5,
       "numRatings": 18
+    },
+    {
+      "name": "Maryam Onifade",
+      "rating": 2,
+      "numRatings": 4
     },
     {
       "name": "Maryam Onifade",
@@ -15452,7 +15442,7 @@
       "numRatings": 6
     },
     {
-      "name": "Micheal Kempa ",
+      "name": "Micheal Kempa",
       "rating": 5,
       "numRatings": 4
     },
@@ -15692,7 +15682,7 @@
       "numRatings": 5
     },
     {
-      "name": "Migao  Wu ",
+      "name": "Migao  Wu",
       "rating": 4.5,
       "numRatings": 4
     },
@@ -15957,7 +15947,7 @@
       "numRatings": 21
     },
     {
-      "name": "Mohamed Ali Jemmali ",
+      "name": "Mohamed Ali Jemmali",
       "rating": 3.9,
       "numRatings": 13
     },
@@ -15987,7 +15977,7 @@
       "numRatings": 6
     },
     {
-      "name": "Mohamed Ibrahim ",
+      "name": "Mohamed Ibrahim",
       "rating": 0,
       "numRatings": 0
     },
@@ -16070,6 +16060,11 @@
       "name": "Mohammad Rafiee",
       "rating": 2.8,
       "numRatings": 5
+    },
+    {
+      "name": "Mohammad Rahman",
+      "rating": 4,
+      "numRatings": 2
     },
     {
       "name": "Mohammad Rahman",
@@ -16527,7 +16522,7 @@
       "numRatings": 34
     },
     {
-      "name": "Nancy  Paris ",
+      "name": "Nancy  Paris",
       "rating": 3,
       "numRatings": 1
     },
@@ -17172,7 +17167,7 @@
       "numRatings": 2
     },
     {
-      "name": "Octavian Strimbu ",
+      "name": "Octavian Strimbu",
       "rating": 4.1,
       "numRatings": 25
     },
@@ -18447,6 +18442,11 @@
       "numRatings": 50
     },
     {
+      "name": "Pouya  Safi",
+      "rating": 0,
+      "numRatings": 0
+    },
+    {
       "name": "Pouya Safi",
       "rating": 4.1,
       "numRatings": 48
@@ -19452,7 +19452,7 @@
       "numRatings": 0
     },
     {
-      "name": "Roberto  Ortiz  ",
+      "name": "Roberto  Ortiz",
       "rating": 0,
       "numRatings": 0
     },
@@ -19722,7 +19722,7 @@
       "numRatings": 11
     },
     {
-      "name": "Roxanne Brosseau ",
+      "name": "Roxanne Brosseau",
       "rating": 3.7,
       "numRatings": 13
     },
@@ -20267,7 +20267,7 @@
       "numRatings": 163
     },
     {
-      "name": "Sardar Saadi ",
+      "name": "Sardar Saadi",
       "rating": 2.3,
       "numRatings": 16
     },
@@ -20392,7 +20392,7 @@
       "numRatings": 58
     },
     {
-      "name": "Sébastien  Lachambre ",
+      "name": "Sébastien  Lachambre",
       "rating": 0,
       "numRatings": 0
     },
@@ -20562,7 +20562,7 @@
       "numRatings": 2
     },
     {
-      "name": "Shaily Zolfaghari ",
+      "name": "Shaily Zolfaghari",
       "rating": 5,
       "numRatings": 1
     },
@@ -21137,12 +21137,12 @@
       "numRatings": 16
     },
     {
-      "name": "Stéphanie  Plante ",
+      "name": "Stéphanie  Plante",
       "rating": 0,
       "numRatings": 0
     },
     {
-      "name": "Stéphanie  Viola Plante ",
+      "name": "Stéphanie  Viola Plante",
       "rating": 3,
       "numRatings": 20
     },
@@ -21682,7 +21682,7 @@
       "numRatings": 189
     },
     {
-      "name": "Tamer  Ahmed ",
+      "name": "Tamer  Ahmed",
       "rating": 3.6,
       "numRatings": 12
     },
@@ -21797,7 +21797,7 @@
       "numRatings": 12
     },
     {
-      "name": "Tawfic Abu-Zahra ",
+      "name": "Tawfic Abu-Zahra",
       "rating": 5,
       "numRatings": 2
     },
@@ -21932,7 +21932,7 @@
       "numRatings": 1
     },
     {
-      "name": "Thomas Juneau ",
+      "name": "Thomas Juneau",
       "rating": 4,
       "numRatings": 65
     },
@@ -22287,7 +22287,7 @@
       "numRatings": 0
     },
     {
-      "name": "Valérie  Aubut ",
+      "name": "Valérie  Aubut",
       "rating": 3,
       "numRatings": 2
     },
@@ -22757,7 +22757,7 @@
       "numRatings": 5
     },
     {
-      "name": "Wendy Gifford ",
+      "name": "Wendy Gifford",
       "rating": 0,
       "numRatings": 0
     },
