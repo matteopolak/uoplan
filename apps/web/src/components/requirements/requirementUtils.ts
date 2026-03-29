@@ -1,5 +1,9 @@
 import type { DataCache, RequirementWithStatus } from "schedule";
-import { normalizeCourseCode } from "schedule";
+import {
+  normalizeCourseCode,
+  courseMatchesFilters,
+  getEffectiveSchedule,
+} from "schedule";
 
 function normalizeTitleForCompare(title: string | undefined): string {
   return (title ?? "").trim().replace(/\s+/g, " ").toLowerCase();
@@ -150,48 +154,104 @@ export function collectOptionGroups(
 }
 
 /**
- * Recursively replaces `or_group` / `options_group` nodes that have a user
- * selection with just the selected child branch. Already-complete option
- * groups are passed through unchanged (the engine has already resolved them).
- *
- * Used by AssignStep and ConstrainStep so those steps never show the parent
- * radio-button block — only the selected child appears directly.
+ * Resolves which branch index applies for an `or_group` / `options_group`
+ * (user pick in the Options step, else {@link RequirementWithStatus.satisfiedOptionIndex}).
  */
-export function applyOptionSelections(
-  tree: RequirementWithStatus[],
+export function selectedBranchIndexForOptionGroup(
+  node: RequirementWithStatus,
+  selectedOptions: Record<string, number>,
+): number | undefined {
+  if (node.requirementId == null) return undefined;
+  const fromUser = selectedOptions[node.requirementId];
+  if (fromUser != null) return fromUser;
+  if (node.satisfiedOptionIndex != null) return node.satisfiedOptionIndex;
+  return undefined;
+}
+
+/**
+ * True when this node is a pure structural wrapper (conjunction / pick shell)
+ * with no own requirement slot — its children can be spliced into the parent
+ * after an option branch is chosen.
+ */
+function canHoistStructuralWrapper(node: RequirementWithStatus): boolean {
+  if (
+    node.type !== "and" &&
+    node.type !== "pick" &&
+    node.type !== "group"
+  ) {
+    return false;
+  }
+  if (node.requirementId != null) return false;
+  if ((node.candidateCourses?.length ?? 0) > 0) return false;
+  if ((node.creditsNeeded ?? 0) > 0) return false;
+  return (node.options?.length ?? 0) > 0;
+}
+
+/**
+ * Fully processes one node (option flattening + child recursion), then unwraps
+ * structural `and` / `pick` / `group` shells so their children sit alongside
+ * siblings from the parent list (Assign / Constrain UX).
+ */
+function expandSelectedOptionBranch(
+  branch: RequirementWithStatus,
+  selectedOptions: Record<string, number>,
+): RequirementWithStatus[] {
+  let nodes = mapOptionSelectionList([branch], selectedOptions);
+  for (;;) {
+    if (nodes.length !== 1) return nodes;
+    const only = nodes[0]!;
+    if (!canHoistStructuralWrapper(only)) return nodes;
+    nodes = mapOptionSelectionList(only.options ?? [], selectedOptions);
+  }
+}
+
+function mapOptionSelectionList(
+  nodes: RequirementWithStatus[],
   selectedOptions: Record<string, number>,
 ): RequirementWithStatus[] {
   const out: RequirementWithStatus[] = [];
-  for (const node of tree) {
+  for (const node of nodes) {
     const isOptionType =
       node.type === "or_group" || node.type === "options_group";
 
-    if (
-      isOptionType &&
-      !node.complete &&
-      node.requirementId != null &&
-      selectedOptions[node.requirementId] != null
-    ) {
-      const idx = selectedOptions[node.requirementId];
-      const child = node.options?.[idx];
-      if (child) {
-        // Recurse so nested option groups within the chosen branch also get flattened.
-        out.push(...applyOptionSelections([child], selectedOptions));
+    if (isOptionType && node.requirementId != null) {
+      const idx = selectedBranchIndexForOptionGroup(node, selectedOptions);
+      const nOpts = node.options?.length ?? 0;
+      if (idx != null && nOpts > 0 && idx >= 0 && idx < nOpts) {
+        const child = node.options![idx];
+        out.push(...expandSelectedOptionBranch(child, selectedOptions));
         continue;
       }
     }
 
-    // For non-option-group nodes with children, recurse into children.
     if (node.options?.length) {
       out.push({
         ...node,
-        options: applyOptionSelections(node.options, selectedOptions),
+        options: mapOptionSelectionList(node.options, selectedOptions),
       });
     } else {
       out.push(node);
     }
   }
   return out;
+}
+
+/**
+ * Recursively replaces `or_group` / `options_group` nodes that have a resolved
+ * branch with just the selected child, at every depth. Nested groups are
+ * flattened in the same pass. Selected branches that are pure `and` / `pick` /
+ * `group` wrappers (no requirement id) are unwrapped so their children appear as
+ * siblings of other requirements in the parent — easier to use in Assign /
+ * Constrain.
+ *
+ * Used by AssignStep, ConstrainStep, and RequirementsStep. The Options step
+ * uses the raw tree and OptionsDrilldown instead — do not pre-flatten there.
+ */
+export function applyOptionSelections(
+  tree: RequirementWithStatus[],
+  selectedOptions: Record<string, number>,
+): RequirementWithStatus[] {
+  return mapOptionSelectionList(tree, selectedOptions);
 }
 
 /**
@@ -283,4 +343,245 @@ export function countSatisfiedTopLevelRoots(
     }
   }
   return n;
+}
+
+/** Matches {@link RequirementNode} MultiSelect filtering (Assign / Constrain steps). */
+export interface ConstrainMultiSelectContext {
+  cache: DataCache | null;
+  completedCourses: Set<string>;
+  prereqEligible: Set<string>;
+  levelBuckets: ("undergrad" | "grad")[];
+  languageBuckets: ("en" | "fr" | "other")[];
+  electiveLevelBuckets: number[];
+  unassignedCompletedSetNormalized: Set<string>;
+  allAssignedCoursesNormalized: Set<string>;
+  includeClosedComponents: boolean;
+  completedOnly: boolean;
+}
+
+export interface ConstrainMultiSelectOption {
+  value: string;
+  label: string;
+  disabled: boolean;
+}
+
+/**
+ * Builds MultiSelect `data` and selected values for a requirement node — same
+ * rules as {@link RequirementNode}'s course picker.
+ */
+export function getConstrainMultiSelectOptions(
+  node: RequirementWithStatus,
+  selectedPerRequirement: Record<string, string[]>,
+  ctx: ConstrainMultiSelectContext,
+): { selectedForDisplay: string[]; options: ConstrainMultiSelectOption[] } {
+  const selected = node.requirementId
+    ? (selectedPerRequirement[node.requirementId] ?? [])
+    : [];
+
+  const isElectiveWithExclusions =
+    (node.type === "discipline_elective" ||
+      node.type === "elective" ||
+      node.type === "faculty_elective" ||
+      node.type === "free_elective" ||
+      node.type === "non_discipline_elective") &&
+    (node.excluded_disciplines?.length ?? 0) > 0;
+
+  const isCompletedCourse = (code: string): boolean => {
+    const norm = normalizeCourseCode(code);
+    const canonical = ctx.cache?.getCourse(norm)?.code ?? code;
+    return ctx.completedCourses.has(canonical) || ctx.completedCourses.has(norm);
+  };
+
+  const filtered =
+    node.candidateCourses
+      ?.filter((c) => ctx.prereqEligible.has(c))
+      .filter((c) => {
+        const isCompleted =
+          isCompletedCourse(c) ||
+          ctx.unassignedCompletedSetNormalized.has(normalizeCourseCode(c));
+        if (ctx.completedOnly) return isCompleted;
+        if (isCompleted) return true;
+        if (
+          !courseMatchesFilters(c, {
+            levels: ctx.levelBuckets,
+            languageBuckets: ctx.languageBuckets,
+          })
+        ) {
+          return false;
+        }
+        if (
+          ctx.cache &&
+          !getEffectiveSchedule(ctx.cache, c, ctx.includeClosedComponents)
+        ) {
+          const isSpecificCourseReq =
+            node.type === "course" || node.type === "or_course";
+          if (isSpecificCourseReq && /\b4900\b/.test(c)) return true;
+          return false;
+        }
+        if (isElectiveWithExclusions && ctx.electiveLevelBuckets.length > 0) {
+          const match = c.match(/\d{4}/);
+          if (match) {
+            const num = parseInt(match[0], 10);
+            if (!Number.isNaN(num)) {
+              const bucket = Math.floor(num / 1000) * 1000;
+              if (!ctx.electiveLevelBuckets.includes(bucket)) return false;
+            }
+          }
+        }
+        return true;
+      }) ?? [];
+
+  const selectedForDisplay = selected.map(
+    (c) => ctx.cache?.getCourse(normalizeCourseCode(c))?.code ?? c,
+  );
+
+  const normalizedSeen = new Set<string>();
+  const available: string[] = [];
+  for (const c of selectedForDisplay) {
+    const norm = normalizeCourseCode(c);
+    if (normalizedSeen.has(norm)) continue;
+    normalizedSeen.add(norm);
+    available.push(ctx.cache?.getCourse(norm)?.code ?? c);
+  }
+  for (const c of filtered) {
+    const norm = normalizeCourseCode(c);
+    if (normalizedSeen.has(norm)) continue;
+    normalizedSeen.add(norm);
+    available.push(ctx.cache?.getCourse(norm)?.code ?? c);
+  }
+
+  const availableSorted = [...available].sort((a, b) => {
+    const aUn = ctx.unassignedCompletedSetNormalized.has(normalizeCourseCode(a));
+    const bUn = ctx.unassignedCompletedSetNormalized.has(normalizeCourseCode(b));
+    if (aUn && !bUn) return -1;
+    if (!aUn && bUn) return 1;
+    return 0;
+  });
+
+  const options = availableSorted.map((code) => {
+    const norm = normalizeCourseCode(code);
+    const usedElsewhere =
+      ctx.allAssignedCoursesNormalized.has(norm) &&
+      !selectedForDisplay.includes(code);
+    return { value: code, label: code, disabled: usedElsewhere };
+  });
+
+  return { selectedForDisplay, options };
+}
+
+/**
+ * True when this subtree has no “main flow” Constrain UI: no unresolved option
+ * group, and every course MultiSelect’s {@link getConstrainMultiSelectOptions}
+ * `options` array is empty (same pool as the dropdown: prereqs, term offering,
+ * filters, etc.).
+ *
+ * Nodes without a `requirementId` do not render a MultiSelect — they count as
+ * vacuously “empty” so e.g. a `pick` hides when **all** descendants with
+ * pickers have empty pools.
+ */
+export function subtreeHasOnlyEmptyConstrainDropdowns(
+  node: RequirementWithStatus,
+  selectedOptionsPerRequirement: Record<string, number>,
+  constrainedPerRequirement: Record<string, string[]>,
+  ctx: ConstrainMultiSelectContext,
+): boolean {
+  if (node.complete) return true;
+  if (node.type === "section") return true;
+
+  const isOptionType =
+    node.type === "or_group" || node.type === "options_group";
+  if (isOptionType && node.requirementId != null) {
+    const idx = selectedBranchIndexForOptionGroup(
+      node,
+      selectedOptionsPerRequirement,
+    );
+    const nOpts = node.options?.length ?? 0;
+    if (idx == null || nOpts === 0 || idx < 0 || idx >= nOpts) return false;
+    const child = node.options![idx];
+    return subtreeHasOnlyEmptyConstrainDropdowns(
+      child,
+      selectedOptionsPerRequirement,
+      constrainedPerRequirement,
+      ctx,
+    );
+  }
+
+  if (node.options?.length) {
+    const structural =
+      node.type === "and" ||
+      node.type === "pick" ||
+      node.type === "group" ||
+      (isOptionType && node.requirementId == null);
+    if (structural) {
+      const childrenAllEmpty = node.options.every((child) =>
+        subtreeHasOnlyEmptyConstrainDropdowns(
+          child,
+          selectedOptionsPerRequirement,
+          constrainedPerRequirement,
+          ctx,
+        ),
+      );
+      if (!childrenAllEmpty) return false;
+      // pick/group: hide the whole block only when every child is empty **and**
+      // any parent-card MultiSelect (requirementId on this node) is empty too.
+      if (
+        (node.type === "pick" || node.type === "group") &&
+        node.requirementId != null
+      ) {
+        const { options } = getConstrainMultiSelectOptions(
+          node,
+          constrainedPerRequirement,
+          ctx,
+        );
+        return options.length === 0;
+      }
+      return true;
+    }
+  }
+
+  if (node.requirementId != null) {
+    const { options } = getConstrainMultiSelectOptions(
+      node,
+      constrainedPerRequirement,
+      ctx,
+    );
+    return options.length === 0;
+  }
+
+  // No Constrain MultiSelect on this node — does not block “all children empty”.
+  return true;
+}
+
+export interface PartitionedConstrainRoot {
+  node: RequirementWithStatus;
+  /** Index of this root in the original `incompleteRoots` array (stable keys). */
+  rootIndex: number;
+}
+
+/** Splits roots by whether every constrain MultiSelect would show an empty dropdown. */
+export function partitionIncompleteConstrainRoots(
+  incompleteRoots: RequirementWithStatus[],
+  selectedOptionsPerRequirement: Record<string, number>,
+  constrainedPerRequirement: Record<string, string[]>,
+  ctx: ConstrainMultiSelectContext,
+): { primary: PartitionedConstrainRoot[]; collapsed: PartitionedConstrainRoot[] } {
+  const primary: PartitionedConstrainRoot[] = [];
+  const collapsed: PartitionedConstrainRoot[] = [];
+  for (let i = 0; i < incompleteRoots.length; i++) {
+    const root = incompleteRoots[i];
+    const entry: PartitionedConstrainRoot = { node: root, rootIndex: i };
+    if (
+      subtreeHasOnlyEmptyConstrainDropdowns(
+        root,
+        selectedOptionsPerRequirement,
+        constrainedPerRequirement,
+        ctx,
+      )
+    ) {
+      collapsed.push(entry);
+    } else {
+      primary.push(entry);
+    }
+  }
+  return { primary, collapsed };
 }

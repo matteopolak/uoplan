@@ -26,10 +26,9 @@ import { IconCheck, IconChevronDown, IconX } from "@tabler/icons-react";
 import type { ComboboxItem } from "@mantine/core";
 import type { DataCache } from "schedule";
 import { normalizeCourseCode } from "schedule";
-import { courseMatchesFilters } from "schedule";
-import { getEffectiveSchedule } from "schedule";
 import type { RequirementWithStatus } from "schedule";
 import {
+  getConstrainMultiSelectOptions,
   getOptionSecondarySummaryLine,
   simplifySingleChildChain,
 } from "./requirementUtils";
@@ -337,102 +336,32 @@ export const RequirementNode = memo(function RequirementNode({
   const showAsComplete =
     (node.complete && node.satisfiedBy.length > 0) || satisfiedBySelection;
   const hasRequirementId = node.requirementId != null;
-  const isElectiveWithExclusions =
-    (node.type === "discipline_elective" ||
-      node.type === "elective" ||
-      node.type === "faculty_elective" ||
-      node.type === "free_elective" ||
-      node.type === "non_discipline_elective") &&
-    (node.excluded_disciplines?.length ?? 0) > 0;
-
   const { selectedForDisplay, options } = useMemo(() => {
-    const isCompletedCourse = (code: string): boolean => {
-      const norm = normalizeCourseCode(code);
-      const canonical = cache?.getCourse(norm)?.code ?? code;
-      return completedCourses.has(canonical) || completedCourses.has(norm);
-    };
-
-    const filtered =
-      node.candidateCourses
-        ?.filter((c) => prereqEligible.has(c))
-        .filter((c) => {
-          const isCompleted =
-            isCompletedCourse(c) ||
-            unassignedCompletedSetNormalized.has(normalizeCourseCode(c));
-          if (completedOnly) return isCompleted;
-          if (isCompleted) return true;
-          if (!courseMatchesFilters(c, { levels: levelBuckets, languageBuckets }))
-            return false;
-          if (cache && !getEffectiveSchedule(cache, c, includeClosedComponents)) {
-            const isSpecificCourseReq =
-              node.type === "course" || node.type === "or_course";
-            if (isSpecificCourseReq && /\b4900\b/.test(c)) return true;
-            return false;
-          }
-          if (isElectiveWithExclusions && electiveLevelBuckets.length > 0) {
-            const match = c.match(/\d{4}/);
-            if (match) {
-              const num = parseInt(match[0], 10);
-              if (!Number.isNaN(num)) {
-                const bucket = Math.floor(num / 1000) * 1000;
-                if (!electiveLevelBuckets.includes(bucket)) return false;
-              }
-            }
-          }
-          return true;
-        }) ?? [];
-
-    const selectedForDisplay = selected.map(
-      (c) => cache?.getCourse(normalizeCourseCode(c))?.code ?? c,
-    );
-
-    const normalizedSeen = new Set<string>();
-    const available: string[] = [];
-    for (const c of selectedForDisplay) {
-      const norm = normalizeCourseCode(c);
-      if (normalizedSeen.has(norm)) continue;
-      normalizedSeen.add(norm);
-      available.push(cache?.getCourse(norm)?.code ?? c);
-    }
-    for (const c of filtered) {
-      const norm = normalizeCourseCode(c);
-      if (normalizedSeen.has(norm)) continue;
-      normalizedSeen.add(norm);
-      available.push(cache?.getCourse(norm)?.code ?? c);
-    }
-
-    const availableSorted = [...available].sort((a, b) => {
-      const aUn = unassignedCompletedSetNormalized.has(normalizeCourseCode(a));
-      const bUn = unassignedCompletedSetNormalized.has(normalizeCourseCode(b));
-      if (aUn && !bUn) return -1;
-      if (!aUn && bUn) return 1;
-      return 0;
+    return getConstrainMultiSelectOptions(node, selectedPerRequirement, {
+      cache,
+      completedCourses,
+      prereqEligible,
+      levelBuckets,
+      languageBuckets,
+      electiveLevelBuckets,
+      unassignedCompletedSetNormalized,
+      allAssignedCoursesNormalized,
+      includeClosedComponents,
+      completedOnly,
     });
-
-    const options = availableSorted.map((code) => {
-      const norm = normalizeCourseCode(code);
-      const usedElsewhere =
-        allAssignedCoursesNormalized.has(norm) &&
-        !selectedForDisplay.includes(code);
-      return { value: code, label: code, disabled: usedElsewhere };
-    });
-
-    return { selectedForDisplay, options };
   }, [
-    node.candidateCourses,
-    node.type,
+    node,
     prereqEligible,
     levelBuckets,
     languageBuckets,
     electiveLevelBuckets,
-    isElectiveWithExclusions,
     cache,
     completedCourses,
     unassignedCompletedSetNormalized,
     allAssignedCoursesNormalized,
     includeClosedComponents,
     completedOnly,
-    selected,
+    selectedPerRequirement,
   ]);
 
   const selectedCredits = getSelectedCredits(cache, selectedForDisplay);

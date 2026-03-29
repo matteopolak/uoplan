@@ -30,6 +30,7 @@ import {
   applyOptionSelections,
   adjustNodeForAssignments,
   countSatisfiedTopLevelRoots,
+  partitionIncompleteConstrainRoots,
 } from "./requirementUtils";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -170,6 +171,8 @@ export function ConstrainStep({
   onIncludeClosedComponentsChange,
 }: ConstrainStepProps) {
   const [completedOpen, setCompletedOpen] = useState(false);
+  const [collapsedUnavailableOpen, setCollapsedUnavailableOpen] =
+    useState(false);
   const openFnsRef = useRef(new Map<string, () => void>());
   const registryRef = useRef<ExpandRegistry>({
     register(key, open) {
@@ -184,8 +187,14 @@ export function ConstrainStep({
     for (const key of keys) openFnsRef.current.get(key)?.();
   };
 
-  const completedSet = new Set(completedCourses);
-  const prereqEligible = new Set(prereqEligibleCourses);
+  const completedSet = useMemo(
+    () => new Set(completedCourses),
+    [completedCourses],
+  );
+  const prereqEligible = useMemo(
+    () => new Set(prereqEligibleCourses),
+    [prereqEligibleCourses],
+  );
 
   // Flatten option selections so or_group/options_group parents are replaced
   // by their selected child branch (chosen in the Options step).
@@ -205,6 +214,56 @@ export function ConstrainStep({
 
   const hasTree = adjustedTree.length > 0;
   const incompleteNodes = adjustedTree.filter((node) => !node.complete);
+
+  const constrainCtx = useMemo(
+    () => ({
+      cache,
+      completedCourses: completedSet,
+      prereqEligible,
+      levelBuckets,
+      languageBuckets,
+      electiveLevelBuckets,
+      unassignedCompletedSetNormalized: new Set<string>(),
+      allAssignedCoursesNormalized: new Set<string>(),
+      includeClosedComponents,
+      completedOnly: false as const,
+    }),
+    [
+      cache,
+      completedSet,
+      prereqEligible,
+      levelBuckets,
+      languageBuckets,
+      electiveLevelBuckets,
+      includeClosedComponents,
+    ],
+  );
+
+  const { primary: primaryRoots, collapsed: collapsedRoots } = useMemo(
+    () =>
+      partitionIncompleteConstrainRoots(
+        incompleteNodes,
+        selectedOptionsPerRequirement,
+        constrainedPerRequirement,
+        constrainCtx,
+      ),
+    [
+      incompleteNodes,
+      selectedOptionsPerRequirement,
+      constrainedPerRequirement,
+      constrainCtx,
+    ],
+  );
+
+  const collapsedRootKeysSet = useMemo(
+    () =>
+      new Set(
+        collapsedRoots.map(({ node, rootIndex }) =>
+          getStableNodeKey(node, `root:${rootIndex}`),
+        ),
+      ),
+    [collapsedRoots],
+  );
 
   // Top-level tree nodes that were originally incomplete but became complete via adjustment.
   const newlyCompleteNodes = useMemo(() => {
@@ -379,12 +438,26 @@ export function ConstrainStep({
                   (node, idx) => getStableNodeKey(node, `root:${idx}`),
                 );
                 if (path) {
-                  openByKeys(path);
-                  setTimeout(() => {
-                    document
-                      .querySelector('[data-missing-selection="true"]')
-                      ?.scrollIntoView({ behavior: "smooth", block: "center" });
-                  }, 250);
+                  const firstKey = path[0];
+                  const expandCollapsed =
+                    !!firstKey && collapsedRootKeysSet.has(firstKey);
+                  if (expandCollapsed) {
+                    setCollapsedUnavailableOpen(true);
+                  }
+                  setTimeout(
+                    () => {
+                      openByKeys(path);
+                      setTimeout(() => {
+                        document
+                          .querySelector('[data-missing-selection="true"]')
+                          ?.scrollIntoView({
+                            behavior: "smooth",
+                            block: "center",
+                          });
+                      }, 250);
+                    },
+                    expandCollapsed ? 300 : 0,
+                  );
                 }
               }}
             >
@@ -397,31 +470,120 @@ export function ConstrainStep({
       <ExpandRegistryContext.Provider value={registryRef.current}>
         <Stack gap="md">
           {hasRemaining ? (
-            incompleteNodes.map((node, idx) => {
-              const nodeKey = getStableNodeKey(node, `root:${idx}`);
-              return (
-                <RequirementNode
-                  key={nodeKey}
-                  nodeKey={nodeKey}
-                  node={node}
-                  cache={cache}
-                  completedCourses={completedSet}
-                  selectedPerRequirement={constrainedPerRequirement}
-                  onSelect={onConstrain}
-                  selectedOptionsPerRequirement={selectedOptionsPerRequirement}
-                  onSelectOption={onSelectOption}
-                  activeBranch
-                  prereqEligible={prereqEligible}
-                  levelBuckets={levelBuckets}
-                  languageBuckets={languageBuckets}
-                  electiveLevelBuckets={electiveLevelBuckets}
-                  unassignedCompletedSet={new Set()}
-                  unassignedCompletedSetNormalized={new Set()}
-                  allAssignedCoursesNormalized={new Set()}
-                  includeClosedComponents={includeClosedComponents}
-                />
-              );
-            })
+            <>
+              {primaryRoots.length === 0 && collapsedRoots.length > 0 && (
+                <Alert color="gray" variant="light" radius={0}>
+                  <Text size="sm">
+                    The remaining requirements have no courses in the picker
+                    (e.g. missing prerequisites or nothing offered this term). Expand{" "}
+                    <strong>No eligible courses</strong> below to review them,
+                    or adjust course filters above.
+                  </Text>
+                </Alert>
+              )}
+              {primaryRoots.map(({ node, rootIndex }) => {
+                const nodeKey = getStableNodeKey(node, `root:${rootIndex}`);
+                return (
+                  <RequirementNode
+                    key={nodeKey}
+                    nodeKey={nodeKey}
+                    node={node}
+                    cache={cache}
+                    completedCourses={completedSet}
+                    selectedPerRequirement={constrainedPerRequirement}
+                    onSelect={onConstrain}
+                    selectedOptionsPerRequirement={
+                      selectedOptionsPerRequirement
+                    }
+                    onSelectOption={onSelectOption}
+                    activeBranch
+                    prereqEligible={prereqEligible}
+                    levelBuckets={levelBuckets}
+                    languageBuckets={languageBuckets}
+                    electiveLevelBuckets={electiveLevelBuckets}
+                    unassignedCompletedSet={new Set()}
+                    unassignedCompletedSetNormalized={new Set()}
+                    allAssignedCoursesNormalized={new Set()}
+                    includeClosedComponents={includeClosedComponents}
+                  />
+                );
+              })}
+              {collapsedRoots.length > 0 && (
+                <Paper
+                  p="sm"
+                  withBorder
+                  radius={0}
+                  style={{
+                    backgroundColor: collapsedUnavailableOpen
+                      ? "var(--mantine-color-dark-6)"
+                      : "var(--mantine-color-dark-8)",
+                    cursor: "pointer",
+                  }}
+                  onClick={(e: MouseEvent) => {
+                    e.stopPropagation();
+                    setCollapsedUnavailableOpen((o) => !o);
+                  }}
+                >
+                  <Group
+                    justify="space-between"
+                    align="center"
+                    mb={collapsedUnavailableOpen ? "sm" : 0}
+                  >
+                    <Group gap="xs" align="center">
+                      <IconChevronDown
+                        size={14}
+                        style={{
+                          transform: collapsedUnavailableOpen
+                            ? "rotate(0deg)"
+                            : "rotate(-90deg)",
+                          transition: "transform 150ms ease",
+                        }}
+                      />
+                      <Text fw={600} size="sm">
+                        No eligible courses ({collapsedRoots.length})
+                      </Text>
+                    </Group>
+                    <Badge size="sm" variant="light" color="gray">
+                      {collapsedUnavailableOpen ? "Hide" : "Show"}
+                    </Badge>
+                  </Group>
+                  <Collapse in={collapsedUnavailableOpen}>
+                    <Stack gap="md" mt="sm">
+                      {collapsedRoots.map(({ node, rootIndex }) => {
+                        const nodeKey = getStableNodeKey(
+                          node,
+                          `root:${rootIndex}`,
+                        );
+                        return (
+                          <RequirementNode
+                            key={nodeKey}
+                            nodeKey={nodeKey}
+                            node={node}
+                            cache={cache}
+                            completedCourses={completedSet}
+                            selectedPerRequirement={constrainedPerRequirement}
+                            onSelect={onConstrain}
+                            selectedOptionsPerRequirement={
+                              selectedOptionsPerRequirement
+                            }
+                            onSelectOption={onSelectOption}
+                            activeBranch
+                            prereqEligible={prereqEligible}
+                            levelBuckets={levelBuckets}
+                            languageBuckets={languageBuckets}
+                            electiveLevelBuckets={electiveLevelBuckets}
+                            unassignedCompletedSet={new Set()}
+                            unassignedCompletedSetNormalized={new Set()}
+                            allAssignedCoursesNormalized={new Set()}
+                            includeClosedComponents={includeClosedComponents}
+                          />
+                        );
+                      })}
+                    </Stack>
+                  </Collapse>
+                </Paper>
+              )}
+            </>
           ) : (
             <Alert color="blue" variant="light" radius={0}>
               <Text size="sm">
