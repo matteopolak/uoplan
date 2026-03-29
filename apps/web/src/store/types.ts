@@ -61,6 +61,8 @@ export interface AppState {
   swapPool: string[];
   chosenCourseToRequirementId: Record<string, string>;
   schedulePoolMaps: Record<string, string>[];
+  /** Per-schedule map of courseCode → colorIndex (0–7). */
+  scheduleColorMaps: Record<string, number>[];
   selectedScheduleIndex: number;
   generationError: GenerationErrorState | null;
   unassignedCompletedCourses: string[];

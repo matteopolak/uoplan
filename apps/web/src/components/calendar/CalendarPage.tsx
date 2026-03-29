@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Box,
@@ -22,7 +22,7 @@ import {
 } from "@tabler/icons-react";
 import { useAppStore } from "../../store/appStore";
 import { useShallow } from "zustand/react/shallow";
-import { CalendarView } from "./CalendarView";
+import { CalendarView, type CalendarViewHandle } from "./CalendarView";
 import { ResetModal } from "../shared/ResetModal";
 import { GenerationErrorDetailBlocks } from "../GenerationErrorDetailBlocks";
 import { buildScheduleIcs, downloadTextFile } from "schedule";
@@ -41,6 +41,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
     generationError,
     cache,
     professorRatings,
+    scheduleColorMaps,
   } = useAppStore(
     useShallow((s) => ({
       generatedSchedules: s.generatedSchedules,
@@ -50,6 +51,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
       generationError: s.generationError,
       cache: s.cache,
       professorRatings: s.professorRatings,
+      scheduleColorMaps: s.scheduleColorMaps,
     })),
   );
 
@@ -61,6 +63,8 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
   const getSwapCandidates = useAppStore((s) => s.getSwapCandidates);
   const swapCourseInSchedule = useAppStore((s) => s.swapCourseInSchedule);
   const resetToDefault = useAppStore((s) => s.resetToDefault);
+
+  const morphRef = useRef<CalendarViewHandle>(null);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -128,6 +132,9 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
     setGeneratingOneMore(true);
     generateSchedules({ appendFirstOnly: true }).then(() => {
       setGeneratingOneMore(false);
+      // Trigger animation to the newly appended schedule
+      const newIdx = useAppStore.getState().selectedScheduleIndex;
+      morphRef.current?.animate(newIdx);
     });
   };
 
@@ -280,7 +287,11 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
           value={String(
             Math.min(selectedScheduleIndex, generatedSchedules.length - 1),
           )}
-          onChange={(v) => setSelectedScheduleIndex(Number(v ?? 0))}
+          onChange={(v) => {
+            const idx = Number(v ?? 0);
+            setSelectedScheduleIndex(idx);
+            morphRef.current?.animate(idx);
+          }}
           size="md"
           radius={0}
         />
@@ -410,6 +421,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
         }}
       >
         <CalendarView
+          ref={morphRef}
           schedules={generatedSchedules}
           selectedIndex={selectedScheduleIndex}
           onSelectIndex={setSelectedScheduleIndex}
@@ -417,6 +429,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
           professorRatings={professorRatings}
           getSwapCandidates={getSwapCandidates}
           onSwap={swapCourseInSchedule}
+          colorMaps={scheduleColorMaps}
         />
       </Box>
 
