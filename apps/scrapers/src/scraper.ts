@@ -23,12 +23,19 @@ function hrefPrefix(baseUrl: string): string {
   return baseUrl.replace(ROOT_URL, '');
 }
 
+type CoursePrereqDisciplineLevel = {
+  discipline: string;
+  levels?: number[];
+};
+
 type CoursePrereqNode = {
   type: 'course' | 'or_group' | 'and_group' | 'non_course';
   code?: string;
   text?: string;
   credits?: number;
   disciplines?: string[];
+  levels?: number[];
+  disciplineLevels?: CoursePrereqDisciplineLevel[];
   programs?: string[];
   children?: CoursePrereqNode[];
 };
@@ -40,6 +47,15 @@ const CoursePrereqNodeSchema: z.ZodType<CoursePrereqNode> = z.lazy(() =>
     text: z.string().optional(),
     credits: z.number().optional(),
     disciplines: z.array(z.string()).optional(),
+    levels: z.array(z.number()).optional(),
+    disciplineLevels: z
+      .array(
+        z.object({
+          discipline: z.string(),
+          levels: z.array(z.number()).optional(),
+        }),
+      )
+      .optional(),
     programs: z.array(z.string()).optional(),
     children: z.array(CoursePrereqNodeSchema).optional(),
   }),
@@ -100,15 +116,39 @@ const ProgramRequirementSchema: z.ZodType<ProgramRequirementType> = ProgramRequi
 });
 export type ProgramRequirement = ProgramRequirementType;
 
+/**
+ * "at the 3000 or 4000 level" / "niveau 3000 ou 4000" must not split on the inner `or`/`ou`.
+ */
+function normalizeLevelOrDisjunction(text: string): string {
+  return text.replace(/\b(\d{4})\s+(or|ou)\s+(\d{4})\b/gi, '$1/$3');
+}
+
+/**
+ * Extracts 1000/2000/… level numbers from prerequisite text (English + French).
+ * Replaces the narrower `at the … level`-only helper used for program electives.
+ */
+function extractLevelsFromPrerequisiteText(text: string): number[] | undefined {
+  const normalized = normalizeLevelOrDisjunction(text);
+  const found = new Set<number>();
+
+  const atThe = normalized.match(/\bat the\s+([^.;]+?)\s+level\b/i);
+  if (atThe) {
+    const nums = atThe[1].match(/\b(\d{4})\b/g);
+    if (nums) for (const n of nums) found.add(parseInt(n, 10));
+  }
+
+  const frNiveau = normalized.match(/\b(?:de|au)\s+niveau\s+([^.;]+)/i);
+  if (frNiveau) {
+    const nums = frNiveau[1].match(/\b(\d{4})\b/g);
+    if (nums) for (const n of nums) found.add(parseInt(n, 10));
+  }
+
+  if (found.size === 0) return undefined;
+  return Array.from(found).sort((a, b) => a - b);
+}
+
 function parseLevelsFromClause(text: string): number[] | undefined {
-  const levels: number[] = [];
-  const re = /at the ([^.;]*) level/i;
-  const m = text.match(re);
-  if (!m) return undefined;
-  const nums = m[1].match(/\b(\d{4})\b/g);
-  if (!nums) return undefined;
-  for (const n of nums) levels.push(parseInt(n, 10));
-  return levels.length > 0 ? levels : undefined;
+  return extractLevelsFromPrerequisiteText(text);
 }
 
 function extractDisciplines(text: string): string[] {
@@ -176,6 +216,52 @@ function splitTopLevel(text: string, separators: RegExp): string[] {
   }
   if (current.trim()) parts.push(current.trim());
   return parts;
+}
+
+/**
+ * "18 units in (CSI) or software engineering (SEG) at the … level" shares one credit pool across
+ * discipline branches — do not emit a separate or_group per `or`.
+ */
+function tryMergeSharedCreditDisciplineOr(
+  orParts: string[],
+  fullText: string,
+): CoursePrereqNode | undefined {
+  if (orParts.length < 2) return undefined;
+  if (orParts.some((p) => extractCourseCodes(p).length > 0)) return undefined;
+  const c0 = parseCreditRequirement(orParts[0]);
+  if (c0 === undefined) return undefined;
+  if (!orParts.slice(1).every((p) => parseCreditRequirement(p) === undefined)) return undefined;
+  const allDisciplines = Array.from(new Set(orParts.flatMap((p) => extractDisciplines(p))));
+  if (allDisciplines.length === 0) return undefined;
+  const levels = extractLevelsFromPrerequisiteText(fullText);
+  const base: CoursePrereqNode = {
+    type: 'non_course',
+    credits: c0,
+    disciplines: allDisciplines,
+    text: fullText,
+  };
+  if (levels?.length) {
+    return {
+      ...base,
+      disciplineLevels: allDisciplines.map((d) => ({ discipline: d, levels })),
+    };
+  }
+  return base;
+}
+
+function enrichNonCourseWithLevels(node: CoursePrereqNode, sourceText: string): CoursePrereqNode {
+  if (node.type !== 'non_course') return node;
+  if (node.credits == null && !node.disciplines?.length) return node;
+  const levels = extractLevelsFromPrerequisiteText(sourceText);
+  if (!levels?.length) return node;
+
+  if (node.disciplines?.length) {
+    return {
+      ...node,
+      disciplineLevels: node.disciplines.map((d) => ({ discipline: d, levels })),
+    };
+  }
+  return { ...node, levels };
 }
 
 function parsePrereqClause(clause: string): CoursePrereqNode | undefined {
@@ -301,10 +387,14 @@ function parsePrereqClause(clause: string): CoursePrereqNode | undefined {
   }
 
   const orRegex = /\s+(or|ou)\s+/i;
-  const hasOr = orRegex.test(inner);
+  const innerForOr = normalizeLevelOrDisjunction(inner);
+  const hasOr = orRegex.test(innerForOr);
 
   if (hasOr) {
-    const orParts = splitTopLevel(inner, orRegex);
+    const orParts = splitTopLevel(innerForOr, orRegex);
+    const merged = tryMergeSharedCreditDisciplineOr(orParts, innerForOr);
+    if (merged) return merged;
+
     const children: CoursePrereqNode[] = [];
     for (const part of orParts) {
       const partTrim = part.trim().replace(/^[,]+/, '').trim();
@@ -313,12 +403,17 @@ function parsePrereqClause(clause: string): CoursePrereqNode | undefined {
       const credits = parseCreditRequirement(partTrim);
       const disciplines = extractDisciplines(partTrim);
       if (codes.length === 0) {
-        children.push({
-          type: 'non_course',
-          text: partTrim,
-          credits,
-          disciplines: disciplines.length ? disciplines : undefined,
-        });
+        children.push(
+          enrichNonCourseWithLevels(
+            {
+              type: 'non_course',
+              text: partTrim,
+              credits,
+              disciplines: disciplines.length ? disciplines : undefined,
+            },
+            partTrim,
+          ),
+        );
       } else if (codes.length === 1) {
         children.push({
           type: 'course',
@@ -328,11 +423,9 @@ function parsePrereqClause(clause: string): CoursePrereqNode | undefined {
       } else {
         const childNodes: CoursePrereqNode[] = codes.map(code => ({ type: 'course', code }));
         if (credits !== undefined) {
-          childNodes.push({
-            type: 'non_course',
-            text: partTrim,
-            credits,
-          });
+          childNodes.push(
+            enrichNonCourseWithLevels({ type: 'non_course', text: partTrim, credits }, partTrim),
+          );
         }
         children.push({
           type: 'and_group',
@@ -345,7 +438,7 @@ function parsePrereqClause(clause: string): CoursePrereqNode | undefined {
     if (children.length === 1) return children[0];
     return {
       type: 'or_group',
-      text: inner,
+      text: innerForOr,
       children,
     };
   }
@@ -354,12 +447,15 @@ function parsePrereqClause(clause: string): CoursePrereqNode | undefined {
   const credits = parseCreditRequirement(inner);
   const disciplines = extractDisciplines(inner);
   if (codes.length === 0) {
-    return {
-      type: 'non_course',
-      text: inner,
-      credits,
-      disciplines: disciplines.length ? disciplines : undefined,
-    };
+    return enrichNonCourseWithLevels(
+      {
+        type: 'non_course',
+        text: inner,
+        credits,
+        disciplines: disciplines.length ? disciplines : undefined,
+      },
+      inner,
+    );
   }
   if (codes.length === 1 && credits === undefined) {
     return {
@@ -371,11 +467,7 @@ function parsePrereqClause(clause: string): CoursePrereqNode | undefined {
 
   const children: CoursePrereqNode[] = codes.map(code => ({ type: 'course', code }));
   if (credits !== undefined) {
-    children.push({
-      type: 'non_course',
-      text: inner,
-      credits,
-    });
+    children.push(enrichNonCourseWithLevels({ type: 'non_course', text: inner, credits }, inner));
   }
   if (children.length === 1) return children[0];
   return {

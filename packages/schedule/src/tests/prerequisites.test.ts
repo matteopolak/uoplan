@@ -10,10 +10,17 @@ import {
   isGraduateCourse,
 } from '../courseFilters';
 
-function makeMockCache(courses: Array<{ code: string; credits: number; discipline?: string }>): DataCache {
-  const map = new Map<string, { code: string; credits: number; component?: string }>();
+function makeMockCache(
+  courses: Array<{
+    code: string;
+    credits: number;
+    discipline?: string;
+    prerequisites?: CoursePrereqNode;
+  }>,
+): DataCache {
+  const map = new Map<string, { code: string; credits: number; component?: string; prerequisites?: CoursePrereqNode }>();
   for (const c of courses) {
-    map.set(c.code, { code: c.code, credits: c.credits });
+    map.set(c.code, { code: c.code, credits: c.credits, prerequisites: c.prerequisites });
   }
   return {
     getCourse(code: string) {
@@ -104,6 +111,89 @@ describe('prerequisites evaluation', () => {
     };
     const cache = makeMockCache([]);
     const ctx = buildPrereqContext([], cache);
+    expect(meetsCoursePrereq(node, ctx)).toBe(true);
+  });
+
+  it('merged discipline credit pool with disciplineLevels needs sum at allowed levels', () => {
+    const merged: CoursePrereqNode = {
+      type: 'non_course',
+      credits: 18,
+      disciplines: ['CSI', 'SEG'],
+      disciplineLevels: [
+        { discipline: 'CSI', levels: [3000, 4000] },
+        { discipline: 'SEG', levels: [3000, 4000] },
+      ],
+      text: '18 units in (CSI) or (SEG) at level',
+    };
+    const cache = makeMockCache([
+      { code: 'CSI 4900', credits: 3, prerequisites: merged },
+    ]);
+    expect(canTakeCourse('CSI 4900', cache, buildPrereqContext([], cache))).toBe(false);
+    const six = Array.from({ length: 6 }, (_, i) => ({
+      code: `CSI ${3001 + i}`,
+      credits: 3,
+    }));
+    const cacheOk = makeMockCache([
+      ...six,
+      { code: 'CSI 4900', credits: 3, prerequisites: merged },
+    ]);
+    expect(
+      canTakeCourse(
+        'CSI 4900',
+        cacheOk,
+        buildPrereqContext(
+          six.map((c) => c.code),
+          cacheOk,
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it('disciplineLevels exclude credits outside listed levels', () => {
+    const node: CoursePrereqNode = {
+      type: 'non_course',
+      credits: 18,
+      disciplines: ['CSI', 'SEG'],
+      disciplineLevels: [
+        { discipline: 'CSI', levels: [3000, 4000] },
+        { discipline: 'SEG', levels: [3000, 4000] },
+      ],
+      text: 'x',
+    };
+    const low = Array.from({ length: 6 }, (_, i) => ({
+      code: `CSI ${1001 + i}`,
+      credits: 3,
+    }));
+    const cache = makeMockCache([
+      ...low,
+      { code: 'CSI 4900', credits: 3, prerequisites: node },
+    ]);
+    expect(
+      canTakeCourse(
+        'CSI 4900',
+        cache,
+        buildPrereqContext(
+          low.map((c) => c.code),
+          cache,
+        ),
+      ),
+    ).toBe(false);
+  });
+
+  it('levels-only non_course counts credits at those course levels', () => {
+    const node: CoursePrereqNode = {
+      type: 'non_course',
+      credits: 15,
+      levels: [5000, 6000, 7000, 8000],
+      text: '15 units at grad level',
+    };
+    const cache = makeMockCache([
+      { code: 'AAA 5001', credits: 5 },
+      { code: 'AAA 5002', credits: 5 },
+      { code: 'AAA 5003', credits: 5 },
+      { code: 'X 9999', credits: 3, prerequisites: node },
+    ]);
+    const ctx = buildPrereqContext(['AAA 5001', 'AAA 5002', 'AAA 5003'], cache);
     expect(meetsCoursePrereq(node, ctx)).toBe(true);
   });
 

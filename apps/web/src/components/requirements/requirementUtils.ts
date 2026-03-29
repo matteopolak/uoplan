@@ -3,6 +3,7 @@ import {
   normalizeCourseCode,
   courseMatchesFilters,
   getEffectiveSchedule,
+  isHonoursProject,
 } from "schedule";
 
 function normalizeTitleForCompare(title: string | undefined): string {
@@ -415,7 +416,8 @@ export function getConstrainMultiSelectOptions(
         ) {
           const isSpecificCourseReq =
             node.type === "course" || node.type === "or_course";
-          if (isSpecificCourseReq && /\b4900\b/.test(c)) return true;
+          if (isSpecificCourseReq && isHonoursProject(c, ctx.cache))
+            return true;
           return false;
         }
         if (isElectiveWithExclusions && ctx.electiveLevelBuckets.length > 0) {
