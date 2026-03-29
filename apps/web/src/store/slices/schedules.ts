@@ -54,6 +54,7 @@ export const createSchedulesSlice: StateCreator<
       cache,
       chosenCourseToRequirementId,
       schedulePoolMaps,
+      scheduleColorMaps,
       generationMinStartMinutes,
       generationMaxEndMinutes,
       generationAllowedDays,
@@ -102,11 +103,24 @@ export const createSchedulesSlice: StateCreator<
         if (scheduleIndex < nextPoolMaps.length) {
           nextPoolMaps[scheduleIndex] = nextMap;
         }
+        // Carry the old course's colour index to the replacement course
+        const oldColorMap = scheduleColorMaps[scheduleIndex] ?? {};
+        const colorIdx = oldColorMap[oldCode];
+        const { [oldCode]: _removed, ...mapWithoutOld } = oldColorMap;
+        const nextColorMap =
+          colorIdx !== undefined
+            ? { ...mapWithoutOld, [newCourseCode]: colorIdx }
+            : mapWithoutOld;
+        const nextColorMaps = [...scheduleColorMaps];
+        if (scheduleIndex < nextColorMaps.length) {
+          nextColorMaps[scheduleIndex] = nextColorMap;
+        }
         set({
           generatedSchedules: newSchedules,
           chosenCourseToRequirementId:
             scheduleIndex === 0 ? nextMap : chosenCourseToRequirementId,
           schedulePoolMaps: nextPoolMaps,
+          scheduleColorMaps: nextColorMaps,
           ...(isUndo
             ? {}
             : {

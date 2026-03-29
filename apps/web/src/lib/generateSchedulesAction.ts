@@ -32,6 +32,7 @@ import {
 } from "schedule";
 import { collectImplicitHonoursForSchedule } from "./implicitHonours";
 import { diagnoseTimetableFailure, type TimetableFailureDiagnostics } from "schedule";
+import { buildColorMap, buildColorMaps } from "./colorMap";
 
 const UNKNOWN_COURSE_LEVEL = 999_000;
 
@@ -156,6 +157,7 @@ export interface GenerateSchedulesResult {
   swapPool: string[];
   chosenCourseToRequirementId: Record<string, string>;
   schedulePoolMaps: Record<string, string>[];
+  scheduleColorMaps: Record<string, number>[];
   selectedScheduleIndex: number;
   swapHistory: never[];
   generationError: GenerationErrorState | null;
@@ -189,6 +191,7 @@ export async function generateSchedulesAction(
     includeClosedComponents,
     generationLimitFirstYearCredits,
     generationCompressedSchedule,
+    scheduleColorMaps: existingColorMaps,
   } = state;
 
   if (!cache) {
@@ -227,6 +230,7 @@ export async function generateSchedulesAction(
       swapPool: state.swapPool,
       chosenCourseToRequirementId: state.chosenCourseToRequirementId,
       schedulePoolMaps: state.schedulePoolMaps,
+      scheduleColorMaps: existingColorMaps,
       selectedScheduleIndex: state.selectedScheduleIndex,
       swapHistory: [],
       generationError: generationErrorState(
@@ -974,11 +978,14 @@ export async function generateSchedulesAction(
         ...limitedSchedules[0].enrollments.map((e) => e.courseCode),
       ]),
     ];
+    const prevColorMap = existingColorMaps[existingColorMaps.length - 1] ?? {};
+    const newColorMaps = [...existingColorMaps, buildColorMap(limitedSchedules[0], prevColorMap)];
     return {
       generatedSchedules: newSchedules,
       swapPool: newSwapPool,
       chosenCourseToRequirementId: state.chosenCourseToRequirementId,
       schedulePoolMaps: newPoolMaps,
+      scheduleColorMaps: newColorMaps,
       selectedScheduleIndex: newSchedules.length - 1,
       swapHistory: [],
       generationError: null,
@@ -999,6 +1006,7 @@ export async function generateSchedulesAction(
       swapPool: state.swapPool,
       chosenCourseToRequirementId: state.chosenCourseToRequirementId,
       schedulePoolMaps: state.schedulePoolMaps,
+      scheduleColorMaps: existingColorMaps,
       selectedScheduleIndex: state.selectedScheduleIndex,
       swapHistory: [],
       generationError: generationErrorState(
@@ -1022,6 +1030,7 @@ export async function generateSchedulesAction(
       swapPool,
       chosenCourseToRequirementId: lastChosenFromPool,
       schedulePoolMaps: limitedPoolMaps,
+      scheduleColorMaps: [],
       selectedScheduleIndex: 0,
       swapHistory: [],
       generationError: generationErrorState(timetableFailure.leadMessage, details),
@@ -1033,6 +1042,7 @@ export async function generateSchedulesAction(
     swapPool,
     chosenCourseToRequirementId: lastChosenFromPool,
     schedulePoolMaps: limitedPoolMaps,
+    scheduleColorMaps: buildColorMaps(limitedSchedules),
     selectedScheduleIndex: 0,
     swapHistory: [],
     generationError: null,
