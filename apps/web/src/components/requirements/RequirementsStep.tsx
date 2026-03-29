@@ -256,7 +256,7 @@ export function RequirementsStep({
     .sort();
 
   return (
-    <Stack gap="lg" data-tour="requirements">
+    <Stack gap="lg" data-tour="requirements-legacy">
       {unassignedDisplay.length > 0 && (
         <Alert
           color="yellow"

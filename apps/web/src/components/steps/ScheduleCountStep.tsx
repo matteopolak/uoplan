@@ -1,4 +1,4 @@
-import { Stack, NumberInput, Button, Alert, Group, MultiSelect, TextInput, Select, Checkbox, Text } from '@mantine/core';
+import { Stack, NumberInput, Button, Alert, Group, MultiSelect, TextInput, Select, Checkbox } from '@mantine/core';
 import type { DayOfWeek } from 'schemas';
 import type { GenerationErrorDetails } from '../../store/types';
 import { GenerationErrorDetailBlocks } from '../GenerationErrorDetailBlocks';
@@ -95,7 +95,7 @@ export function ScheduleCountStep({
   ];
 
   return (
-    <Stack gap="md">
+    <Stack gap="md" data-tour="generate-step">
       <NumberInput
         label="How many courses do you want this semester?"
         value={coursesThisSemester}
@@ -175,7 +175,6 @@ export function ScheduleCountStep({
         </Alert>
       )}
       <Button
-        data-tour="generate-schedules"
         size="sm"
         color="violet"
         variant="filled"

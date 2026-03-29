@@ -136,7 +136,7 @@ export function AssignStep({
     .sort();
 
   return (
-    <Stack gap="lg" data-tour="requirements">
+    <Stack gap="lg" data-tour="assign-requirements">
       {unassignedDisplay.length > 0 ? (
         <Alert
           color="yellow"

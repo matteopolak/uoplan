@@ -155,7 +155,7 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
   };
 
   return (
-    <Stack gap="md">
+    <Stack gap="md" data-tour="program-step">
       <Select
         label="First year of study"
         description="Determines which program requirements apply to you."
@@ -169,7 +169,6 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
         size="md"
       />
       <Select
-        data-tour="program-select"
         label="Select your program"
         placeholder="Search for your program..."
         data={data}
@@ -216,7 +215,6 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
         aria-label="Upload transcript PDF"
       />
       <Button
-        data-tour="transcript-upload"
         size="sm"
         color="violet"
         variant="filled"

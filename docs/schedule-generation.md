@@ -11,7 +11,8 @@ How uoplan builds conflict-free timetables from program requirements and user ch
 3. **Orchestration** — **`apps/web/src/lib/generateSchedulesAction.ts`** (invoked from `createSchedulesSlice` → `generateSchedules`):
    - Pins honours (Constrain, Assign, or implicit) and optional explicit union from Constrain (`mergeGlobalExplicitRule`, `pickFromUserAndGeneralPools` from `packages/schedule`).
    - Builds **`RequirementPool`s** via `buildRequirementPools` and allocates counts with **`computeCoursesPerPool`** (`apps/web/src/store/scheduleHelpers.ts`), adjusting credits for pinned courses **once per requirement** (`requirementIdForPinnedCourse`).
-   - Samples candidates per pool, then calls **`generateSchedules`** / **`generateSchedulesWithPinned`** in **`packages/schedule/src/scheduleGenerator.ts`** (backtracking over section combos; honours projects use empty timetables).
+   - Samples candidates per pool using **weighted random selection** — lower-level courses (1000) are preferred over higher-level ones (2000, 3000, …) via an inverse-exponential weight (`1 / 2^(tier-1)`). User-constrained courses are always picked first for their pool. Courses with non-course prerequisites receive a penalty. The `weightedRandomPick` utility in `scheduleHelpers.ts` drives this selection using the seeded RNG.
+   - Then calls **`generateSchedules`** / **`generateSchedulesWithPinned`** in **`packages/schedule/src/scheduleGenerator.ts`** (backtracking over section combos; honours projects use empty timetables).
 
 4. **Constraints** — `GenerationConstraints` (time window, days, professor rating, first-year credit cap, compressed schedule) are applied inside `scheduleGenerator.ts`.
 

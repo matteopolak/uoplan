@@ -77,3 +77,25 @@
 .driver-active-element {
   border-radius: 4px;
 }
+
+/* Structured tour description (see wizardStepContent.ts) */
+.driver-popover-description .driver-tour-desc__label {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  color: #868e96 !important;
+  margin: 0 0 6px 0 !important;
+}
+
+.driver-popover-description .driver-tour-desc__label--second {
+  margin-top: 12px !important;
+}
+
+.driver-popover-description .driver-tour-desc__purpose,
+.driver-popover-description .driver-tour-desc__action {
+  margin: 0 0 4px 0 !important;
+  color: #adb5bd !important;
+  line-height: 1.5 !important;
+  font-size: 13px !important;
+}

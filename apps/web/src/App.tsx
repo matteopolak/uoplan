@@ -6,6 +6,7 @@ import {
   Button,
   Group,
   Loader,
+  Modal,
   Paper,
   Stack,
   Text,
@@ -13,7 +14,12 @@ import {
 } from "@mantine/core";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMediaQuery } from "@mantine/hooks";
-import { IconHelp, IconRefresh, IconShare } from "@tabler/icons-react";
+import {
+  IconCompass,
+  IconHelp,
+  IconRefresh,
+  IconShare,
+} from "@tabler/icons-react";
 import { runTour } from "./tour";
 import { useAppStore } from "./store/appStore";
 import { useShallow } from "zustand/react/shallow";
@@ -43,6 +49,7 @@ import { usePersistState } from "./hooks/usePersistState";
 import { useNavHistory } from "./hooks/useNavHistory";
 import { useTour } from "./hooks/useTour";
 import { useShareUrl } from "./hooks/useShareUrl";
+import { WIZARD_STEP_CONTENT } from "./lib/wizardStepContent";
 
 function App() {
   const {
@@ -142,13 +149,13 @@ function App() {
     useNavHistory();
   const [generating, setGenerating] = useState(false);
   const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [helpModalOpen, setHelpModalOpen] = useState(false);
 
   const isMobile = useMediaQuery("(max-width: 768px)");
   const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
 
   // Use extracted hooks
   const { shareCopied, handleCopyShare } = useShareUrl(getShareUrl);
-  useTour(!loading && !!indices, setActive);
 
   useEffect(() => {
     loadData();
@@ -174,6 +181,13 @@ function App() {
   const navVisibleStepIndices = useMemo(
     () => buildVisibleStepIndices(needsOptionsStep, needsAssignStep),
     [needsOptionsStep, needsAssignStep],
+  );
+
+  useTour(
+    !loading && !!indices,
+    setActive,
+    needsOptionsStep,
+    needsAssignStep,
   );
 
   const effectiveActive = useMemo(
@@ -364,6 +378,53 @@ function App() {
         }}
       />
 
+      <Modal
+        opened={helpModalOpen}
+        onClose={() => setHelpModalOpen(false)}
+        title={WIZARD_STEP_CONTENT[effectiveActive]?.title ?? "Help"}
+        centered
+        radius={0}
+        styles={{
+          header: {
+            backgroundColor: "#1E1E20",
+            borderBottom: "1px solid #2C2E33",
+          },
+          body: { backgroundColor: "#1E1E20" },
+          title: { color: "#F8F9FA", fontWeight: 600 },
+        }}
+      >
+        <Stack gap="md">
+          <Box>
+            <Text
+              size="xs"
+              fw={600}
+              tt="uppercase"
+              style={{ letterSpacing: "0.08em", color: "#868E96" }}
+              mb={6}
+            >
+              What this step is for
+            </Text>
+            <Text size="sm" style={{ color: "#ADB5BD", lineHeight: 1.5 }}>
+              {WIZARD_STEP_CONTENT[effectiveActive]?.purpose}
+            </Text>
+          </Box>
+          <Box>
+            <Text
+              size="xs"
+              fw={600}
+              tt="uppercase"
+              style={{ letterSpacing: "0.08em", color: "#868E96" }}
+              mb={6}
+            >
+              What you should do
+            </Text>
+            <Text size="sm" style={{ color: "#ADB5BD", lineHeight: 1.5 }}>
+              {WIZARD_STEP_CONTENT[effectiveActive]?.whatToDo}
+            </Text>
+          </Box>
+        </Stack>
+      </Modal>
+
       <Title
         order={1}
         style={{
@@ -464,7 +525,18 @@ function App() {
                       color="gray"
                       size="xs"
                       leftSection={<IconHelp size={14} />}
-                      onClick={() => runTour(setActive)}
+                      onClick={() => setHelpModalOpen(true)}
+                    >
+                      Help
+                    </Button>
+                    <Button
+                      variant="subtle"
+                      color="gray"
+                      size="xs"
+                      leftSection={<IconCompass size={14} />}
+                      onClick={() =>
+                        runTour(setActive, navVisibleStepIndices)
+                      }
                     >
                       Tour
                     </Button>

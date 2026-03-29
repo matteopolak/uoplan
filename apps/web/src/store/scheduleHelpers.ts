@@ -45,11 +45,65 @@ export function buildRequirementPools(
 /** Default credits per course when converting creditsNeeded to number of courses. */
 export const DEFAULT_CREDITS_PER_COURSE = 3;
 
-function poolCourseCap(pool: RequirementPool): number {
-  return Math.max(
+/**
+ * Max courses this pool may contribute toward one generated term.
+ * Discipline electives are capped at one per term: remaining units are spread
+ * across future terms by the planner, not stacked into one schedule.
+ */
+export function poolCourseCap(pool: RequirementPool): number {
+  const raw = Math.max(
     pool.minCourses,
     Math.ceil(pool.creditsNeeded / DEFAULT_CREDITS_PER_COURSE),
   );
+  if (pool.type === "discipline_elective") {
+    return Math.min(raw, 1);
+  }
+  return raw;
+}
+
+export function buildPoolCaps(pools: RequirementPool[]): Map<string, number> {
+  const cap = new Map<string, number>();
+  for (const pool of pools) {
+    cap.set(pool.requirementId, poolCourseCap(pool));
+  }
+  return cap;
+}
+
+/**
+ * Single-step alternatives: move one allocated slot from a structured pool to a
+ * broad elective pool with spare cap. Used when overlapping candidates make the
+ * greedy split unsatisfiable with distinct course codes.
+ */
+export function enumerateSingleRedistributions(
+  coursesPerPool: Map<string, number>,
+  pools: RequirementPool[],
+  cap: Map<string, number>,
+): Map<string, number>[] {
+  const structured = pools.filter((p) => !isBroadElectivePoolType(p.type));
+  const broad = pools.filter((p) => isBroadElectivePoolType(p.type));
+  const out: Map<string, number>[] = [];
+  const seen = new Set<string>();
+
+  for (const s of structured) {
+    const sn = coursesPerPool.get(s.requirementId) ?? 0;
+    if (sn <= 0) continue;
+    for (const b of broad) {
+      const bn = coursesPerPool.get(b.requirementId) ?? 0;
+      const bc = cap.get(b.requirementId) ?? 0;
+      if (bn >= bc) continue;
+      const m = new Map(coursesPerPool);
+      m.set(s.requirementId, sn - 1);
+      m.set(b.requirementId, bn + 1);
+      const key = [...m.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([id, n]) => `${id}:${n}`)
+        .join("|");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(m);
+    }
+  }
+  return out;
 }
 
 /**
@@ -181,4 +235,22 @@ export function shuffleInPlace<T>(arr: T[], rng: () => number): void {
     arr[i] = arr[j];
     arr[j] = tmp;
   }
+}
+
+/**
+ * Pick one item from `items` using weighted probabilities.
+ * Deterministic given the seeded `rng`.
+ */
+export function weightedRandomPick<T>(
+  items: T[],
+  weights: number[],
+  rng: () => number,
+): T {
+  const total = weights.reduce((a, b) => a + b, 0);
+  let r = rng() * total;
+  for (let i = 0; i < items.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return items[i];
+  }
+  return items[items.length - 1];
 }
