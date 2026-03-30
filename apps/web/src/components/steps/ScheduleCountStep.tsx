@@ -1,3 +1,4 @@
+import React from 'react';
 import { Stack, NumberInput, Button, Alert, Group, MultiSelect, TextInput, Select, Checkbox } from '@mantine/core';
 import type { DayOfWeek } from 'schemas';
 import type { GenerationErrorDetails } from '../../store/types';
@@ -53,6 +54,7 @@ interface ScheduleCountStepProps {
   errorDetails?: GenerationErrorDetails | null;
   disableGenerate?: boolean;
   disableGenerateReason?: string;
+  beforeGenerate?: React.ReactNode;
 }
 
 export function ScheduleCountStep({
@@ -79,6 +81,7 @@ export function ScheduleCountStep({
   errorDetails,
   disableGenerate = false,
   disableGenerateReason,
+  beforeGenerate,
 }: ScheduleCountStepProps) {
   const needMore = selectedCount < coursesThisSemester;
   const summarizeEmptyPools =
@@ -174,6 +177,7 @@ export function ScheduleCountStep({
           {disableGenerateReason}
         </Alert>
       )}
+      {beforeGenerate}
       <Button
         size="sm"
         color="violet"

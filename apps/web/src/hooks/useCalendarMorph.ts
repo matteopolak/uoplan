@@ -6,6 +6,7 @@ export interface CapturedEvent {
   rect: DOMRect;
   heading: string;
   section: string;
+  professor: string;
 }
 
 export interface Phantom {
@@ -17,8 +18,10 @@ export interface Phantom {
   kind: "flip" | "fadeOut";
   heading: string;
   section: string;
+  professor: string;
   toHeading: string;
   toSection: string;
+  toProfessor: string;
 }
 
 type Phase =
@@ -48,7 +51,9 @@ function captureEventPositions(container: HTMLElement | null): CapturedEvent[] {
         el.querySelector(".fc-uoplan-event-code")?.textContent ?? "";
       const section =
         el.querySelector(".fc-uoplan-event-type")?.textContent ?? "";
-      captures.push({ courseCode, colorHex, rect, heading, section });
+      const professor =
+        el.querySelector(".fc-uoplan-event-professor > span")?.textContent ?? "";
+      captures.push({ courseCode, colorHex, rect, heading, section, professor });
     }
   }
   return captures;
@@ -65,8 +70,10 @@ function buildParkedPhantoms(oldEvents: CapturedEvent[]): Phantom[] {
     kind: "flip" as const,
     heading: c.heading,
     section: c.section,
+    professor: c.professor,
     toHeading: c.heading,
     toSection: c.section,
+    toProfessor: c.professor,
   }));
 }
 
@@ -95,8 +102,10 @@ function buildPhantoms(
           kind: "flip",
           heading: old.heading,
           section: old.section,
+          professor: old.professor,
           toHeading: newEvents[ni].heading,
           toSection: newEvents[ni].section,
+          toProfessor: newEvents[ni].professor,
         });
         matchedOld.add(oi);
         matchedNew.add(ni);
@@ -147,8 +156,10 @@ function buildPhantoms(
         kind: "flip",
         heading: olds[i].heading,
         section: olds[i].section,
+        professor: olds[i].professor,
         toHeading: news[i].heading,
         toSection: news[i].section,
+        toProfessor: news[i].professor,
       });
     }
     for (let i = flips; i < olds.length; i++) {
@@ -161,8 +172,10 @@ function buildPhantoms(
         kind: "fadeOut",
         heading: olds[i].heading,
         section: olds[i].section,
+        professor: olds[i].professor,
         toHeading: olds[i].heading,
         toSection: olds[i].section,
+        toProfessor: olds[i].professor,
       });
     }
   }

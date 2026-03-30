@@ -6,13 +6,12 @@ import {
 } from "../../lib/wizardSteps";
 
 export const STEPS = [
-  { label: "Term", description: "Choose term" },
-  { label: "Program", description: "Program & transcript" },
-  { label: "Completed", description: "Mark completed courses" },
-  { label: "Options", description: "Choose program options" },
-  { label: "Assign", description: "Assign completed courses" },
-  { label: "Courses", description: "Pick courses & filters" },
-  { label: "Generate", description: "Preferences & generate" },
+  { label: "Choose term", description: "Choose term" },
+  { label: "Select program", description: "Program & transcript" },
+  { label: "Add completed courses", description: "Mark completed courses" },
+  { label: "Choose path", description: "Choose program options" },
+  { label: "Fill requirements", description: "Assign completed courses" },
+  { label: "Generate schedules", description: "Preferences & generate" },
 ] as const;
 
 export type Step = (typeof STEPS)[number];

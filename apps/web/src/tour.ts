@@ -8,6 +8,7 @@ import {
   WIZARD_STEP_CONTENT,
   WIZARD_TOUR_SELECTOR,
 } from './lib/wizardStepContent';
+import { WizardStep } from './lib/wizardSteps';
 
 const TOUR_DONE_KEY = 'uoplan-tour-done';
 
@@ -90,7 +91,7 @@ export function runTour(
       const targetWizard =
         nextTourIndex < visibleStepIndices.length
           ? visibleStepIndices[nextTourIndex]!
-          : 6;
+          : WizardStep.Generate;
       setWizardStep(targetWizard);
       setTimeout(() => {
         d.moveNext();
@@ -105,7 +106,7 @@ export function runTour(
       const targetWizard =
         prevTourIndex < visibleStepIndices.length
           ? visibleStepIndices[prevTourIndex]!
-          : 6;
+          : WizardStep.Generate;
       setWizardStep(targetWizard);
       setTimeout(() => {
         d.movePrevious();

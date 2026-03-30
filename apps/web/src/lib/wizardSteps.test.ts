@@ -8,93 +8,116 @@ import {
   isWizardStepSkipped,
   normalizeActiveStep,
   skippedWizardStepIsPassed,
+  WizardStep,
 } from "./wizardSteps";
 
 describe("buildVisibleStepIndices", () => {
   it("includes options and assign when both needed", () => {
     expect(buildVisibleStepIndices(true, true)).toEqual([
-      0, 1, 2, 3, 4, 5, 6,
+      WizardStep.Term,
+      WizardStep.Program,
+      WizardStep.Completed,
+      WizardStep.Options,
+      WizardStep.Assign,
+      WizardStep.Generate,
     ]);
   });
 
   it("skips options and assign when neither needed", () => {
-    expect(buildVisibleStepIndices(false, false)).toEqual([0, 1, 2, 5, 6]);
+    expect(buildVisibleStepIndices(false, false)).toEqual([
+      WizardStep.Term,
+      WizardStep.Program,
+      WizardStep.Completed,
+      WizardStep.Generate,
+    ]);
   });
 
   it("includes only options when assign not needed", () => {
-    expect(buildVisibleStepIndices(true, false)).toEqual([0, 1, 2, 3, 5, 6]);
+    expect(buildVisibleStepIndices(true, false)).toEqual([
+      WizardStep.Term,
+      WizardStep.Program,
+      WizardStep.Completed,
+      WizardStep.Options,
+      WizardStep.Generate,
+    ]);
   });
 
   it("includes only assign when options not needed", () => {
-    expect(buildVisibleStepIndices(false, true)).toEqual([0, 1, 2, 4, 5, 6]);
+    expect(buildVisibleStepIndices(false, true)).toEqual([
+      WizardStep.Term,
+      WizardStep.Program,
+      WizardStep.Completed,
+      WizardStep.Assign,
+      WizardStep.Generate,
+    ]);
   });
 });
 
 describe("getNextStep / getPrevStep", () => {
-  it("jumps from completed to constrain when options and assign skipped", () => {
-    expect(getNextStep(2, false, false)).toBe(5);
-    expect(getPrevStep(5, false, false)).toBe(2);
+  it("jumps from completed to generate when options and assign skipped", () => {
+    expect(getNextStep(WizardStep.Completed, false, false)).toBe(WizardStep.Generate);
+    expect(getPrevStep(WizardStep.Generate, false, false)).toBe(WizardStep.Completed);
   });
 
   it("goes through assign when only options skipped", () => {
-    expect(getNextStep(2, false, true)).toBe(4);
-    expect(getNextStep(4, false, true)).toBe(5);
-    expect(getPrevStep(4, false, true)).toBe(2);
+    expect(getNextStep(WizardStep.Completed, false, true)).toBe(WizardStep.Assign);
+    expect(getNextStep(WizardStep.Assign, false, true)).toBe(WizardStep.Generate);
+    expect(getPrevStep(WizardStep.Assign, false, true)).toBe(WizardStep.Completed);
   });
 
   it("stays on last step", () => {
-    expect(getNextStep(6, true, true)).toBe(6);
+    expect(getNextStep(WizardStep.Generate, true, true)).toBe(WizardStep.Generate);
   });
 });
 
 describe("normalizeActiveStep", () => {
-  it("maps skipped options step to constrain or assign", () => {
-    expect(normalizeActiveStep(3, false, false)).toBe(5);
-    expect(normalizeActiveStep(3, false, true)).toBe(4);
+  it("maps skipped options step to generate or assign", () => {
+    expect(normalizeActiveStep(WizardStep.Options, false, false)).toBe(WizardStep.Generate);
+    expect(normalizeActiveStep(WizardStep.Options, false, true)).toBe(WizardStep.Assign);
   });
 
-  it("maps skipped assign step to constrain", () => {
-    expect(normalizeActiveStep(4, true, false)).toBe(5);
+  it("maps skipped assign step to generate", () => {
+    expect(normalizeActiveStep(WizardStep.Assign, true, false)).toBe(WizardStep.Generate);
   });
 
   it("leaves valid steps unchanged", () => {
-    expect(normalizeActiveStep(5, false, false)).toBe(5);
+    expect(normalizeActiveStep(WizardStep.Generate, false, false)).toBe(WizardStep.Generate);
   });
 });
 
 describe("furthestReachedDisplayIndex", () => {
-  const skipBoth = [0, 1, 2, 5, 6];
+  const skipBoth = [WizardStep.Term, WizardStep.Program, WizardStep.Completed, WizardStep.Generate];
 
   it("uses the visible index when furthest actual is on the list", () => {
-    expect(furthestReachedDisplayIndex(skipBoth, 5)).toBe(3);
-    expect(furthestReachedDisplayIndex(skipBoth, 2)).toBe(2);
+    expect(furthestReachedDisplayIndex(skipBoth, WizardStep.Generate)).toBe(3);
+    expect(furthestReachedDisplayIndex(skipBoth, WizardStep.Completed)).toBe(2);
   });
 
   it("maps past a dropped optional step to the next visible row", () => {
-    expect(furthestReachedDisplayIndex(skipBoth, 4)).toBe(3);
-    expect(furthestReachedDisplayIndex(skipBoth, 3)).toBe(3);
+    expect(furthestReachedDisplayIndex(skipBoth, WizardStep.Assign)).toBe(3);
+    expect(furthestReachedDisplayIndex(skipBoth, WizardStep.Options)).toBe(3);
   });
 });
 
 describe("skipped optional steps", () => {
   it("detects skipped options and assign rows", () => {
-    expect(isWizardStepSkipped(3, false, false)).toBe(true);
-    expect(isWizardStepSkipped(4, false, false)).toBe(true);
-    expect(isWizardStepSkipped(3, true, false)).toBe(false);
-    expect(isWizardStepSkipped(4, false, true)).toBe(false);
+    expect(isWizardStepSkipped(WizardStep.Options, false, false)).toBe(true);
+    expect(isWizardStepSkipped(WizardStep.Assign, false, false)).toBe(true);
+    expect(isWizardStepSkipped(WizardStep.Options, true, false)).toBe(false);
+    expect(isWizardStepSkipped(WizardStep.Assign, false, true)).toBe(false);
   });
 
   it("firstInteractiveStepAfter finds the next interactive step", () => {
-    expect(firstInteractiveStepAfter(2, false, false)).toBe(5);
-    expect(firstInteractiveStepAfter(3, true, false)).toBe(5);
-    expect(firstInteractiveStepAfter(3, false, true)).toBe(4);
+    expect(firstInteractiveStepAfter(WizardStep.Completed, false, false)).toBe(WizardStep.Generate);
+    expect(firstInteractiveStepAfter(WizardStep.Options, true, false)).toBe(WizardStep.Generate);
+    expect(firstInteractiveStepAfter(WizardStep.Options, false, true)).toBe(WizardStep.Assign);
   });
 
   it("skippedWizardStepIsPassed when furthest reaches the next step", () => {
-    expect(skippedWizardStepIsPassed(3, 4, true, false)).toBe(false);
-    expect(skippedWizardStepIsPassed(3, 5, true, false)).toBe(false);
-    expect(skippedWizardStepIsPassed(3, 5, false, false)).toBe(true);
-    expect(skippedWizardStepIsPassed(4, 4, false, false)).toBe(false);
-    expect(skippedWizardStepIsPassed(4, 5, false, false)).toBe(true);
+    expect(skippedWizardStepIsPassed(WizardStep.Options, WizardStep.Assign, true, false)).toBe(false);
+    expect(skippedWizardStepIsPassed(WizardStep.Options, WizardStep.Generate, true, false)).toBe(false);
+    expect(skippedWizardStepIsPassed(WizardStep.Options, WizardStep.Generate, false, false)).toBe(true);
+    expect(skippedWizardStepIsPassed(WizardStep.Assign, WizardStep.Assign, false, false)).toBe(false);
+    expect(skippedWizardStepIsPassed(WizardStep.Assign, WizardStep.Generate, false, false)).toBe(true);
   });
 });

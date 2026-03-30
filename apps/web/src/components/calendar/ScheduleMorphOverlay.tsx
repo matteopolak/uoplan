@@ -18,12 +18,13 @@ function rectToStyle(rect: DOMRect) {
   };
 }
 
-function TextContent({ heading, section }: { heading: string; section: string }) {
+function TextContent({ heading, section, professor }: { heading: string; section: string; professor: string }) {
   if (!heading) return null;
   return (
     <div className="fc-uoplan-event-body">
       <span className="fc-uoplan-event-code">{heading}</span>
       {section && <span className="fc-uoplan-event-type">{section}</span>}
+      {professor && <span className="fc-uoplan-event-professor">{professor}</span>}
     </div>
   );
 }
@@ -35,7 +36,7 @@ function PhantomBlock({
   phantom: Phantom;
   onComplete: () => void;
 }) {
-  const { colorHex, kind, fromRect, toRect, heading, section, toHeading, toSection } = phantom;
+  const { colorHex, kind, fromRect, toRect, heading, section, professor, toHeading, toSection, toProfessor } = phantom;
   const { r, g, b } = hexToRgb(colorHex);
   const bg = `rgba(${r}, ${g}, ${b}, 0.38)`;
 
@@ -81,21 +82,21 @@ function PhantomBlock({
       >
         {/* Old text fades out during the slide */}
         <motion.div
-          style={{ position: "absolute", top: "8px", left: "8px", right: "8px" }}
+          style={{ position: "absolute", top: "8px", left: "8px", right: "8px", bottom: "8px", display: "flex", flexDirection: "column" }}
           animate={{ opacity: 0 }}
           transition={{ duration: HALF_S, ease: "easeIn" }}
         >
-          <TextContent heading={heading} section={section} />
+          <TextContent heading={heading} section={section} professor={professor} />
         </motion.div>
 
         {/* New text fades in during the slide */}
         <motion.div
-          style={{ position: "absolute", top: "8px", left: "8px", right: "8px" }}
+          style={{ position: "absolute", top: "8px", left: "8px", right: "8px", bottom: "8px", display: "flex", flexDirection: "column" }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: HALF_S, ease: "easeIn" }}
         >
-          <TextContent heading={toHeading} section={toSection} />
+          <TextContent heading={toHeading} section={toSection} professor={toProfessor} />
         </motion.div>
       </motion.div>
     );
@@ -113,10 +114,7 @@ function PhantomBlock({
       onAnimationComplete={onComplete}
       style={blockStyle}
     >
-      <div className="fc-uoplan-event-body">
-        <span className="fc-uoplan-event-code">{heading}</span>
-        {section && <span className="fc-uoplan-event-type">{section}</span>}
-      </div>
+      <TextContent heading={heading} section={section} professor={professor} />
     </motion.div>
   );
 }

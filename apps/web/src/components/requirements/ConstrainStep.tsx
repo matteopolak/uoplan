@@ -406,18 +406,6 @@ export function ConstrainStep({
         </Stack>
       </Paper>
 
-      <Alert color="blue" variant="light" radius={0}>
-        <Text size="sm">
-          <strong>Optional.</strong> Choose courses you want considered for each requirement.
-          Leave a requirement empty to let the generator pick any eligible
-          course. For each requirement, up to min(needed, your picks) courses
-          are chosen only from your list; any remaining slots for that
-          requirement come from other eligible courses. If you list at least as
-          many picks as there are courses in your term, schedules use only those
-          courses.
-        </Text>
-      </Alert>
-
       {missingSelections.length > 0 && (
         <Alert
           color="yellow"
