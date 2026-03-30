@@ -1,18 +1,34 @@
 /**
- * Wizard uses fixed indices into {@link STEPS}: 0 Term … 6 Generate.
+ * Wizard uses fixed indices into {@link STEPS}.
  * Options (3) and Assign (4) are omitted from the flow when the user has nothing to do.
  */
-export const ALL_WIZARD_STEP_INDICES = [0, 1, 2, 3, 4, 5, 6] as const;
+export enum WizardStep {
+  Term = 0,
+  Program = 1,
+  Completed = 2,
+  Options = 3,
+  Assign = 4,
+  Generate = 5,
+}
+
+export const ALL_WIZARD_STEP_INDICES = [
+  WizardStep.Term,
+  WizardStep.Program,
+  WizardStep.Completed,
+  WizardStep.Options,
+  WizardStep.Assign,
+  WizardStep.Generate,
+] as const;
 
 /** Interactive steps only (omits Options / Assign when N/A). */
 export function buildVisibleStepIndices(
   needsOptions: boolean,
   needsAssign: boolean,
 ): number[] {
-  const out: number[] = [0, 1, 2];
-  if (needsOptions) out.push(3);
-  if (needsAssign) out.push(4);
-  out.push(5, 6);
+  const out: number[] = [WizardStep.Term, WizardStep.Program, WizardStep.Completed];
+  if (needsOptions) out.push(WizardStep.Options);
+  if (needsAssign) out.push(WizardStep.Assign);
+  out.push(WizardStep.Generate);
   return out;
 }
 
@@ -76,8 +92,8 @@ export function isWizardStepSkipped(
   needsOptions: boolean,
   needsAssign: boolean,
 ): boolean {
-  if (actualIdx === 3) return !needsOptions;
-  if (actualIdx === 4) return !needsAssign;
+  if (actualIdx === WizardStep.Options) return !needsOptions;
+  if (actualIdx === WizardStep.Assign) return !needsAssign;
   return false;
 }
 
