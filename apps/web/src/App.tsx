@@ -4,6 +4,7 @@ import {
   Badge,
   Box,
   Button,
+  Collapse,
   Group,
   Loader,
   Modal,
@@ -15,6 +16,7 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { useMediaQuery } from "@mantine/hooks";
 import {
+  IconChevronDown,
   IconCompass,
   IconHelp,
   IconRefresh,
@@ -43,6 +45,7 @@ import {
   getNextStep,
   getPrevStep,
   normalizeActiveStep,
+  WizardStep,
 } from "./lib/wizardSteps";
 import { ScheduleCountStep } from "./components/steps/ScheduleCountStep";
 import { usePersistState } from "./hooks/usePersistState";
@@ -150,6 +153,7 @@ function App() {
   const [generating, setGenerating] = useState(false);
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
+  const [constrainOpen, setConstrainOpen] = useState(false);
 
   const isMobile = useMediaQuery("(max-width: 768px)");
   const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
@@ -216,10 +220,10 @@ function App() {
   }, [active, effectiveActive, replaceActive]);
 
   const canProceedFromStep = (() => {
-    if (effectiveActive === 0) return hasTerms && Boolean(selectedTermId) && Boolean(cache);
-    if (effectiveActive === 1) return firstYear !== null && program !== null;
-    if (effectiveActive === 3) return !missingOptions;
-    if (effectiveActive === 4) return unassignedCompletedCourses.length === 0;
+    if (effectiveActive === WizardStep.Term) return hasTerms && Boolean(selectedTermId) && Boolean(cache);
+    if (effectiveActive === WizardStep.Program) return firstYear !== null && program !== null;
+    if (effectiveActive === WizardStep.Options) return !missingOptions;
+    if (effectiveActive === WizardStep.Assign) return unassignedCompletedCourses.length === 0;
     return true;
   })();
 
@@ -245,7 +249,7 @@ function App() {
       };
       return;
     }
-    if (!was.canProceed && canProceedFromStep && effectiveActive !== 6) {
+    if (!was.canProceed && canProceedFromStep && effectiveActive !== WizardStep.Generate) {
       setNextUnlockCue(true);
     }
     prevStepProgressRef.current = {
@@ -553,7 +557,7 @@ function App() {
                 </Group>
 
                 {/* Step content */}
-                {effectiveActive === 0 && terms && (
+                {effectiveActive === WizardStep.Term && terms && (
                   <Stack gap="md">
                     <TermStep
                       terms={terms}
@@ -562,7 +566,7 @@ function App() {
                     />
                   </Stack>
                 )}
-                {effectiveActive === 1 && (
+                {effectiveActive === WizardStep.Program && (
                   <Stack gap="md">
                     <ProgramStep
                       programs={programs}
@@ -571,7 +575,7 @@ function App() {
                     />
                   </Stack>
                 )}
-                {effectiveActive === 2 && (
+                {effectiveActive === WizardStep.Completed && (
                   <Stack gap="md">
                     <CompletedCoursesStep
                       cache={cache}
@@ -582,7 +586,7 @@ function App() {
                     />
                   </Stack>
                 )}
-                {effectiveActive === 3 && (
+                {effectiveActive === WizardStep.Options && (
                   <Stack gap="md">
                     <OptionsStep
                       requirementTreeWithStatus={requirementTreeWithStatus}
@@ -593,7 +597,7 @@ function App() {
                     />
                   </Stack>
                 )}
-                {effectiveActive === 4 && (
+                {effectiveActive === WizardStep.Assign && (
                   <Stack gap="md">
                     <AssignStep
                       cache={cache}
@@ -610,32 +614,7 @@ function App() {
                     />
                   </Stack>
                 )}
-                {effectiveActive === 5 && (
-                  <Stack gap="md">
-                    <ConstrainStep
-                      cache={cache}
-                      remainingRequirements={remainingRequirements}
-                      requirementTreeWithStatus={requirementTreeWithStatus}
-                      completedRequirementsList={completedRequirementsList}
-                      completedCourses={completedCourses}
-                      selectedPerRequirement={selectedPerRequirement}
-                      constrainedPerRequirement={constrainedPerRequirement}
-                      onConstrain={setConstrainedForRequirement}
-                      selectedOptionsPerRequirement={selectedOptionsPerRequirement}
-                      onSelectOption={setSelectedOptionForRequirement}
-                      prereqEligibleCourses={filteredPrereqEligibleCourses}
-                      levelBuckets={levelBuckets}
-                      languageBuckets={languageBuckets}
-                      onChangeLevelBuckets={setLevelBuckets}
-                      onChangeLanguageBuckets={setLanguageBuckets}
-                      electiveLevelBuckets={electiveLevelBuckets}
-                      onChangeElectiveLevelBuckets={setElectiveLevelBuckets}
-                      includeClosedComponents={includeClosedComponents}
-                      onIncludeClosedComponentsChange={setIncludeClosedComponents}
-                    />
-                  </Stack>
-                )}
-                {effectiveActive === 6 && (
+                {effectiveActive === WizardStep.Generate && (
                   <Stack gap="md">
                     <ScheduleCountStep
                       coursesThisSemester={coursesThisSemester}
@@ -667,6 +646,73 @@ function App() {
                       errorDetails={generationError?.details ?? null}
                       disableGenerate={unassignedCompletedCourses.length > 0}
                       disableGenerateReason={`You still need to assign ${unassignedCompletedCourses.length} completed course${unassignedCompletedCourses.length === 1 ? "" : "s"} in Requirements before you can generate schedules.`}
+                      beforeGenerate={
+                        <Paper
+                          withBorder
+                          radius={0}
+                          style={{
+                            backgroundColor: constrainOpen
+                              ? "var(--mantine-color-dark-6)"
+                              : "var(--mantine-color-dark-8)",
+                          }}
+                        >
+                          <Group
+                            justify="space-between"
+                            align="center"
+                            p="sm"
+                            mb="xs"
+                            style={{ cursor: "pointer" }}
+                            onClick={() => setConstrainOpen((o) => !o)}
+                          >
+                            <Group gap="xs" align="center">
+                              <IconChevronDown
+                                size={14}
+                                style={{
+                                  flexShrink: 0,
+                                  transform: constrainOpen ? "rotate(0deg)" : "rotate(-90deg)",
+                                  transition: "transform 150ms ease",
+                                }}
+                              />
+                              <Text fw={600} size="sm">Pick specific courses</Text>
+                            </Group>
+                            <Badge size="sm" variant="light" color="violet">
+                              Optional
+                            </Badge>
+                          </Group>
+                          <Collapse in={!constrainOpen}>
+                            <Alert color="blue" variant="light" radius={0} mx="sm" mb="sm" style={{ border: "none" }}>
+                              <Text size="sm">
+                                Pin courses to specific requirements — the generator uses your picks first, filling any remaining slots from other eligible courses.
+                              </Text>
+                            </Alert>
+                          </Collapse>
+                          <Collapse in={constrainOpen}>
+                            <Box p="sm" pt={0}>
+                              <ConstrainStep
+                                cache={cache}
+                                remainingRequirements={remainingRequirements}
+                                requirementTreeWithStatus={requirementTreeWithStatus}
+                                completedRequirementsList={completedRequirementsList}
+                                completedCourses={completedCourses}
+                                selectedPerRequirement={selectedPerRequirement}
+                                constrainedPerRequirement={constrainedPerRequirement}
+                                onConstrain={setConstrainedForRequirement}
+                                selectedOptionsPerRequirement={selectedOptionsPerRequirement}
+                                onSelectOption={setSelectedOptionForRequirement}
+                                prereqEligibleCourses={filteredPrereqEligibleCourses}
+                                levelBuckets={levelBuckets}
+                                languageBuckets={languageBuckets}
+                                onChangeLevelBuckets={setLevelBuckets}
+                                onChangeLanguageBuckets={setLanguageBuckets}
+                                electiveLevelBuckets={electiveLevelBuckets}
+                                onChangeElectiveLevelBuckets={setElectiveLevelBuckets}
+                                includeClosedComponents={includeClosedComponents}
+                                onIncludeClosedComponentsChange={setIncludeClosedComponents}
+                              />
+                            </Box>
+                          </Collapse>
+                        </Paper>
+                      }
                     />
                   </Stack>
                 )}
@@ -703,7 +749,7 @@ function App() {
                       ),
                     )
                   }
-                  disabled={effectiveActive === 0}
+                  disabled={effectiveActive === WizardStep.Term}
                   style={{ border: "none" }}
                 >
                   Back
@@ -729,7 +775,7 @@ function App() {
                         ),
                       )
                     }
-                    disabled={effectiveActive === 6 || !canProceedFromStep}
+                    disabled={effectiveActive === WizardStep.Generate || !canProceedFromStep}
                   >
                     Next
                   </Button>
