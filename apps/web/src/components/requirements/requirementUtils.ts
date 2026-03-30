@@ -401,7 +401,7 @@ export function getConstrainMultiSelectOptions(
           isCompletedCourse(c) ||
           ctx.unassignedCompletedSetNormalized.has(normalizeCourseCode(c));
         if (ctx.completedOnly) return isCompleted;
-        if (isCompleted) return true;
+        if (isCompleted) return false;
         if (
           !courseMatchesFilters(c, {
             levels: ctx.levelBuckets,
