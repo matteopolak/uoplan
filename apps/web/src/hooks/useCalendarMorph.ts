@@ -14,25 +14,23 @@ export interface Phantom {
   colorHex: string;
   fromRect: DOMRect | null;
   toRect: DOMRect | null;
-  /** "flip"    – slides to new position (first half), then cross-fades (second half)
-   *  "fadeOut" – fades away in place over the full duration */
   kind: "flip" | "fadeOut";
   heading: string;
   section: string;
+  toHeading: string;
+  toSection: string;
 }
 
 type Phase =
   | "idle"
-  /** Events hidden, parked phantoms visible at old positions, FullCalendar rendering new schedule. */
+  /** Events hidden, parked phantoms at old positions, FullCalendar rendering new schedule. */
   | "pre-animating"
-  /** Final phantoms animating — first half: slide + old text visible. */
-  | "animating"
-  /** Second half: phantoms fade out ↔ real events fade in (cross-fade). */
-  | "animating-midpoint";
+  /** Final phantoms animating — first half slides, second half fades out. */
+  | "animating";
 
 /** Duration of the full phantom animation (ms). */
 export const PHANTOM_MS = 350;
-/** The midpoint where real-event reveal begins (ms). */
+/** The midpoint at which the phantom stops moving and starts fading (ms). */
 export const HALF_PHANTOM_MS = PHANTOM_MS / 2;
 
 const RENDER_SETTLE_MS = 50;
@@ -56,7 +54,7 @@ function captureEventPositions(container: HTMLElement | null): CapturedEvent[] {
   return captures;
 }
 
-/** Build phantoms to cover old events immediately (no movement yet). */
+/** Build stationary phantoms to cover old events while FullCalendar re-renders. */
 function buildParkedPhantoms(oldEvents: CapturedEvent[]): Phantom[] {
   return oldEvents.map((c, i) => ({
     layoutId: `park-${i}`,
@@ -67,6 +65,8 @@ function buildParkedPhantoms(oldEvents: CapturedEvent[]): Phantom[] {
     kind: "flip" as const,
     heading: c.heading,
     section: c.section,
+    toHeading: c.heading,
+    toSection: c.section,
   }));
 }
 
@@ -77,7 +77,7 @@ function buildPhantoms(
   const phantoms: Phantom[] = [];
   const matchedOld = new Set<number>();
   const matchedNew = new Set<number>();
-  let pairIdx = 0;
+  let idx = 0;
 
   // Primary: match by courseCode
   for (let oi = 0; oi < oldEvents.length; oi++) {
@@ -87,7 +87,7 @@ function buildPhantoms(
       if (matchedNew.has(ni)) continue;
       if (newEvents[ni].courseCode === old.courseCode) {
         phantoms.push({
-          layoutId: `p${pairIdx++}`,
+          layoutId: `p${idx++}`,
           courseCode: old.courseCode,
           colorHex: old.colorHex,
           fromRect: old.rect,
@@ -95,6 +95,8 @@ function buildPhantoms(
           kind: "flip",
           heading: old.heading,
           section: old.section,
+          toHeading: newEvents[ni].heading,
+          toSection: newEvents[ni].section,
         });
         matchedOld.add(oi);
         matchedNew.add(ni);
@@ -104,25 +106,32 @@ function buildPhantoms(
   }
 
   // Secondary: match remaining by colorHex
-  const remainingOld = oldEvents
-    .map((c, i) => ({ ...c, i }))
-    .filter((c) => !matchedOld.has(c.i));
-  const remainingNew = newEvents
-    .map((c, i) => ({ ...c, i }))
-    .filter((c) => !matchedNew.has(c.i));
+  const remaining = <T extends { colorHex: string; i: number }>(
+    list: T[],
+    matched: Set<number>,
+  ) => list.filter((c) => !matched.has(c.i));
 
-  const byColor = <T extends { colorHex: string }>(arr: T[]) => {
-    const map = new Map<string, T[]>();
+  const remOld = remaining(
+    oldEvents.map((c, i) => ({ ...c, i })),
+    matchedOld,
+  );
+  const remNew = remaining(
+    newEvents.map((c, i) => ({ ...c, i })),
+    matchedNew,
+  );
+
+  const bucket = <T extends { colorHex: string }>(arr: T[]) => {
+    const m = new Map<string, T[]>();
     for (const c of arr) {
-      const bucket = map.get(c.colorHex) ?? [];
-      bucket.push(c);
-      map.set(c.colorHex, bucket);
+      const b = m.get(c.colorHex) ?? [];
+      b.push(c);
+      m.set(c.colorHex, b);
     }
-    return map;
+    return m;
   };
 
-  const oldByColor = byColor(remainingOld);
-  const newByColor = byColor(remainingNew);
+  const oldByColor = bucket(remOld);
+  const newByColor = bucket(remNew);
 
   for (const color of new Set([...oldByColor.keys(), ...newByColor.keys()])) {
     const olds = oldByColor.get(color) ?? [];
@@ -130,7 +139,7 @@ function buildPhantoms(
     const flips = Math.min(olds.length, news.length);
     for (let i = 0; i < flips; i++) {
       phantoms.push({
-        layoutId: `p${pairIdx++}`,
+        layoutId: `p${idx++}`,
         courseCode: olds[i].courseCode,
         colorHex: color,
         fromRect: olds[i].rect,
@@ -138,11 +147,13 @@ function buildPhantoms(
         kind: "flip",
         heading: olds[i].heading,
         section: olds[i].section,
+        toHeading: news[i].heading,
+        toSection: news[i].section,
       });
     }
     for (let i = flips; i < olds.length; i++) {
       phantoms.push({
-        layoutId: `p${pairIdx++}`,
+        layoutId: `p${idx++}`,
         courseCode: olds[i].courseCode,
         colorHex: color,
         fromRect: olds[i].rect,
@@ -150,6 +161,8 @@ function buildPhantoms(
         kind: "fadeOut",
         heading: olds[i].heading,
         section: olds[i].section,
+        toHeading: olds[i].heading,
+        toSection: olds[i].section,
       });
     }
   }
@@ -162,20 +175,17 @@ export interface CalendarMorphState {
   phantoms: Phantom[];
   /** Real events must be invisible — the overlay owns the visual. */
   isHidingEvents: boolean;
-  /** Real events should be fading in (second half, concurrent with phantom fade-out). */
-  isFadingIn: boolean;
   onAnimationComplete: () => void;
   triggerTransition: (newIndex: number) => void;
 }
 
 /**
- * Two-half morph lifecycle:
+ * Animation phases:
  *
  *  idle
- *   → pre-animating  (parked phantoms cover old events; FullCalendar renders new schedule)
- *   → animating      (final phantoms slide; old text visible — first half)
- *   → animating-midpoint (phantom opacity fades out ↔ real events fade in — second half)
- *   → idle
+ *   → pre-animating  parked phantoms cover old positions; FC renders new schedule
+ *   → animating      final phantoms: slide+crossfade (first half) → fade to 0 (second half)
+ *   → idle           phantoms removed; real events revealed instantly
  */
 export function useCalendarMorph(
   initialIndex: number,
@@ -188,32 +198,39 @@ export function useCalendarMorph(
 
   const oldCapturesRef = useRef<CapturedEvent[]>([]);
   const pendingIndexRef = useRef<number | null>(null);
+  // Always reflects the latest phase without stale-closure issues.
+  const phaseRef = useRef<Phase>("idle");
+
+  const setPhaseAndRef = useCallback((p: Phase) => {
+    phaseRef.current = p;
+    setPhase(p);
+  }, []);
 
   const triggerTransition = useCallback(
     (newIndex: number) => {
       if (newIndex === displayedIndex) return;
+      // Ignore re-entrant calls while an animation is already running.
+      if (phaseRef.current !== "idle") return;
 
       if (prefersReduced) {
         setDisplayedIndex(newIndex);
         return;
       }
 
-      // Capture positions while old events are still fully visible.
       const oldCaptures = captureEventPositions(containerRef.current);
       oldCapturesRef.current = oldCaptures;
       pendingIndexRef.current = newIndex;
 
-      // Immediately cover old events with parked phantoms so the calendar grid
-      // never becomes visible during the 50 ms FullCalendar render settle.
+      // Parked phantoms cover old event positions the instant we hide them,
+      // so the calendar grid never becomes visible during the render settle.
       setPhantoms(buildParkedPhantoms(oldCaptures));
       setDisplayedIndex(newIndex);
-      setPhase("pre-animating");
+      setPhaseAndRef("pre-animating");
     },
-    [displayedIndex, prefersReduced, containerRef],
+    [displayedIndex, prefersReduced, containerRef, setPhaseAndRef],
   );
 
-  // pre-animating → wait for FullCalendar to finish rendering new events, then
-  // replace parked phantoms with final animated ones.
+  // pre-animating → wait for FullCalendar to finish rendering, then start animation
   useEffect(() => {
     if (phase !== "pre-animating") return;
     const t = window.setTimeout(() => {
@@ -221,47 +238,26 @@ export function useCalendarMorph(
       const built = buildPhantoms(oldCapturesRef.current, newCaptures);
       if (built.length === 0) {
         setPhantoms([]);
-        setPhase("animating-midpoint");
+        setPhaseAndRef("fading-in");
         return;
       }
-      // Final phantoms start at the same positions as parked ones, so
-      // Framer Motion's `initial` = fromRect means no visible jump.
       setPhantoms(built);
-      setPhase("animating");
+      setPhaseAndRef("animating");
     }, RENDER_SETTLE_MS);
     return () => window.clearTimeout(t);
-  }, [phase, containerRef]);
-
-  // animating → at the halfway point, start revealing real events.
-  useEffect(() => {
-    if (phase !== "animating") return;
-    const t = window.setTimeout(() => {
-      setPhase("animating-midpoint");
-    }, HALF_PHANTOM_MS);
-    return () => window.clearTimeout(t);
-  }, [phase]);
-
-  // animating-midpoint with no phantoms (the skip case) → back to idle.
-  useEffect(() => {
-    if (phase !== "animating-midpoint" || phantoms.length > 0) return;
-    const t = window.setTimeout(() => {
-      setPhase("idle");
-      pendingIndexRef.current = null;
-    }, HALF_PHANTOM_MS);
-    return () => window.clearTimeout(t);
-  }, [phase, phantoms.length]);
+  }, [phase, containerRef, setPhaseAndRef]);
 
   const onAnimationComplete = useCallback(() => {
+    // Phantoms are at opacity 0. Remove them instantly — real events reveal in the same frame.
     setPhantoms([]);
-    setPhase("idle");
+    setPhaseAndRef("idle");
     pendingIndexRef.current = null;
-  }, []);
+  }, [setPhaseAndRef]);
 
   return {
     displayedIndex,
     phantoms,
     isHidingEvents: phase === "pre-animating" || phase === "animating",
-    isFadingIn: phase === "animating-midpoint",
     onAnimationComplete,
     triggerTransition,
   };
