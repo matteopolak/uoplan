@@ -1,7 +1,7 @@
 {
   "termId": "2265",
   "totalCourses": 11102,
-  "totalWithSchedules": 876,
+  "totalWithSchedules": 875,
   "schedules": [
     {
       "subject": "ADM",
@@ -2423,38 +2423,6 @@
             "meetingDates": [
               "2026-05-04",
               "2026-06-12"
-            ],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "ADM",
-      "catalogNumber": "3366",
-      "courseCode": "ADM 3366",
-      "title": "Advertising and Sales Promotion Management Section Days & Times Instructor Meeting Dates Status Details X00-LECSession A Tu 19:00 - 21:50 Staff 2026-05-04 - 2026-07-24",
-      "timeZone": "America/Toronto",
-      "components": {
-        "LEC": [
-          {
-            "section": "X00-LEC Session A",
-            "sectionCode": "X00",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "Tu",
-                "startMinutes": 1140,
-                "endMinutes": 1310
-              }
-            ],
-            "instructors": [
-              "Staff"
-            ],
-            "meetingDates": [
-              "2026-05-04",
-              "2026-07-24"
             ],
             "status": "Open"
           }
@@ -8623,7 +8591,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -8687,6 +8655,44 @@
               },
               {
                 "day": "Th",
+                "startMinutes": 510,
+                "endMinutes": 680
+              }
+            ],
+            "instructors": [
+              "Elie Serge Banyongen",
+              "Elie Serge Banyongen"
+            ],
+            "meetingDates": [
+              "2026-06-22",
+              "2026-07-31"
+            ],
+            "status": "Open"
+          }
+        ]
+      }
+    },
+    {
+      "subject": "CMN",
+      "catalogNumber": "5160",
+      "courseCode": "CMN 5160",
+      "title": "Communication, mondialisation et changement Section Days & Times Instructor Meeting Dates Status Details A00-SEMSession C Mo 08:30 - 11:20We 08:30 - 11:20 Elie Serge BanyongenElie Serge Banyongen 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31",
+      "timeZone": "America/Toronto",
+      "components": {
+        "SEM": [
+          {
+            "section": "A00-SEM Session C",
+            "sectionCode": "A00",
+            "component": "SEM",
+            "session": null,
+            "times": [
+              {
+                "day": "Mo",
+                "startMinutes": 510,
+                "endMinutes": 680
+              },
+              {
+                "day": "We",
                 "startMinutes": 510,
                 "endMinutes": 680
               }
@@ -10682,6 +10688,44 @@
     },
     {
       "subject": "CVG",
+      "catalogNumber": "5150",
+      "courseCode": "CVG 5150",
+      "title": "Loads on Structures Section Days & Times Instructor Meeting Dates Status Details X00-LECSession B Mo 10:00 - 12:50We 10:00 - 12:50 StaffStaff 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
+      "timeZone": "America/Toronto",
+      "components": {
+        "LEC": [
+          {
+            "section": "X00-LEC Session B",
+            "sectionCode": "X00",
+            "component": "LEC",
+            "session": null,
+            "times": [
+              {
+                "day": "Mo",
+                "startMinutes": 600,
+                "endMinutes": 770
+              },
+              {
+                "day": "We",
+                "startMinutes": 600,
+                "endMinutes": 770
+              }
+            ],
+            "instructors": [
+              "Staff",
+              "Staff"
+            ],
+            "meetingDates": [
+              "2026-05-04",
+              "2026-06-12"
+            ],
+            "status": "Open"
+          }
+        ]
+      }
+    },
+    {
+      "subject": "CVG",
       "catalogNumber": "5184",
       "courseCode": "CVG 5184",
       "title": "Construction Cost Estimating Section Days & Times Instructor Meeting Dates Status Details X00-LECSession B Tu 14:30 - 17:20Th 14:30 - 17:20 Ahmad JradeAhmad Jrade 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
@@ -11006,6 +11050,44 @@
                 "day": "Th",
                 "startMinutes": 1050,
                 "endMinutes": 1220
+              }
+            ],
+            "instructors": [
+              "Staff",
+              "Staff"
+            ],
+            "meetingDates": [
+              "2026-05-04",
+              "2026-06-12"
+            ],
+            "status": "Open"
+          }
+        ]
+      }
+    },
+    {
+      "subject": "CVG",
+      "catalogNumber": "7107",
+      "courseCode": "CVG 7107",
+      "title": "Loads on Structures Section Days & Times Instructor Meeting Dates Status Details X00-LECSession B Mo 10:00 - 12:50We 10:00 - 12:50 StaffStaff 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
+      "timeZone": "America/Toronto",
+      "components": {
+        "LEC": [
+          {
+            "section": "X00-LEC Session B",
+            "sectionCode": "X00",
+            "component": "LEC",
+            "session": null,
+            "times": [
+              {
+                "day": "Mo",
+                "startMinutes": 600,
+                "endMinutes": 770
+              },
+              {
+                "day": "We",
+                "startMinutes": 600,
+                "endMinutes": 770
               }
             ],
             "instructors": [
@@ -13518,44 +13600,6 @@
     },
     {
       "subject": "DVM",
-      "catalogNumber": "4530",
-      "courseCode": "DVM 4530",
-      "title": "Financement des initiatives de développement Section Days & Times Instructor Meeting Dates Status Details A00-LECSession C Tu 08:30 - 11:20Th 08:30 - 11:20 Nasser Ary TanimouneNasser Ary Tanimoune 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31",
-      "timeZone": "America/Toronto",
-      "components": {
-        "LEC": [
-          {
-            "section": "A00-LEC Session C",
-            "sectionCode": "A00",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "Tu",
-                "startMinutes": 510,
-                "endMinutes": 680
-              },
-              {
-                "day": "Th",
-                "startMinutes": 510,
-                "endMinutes": 680
-              }
-            ],
-            "instructors": [
-              "Nasser Ary Tanimoune",
-              "Nasser Ary Tanimoune"
-            ],
-            "meetingDates": [
-              "2026-06-22",
-              "2026-07-31"
-            ],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "DVM",
       "catalogNumber": "4551",
       "courseCode": "DVM 4551",
       "title": "Politiques et pratiques du développement international Section Days & Times Instructor Meeting Dates Status Details A00-SEMSession B Tu 13:00 - 15:50Th 13:00 - 15:50 StaffStaff 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
@@ -13988,44 +14032,6 @@
             "meetingDates": [
               "2026-05-04",
               "2026-06-12"
-            ],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "DVM",
-      "catalogNumber": "6505",
-      "courseCode": "DVM 6505",
-      "title": "Financement des initiatives de développement Section Days & Times Instructor Meeting Dates Status Details A00-LECSession C Tu 08:30 - 11:20Th 08:30 - 11:20 Nasser Ary TanimouneNasser Ary Tanimoune 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31",
-      "timeZone": "America/Toronto",
-      "components": {
-        "LEC": [
-          {
-            "section": "A00-LEC Session C",
-            "sectionCode": "A00",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "Tu",
-                "startMinutes": 510,
-                "endMinutes": 680
-              },
-              {
-                "day": "Th",
-                "startMinutes": 510,
-                "endMinutes": 680
-              }
-            ],
-            "instructors": [
-              "Nasser Ary Tanimoune",
-              "Nasser Ary Tanimoune"
-            ],
-            "meetingDates": [
-              "2026-06-22",
-              "2026-07-31"
             ],
             "status": "Open"
           }
@@ -15459,7 +15465,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Open"
+            "status": "Closed"
           },
           {
             "section": "DA20-LEC Session A",
@@ -15776,6 +15782,62 @@
               "2026-06-12"
             ],
             "status": "Open"
+          }
+        ]
+      }
+    },
+    {
+      "subject": "EDU",
+      "catalogNumber": "5269",
+      "courseCode": "EDU 5269",
+      "title": "Integration of Technology in Education Section Days & Times Instructor Meeting Dates Status Details DA10-LECSession A N/A 00:00 - 00:00 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details DA20-LECSession A N/A 00:00 - 00:00 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details DA00-LECSession B N/A 00:00 - 00:00 Staff 2026-05-04 - 2026-06-12",
+      "timeZone": "America/Toronto",
+      "components": {
+        "LEC": [
+          {
+            "section": "DA10-LEC Session A",
+            "sectionCode": "DA10",
+            "component": "LEC",
+            "session": null,
+            "times": [],
+            "instructors": [
+              "Staff"
+            ],
+            "meetingDates": [
+              "2026-05-04",
+              "2026-07-24"
+            ],
+            "status": "Closed"
+          },
+          {
+            "section": "DA20-LEC Session A",
+            "sectionCode": "DA20",
+            "component": "LEC",
+            "session": null,
+            "times": [],
+            "instructors": [
+              "Staff"
+            ],
+            "meetingDates": [
+              "2026-05-04",
+              "2026-07-24"
+            ],
+            "status": "Open"
+          },
+          {
+            "section": "DA00-LEC Session B",
+            "sectionCode": "DA00",
+            "component": "LEC",
+            "session": null,
+            "times": [],
+            "instructors": [
+              "Staff"
+            ],
+            "meetingDates": [
+              "2026-05-04",
+              "2026-06-12"
+            ],
+            "status": "Closed"
           }
         ]
       }
@@ -18456,44 +18518,6 @@
       }
     },
     {
-      "subject": "ESL",
-      "catalogNumber": "3373",
-      "courseCode": "ESL 3373",
-      "title": "Creating Meaning: Reading to Improve Writing Skills Section Days & Times Instructor Meeting Dates Status Details A00-LECSession B Tu 08:30 - 11:20Th 08:30 - 11:20 StaffStaff 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
-      "timeZone": "America/Toronto",
-      "components": {
-        "LEC": [
-          {
-            "section": "A00-LEC Session B",
-            "sectionCode": "A00",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "Tu",
-                "startMinutes": 510,
-                "endMinutes": 680
-              },
-              {
-                "day": "Th",
-                "startMinutes": 510,
-                "endMinutes": 680
-              }
-            ],
-            "instructors": [
-              "Staff",
-              "Staff"
-            ],
-            "meetingDates": [
-              "2026-05-04",
-              "2026-06-12"
-            ],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
       "subject": "ESP",
       "catalogNumber": "1102",
       "courseCode": "ESP 1102",
@@ -18620,7 +18644,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           },
           {
             "section": "A03-TLB Session B",
@@ -21594,74 +21618,6 @@
       }
     },
     {
-      "subject": "GRT",
-      "catalogNumber": "3102",
-      "courseCode": "GRT 3102",
-      "title": "Sales and Influence for Engineers Section Days & Times Instructor Meeting Dates Status Details S00-LECTerm Fr 19:00 - 21:50Sa 09:00 - 17:00Su 09:00 - 17:00Sa 09:00 - 17:00Su 09:00 - 17:00Sa 09:00 - 17:00Su 09:00 - 17:00 Oleg MysykStaffStaffStaffStaffStaffStaff 2026-05-01 - 2026-05-012026-05-02 - 2026-05-022026-05-03 - 2026-05-032026-05-09 - 2026-05-092026-05-10 - 2026-05-102026-05-16 - 2026-05-162026-05-17 - 2026-05-17",
-      "timeZone": "America/Toronto",
-      "components": {
-        "LEC": [
-          {
-            "section": "S00-LEC Term",
-            "sectionCode": "S00",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "Fr",
-                "startMinutes": 1140,
-                "endMinutes": 1310
-              },
-              {
-                "day": "Sa",
-                "startMinutes": 540,
-                "endMinutes": 1020
-              },
-              {
-                "day": "Su",
-                "startMinutes": 540,
-                "endMinutes": 1020
-              },
-              {
-                "day": "Sa",
-                "startMinutes": 540,
-                "endMinutes": 1020
-              },
-              {
-                "day": "Su",
-                "startMinutes": 540,
-                "endMinutes": 1020
-              },
-              {
-                "day": "Sa",
-                "startMinutes": 540,
-                "endMinutes": 1020
-              },
-              {
-                "day": "Su",
-                "startMinutes": 540,
-                "endMinutes": 1020
-              }
-            ],
-            "instructors": [
-              "Oleg Mysyk",
-              "Staff",
-              "Staff",
-              "Staff",
-              "Staff",
-              "Staff",
-              "Staff"
-            ],
-            "meetingDates": [
-              "2026-05-01",
-              "2026-05-01"
-            ],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
       "subject": "HIS",
       "catalogNumber": "1111",
       "courseCode": "HIS 1111",
@@ -22528,6 +22484,44 @@
               "2026-08-31"
             ],
             "status": "Open"
+          }
+        ]
+      }
+    },
+    {
+      "subject": "HSS",
+      "catalogNumber": "59011",
+      "courseCode": "HSS 59011",
+      "title": "International Health Section Days & Times Instructor Meeting Dates Status Details X00-LECSession C Tu 14:30 - 17:20Th 14:30 - 17:20 StaffStaff 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31",
+      "timeZone": "America/Toronto",
+      "components": {
+        "LEC": [
+          {
+            "section": "X00-LEC Session C",
+            "sectionCode": "X00",
+            "component": "LEC",
+            "session": null,
+            "times": [
+              {
+                "day": "Tu",
+                "startMinutes": 870,
+                "endMinutes": 1040
+              },
+              {
+                "day": "Th",
+                "startMinutes": 870,
+                "endMinutes": 1040
+              }
+            ],
+            "instructors": [
+              "Staff",
+              "Staff"
+            ],
+            "meetingDates": [
+              "2026-06-22",
+              "2026-07-31"
+            ],
+            "status": "Closed"
           }
         ]
       }
@@ -24652,32 +24646,6 @@
             "meetingDates": [
               "2026-05-04",
               "2026-07-24"
-            ],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "MAT",
-      "catalogNumber": "5712",
-      "courseCode": "MAT 5712",
-      "title": "Project in Mathematics and Statistics Section Days & Times Instructor Meeting Dates Status Details T00-RECTerm N/A 00:00 - 00:00 Staff 2026-05-01 - 2026-08-31",
-      "timeZone": "America/Toronto",
-      "components": {
-        "REC": [
-          {
-            "section": "T00-REC Term",
-            "sectionCode": "T00",
-            "component": "REC",
-            "session": null,
-            "times": [],
-            "instructors": [
-              "Staff"
-            ],
-            "meetingDates": [
-              "2026-05-01",
-              "2026-08-31"
             ],
             "status": "Open"
           }
@@ -27378,7 +27346,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -32436,7 +32404,7 @@
               "2026-05-27",
               "2026-05-27"
             ],
-            "status": "Open"
+            "status": "Closed"
           },
           {
             "section": "A03-LAB Session A",
@@ -33282,7 +33250,7 @@
               "2026-05-28",
               "2026-05-28"
             ],
-            "status": "Open"
+            "status": "Closed"
           },
           {
             "section": "A08-LAB Session A",
@@ -33843,7 +33811,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -36232,7 +36200,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Open"
+            "status": "Closed"
           },
           {
             "section": "Z03-LAB Session A",

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { hexToRgb } from "schedule";
@@ -18,6 +18,16 @@ function rectToStyle(rect: DOMRect) {
   };
 }
 
+function TextContent({ heading, section }: { heading: string; section: string }) {
+  if (!heading) return null;
+  return (
+    <div className="fc-uoplan-event-body">
+      <span className="fc-uoplan-event-code">{heading}</span>
+      {section && <span className="fc-uoplan-event-type">{section}</span>}
+    </div>
+  );
+}
+
 function PhantomBlock({
   phantom,
   onComplete,
@@ -25,62 +35,88 @@ function PhantomBlock({
   phantom: Phantom;
   onComplete: () => void;
 }) {
-  const { colorHex, kind, fromRect, toRect, heading, section } = phantom;
+  const { colorHex, kind, fromRect, toRect, heading, section, toHeading, toSection } = phantom;
   const { r, g, b } = hexToRgb(colorHex);
   const bg = `rgba(${r}, ${g}, ${b}, 0.38)`;
 
   const isFlip = kind === "flip";
 
-  /**
-   * Flip phantom:
-   *   - Slides from old → new in the first half (HALF_S)
-   *   - Stays put while cross-fading with the real event in the second half
-   *   - Fades opacity 1 → 0 over the second half (delay HALF_S, duration HALF_S)
-   *
-   * FadeOut phantom:
-   *   - Stays in place, fades opacity 1 → 0 over the full duration
-   */
-  const transition = isFlip
-    ? {
-        default: { duration: HALF_S, ease: EASING },
-        opacity: { duration: HALF_S, delay: HALF_S, ease: "easeIn" as const },
-      }
-    : { duration: FULL_S, ease: EASING };
+  const blockStyle = {
+    position: "fixed" as const,
+    pointerEvents: "none" as const,
+    borderLeft: `4px solid ${colorHex}`,
+    backgroundColor: bg,
+    zIndex: 9999,
+    overflow: "hidden",
+    display: "flex" as const,
+    flexDirection: "column" as const,
+    alignItems: "flex-start" as const,
+    padding: "8px 8px",
+    fontSize: "11px",
+    boxSizing: "border-box" as const,
+  };
 
+  if (isFlip) {
+    /**
+     * Flip phantom:
+     *   - Slides old→new position over HALF_S while old text fades out and new
+     *     text fades in, so text is fully changed by arrival.
+     *   - onComplete is fired via a timer rather than onAnimationComplete because
+     *     parked phantoms (fromRect === toRect) trigger onAnimationComplete instantly,
+     *     which would drain the counter before real phantoms mount. The timer is
+     *     cancelled on unmount, so only real phantoms (which live for HALF_S) fire it.
+     */
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => {
+      const t = window.setTimeout(onComplete, HALF_PHANTOM_MS);
+      return () => window.clearTimeout(t);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    return (
+      <motion.div
+        initial={rectToStyle(fromRect!)}
+        animate={rectToStyle(toRect!)}
+        transition={{ duration: HALF_S, ease: EASING }}
+        style={blockStyle}
+      >
+        {/* Old text fades out during the slide */}
+        <motion.div
+          style={{ position: "absolute", top: "8px", left: "8px", right: "8px" }}
+          animate={{ opacity: 0 }}
+          transition={{ duration: HALF_S, ease: "easeIn" }}
+        >
+          <TextContent heading={heading} section={section} />
+        </motion.div>
+
+        {/* New text fades in during the slide */}
+        <motion.div
+          style={{ position: "absolute", top: "8px", left: "8px", right: "8px" }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: HALF_S, ease: "easeIn" }}
+        >
+          <TextContent heading={toHeading} section={toSection} />
+        </motion.div>
+      </motion.div>
+    );
+  }
+
+  /**
+   * FadeOut phantom:
+   *   - Stays in place, fades opacity 1 → 0 over the full duration.
+   */
   return (
     <motion.div
       initial={{ ...rectToStyle(fromRect!), opacity: 1 }}
-      animate={{ ...rectToStyle(isFlip ? toRect! : fromRect!), opacity: 0 }}
-      transition={transition}
+      animate={{ ...rectToStyle(fromRect!), opacity: 0 }}
+      transition={{ duration: FULL_S, ease: EASING }}
       onAnimationComplete={onComplete}
-      style={{
-        position: "fixed",
-        pointerEvents: "none",
-        borderLeft: `4px solid ${colorHex}`,
-        backgroundColor: bg,
-        zIndex: 9999,
-        overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "flex-start",
-        padding: "8px 8px",
-        fontSize: "11px",
-        boxSizing: "border-box",
-      }}
+      style={blockStyle}
     >
-      {/*
-        Text inherits the parent's opacity — no separate animation needed.
-        First half: fully visible alongside the sliding block.
-        Second half: fades out with the block as the real event cross-fades in.
-      */}
-      {heading && (
-        <div className="fc-uoplan-event-body">
-          <span className="fc-uoplan-event-code">{heading}</span>
-          {section && (
-            <span className="fc-uoplan-event-type">{section}</span>
-          )}
-        </div>
-      )}
+      <div className="fc-uoplan-event-body">
+        <span className="fc-uoplan-event-code">{heading}</span>
+        {section && <span className="fc-uoplan-event-type">{section}</span>}
+      </div>
     </motion.div>
   );
 }
@@ -94,8 +130,6 @@ export function ScheduleMorphOverlay({
   phantoms,
   onComplete,
 }: ScheduleMorphOverlayProps) {
-  // Only reset the counter when a genuinely new phantom array arrives, not
-  // on incidental re-renders while the animation is in flight.
   const phantomsRef = useRef<Phantom[]>([]);
   const remainingRef = useRef(0);
 

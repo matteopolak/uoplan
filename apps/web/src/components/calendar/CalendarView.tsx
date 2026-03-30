@@ -201,13 +201,7 @@ export const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
       >
         <div
           ref={containerRef}
-          className={
-            morph.isHidingEvents
-              ? 'fc-uoplan-morphing'
-              : morph.isFadingIn
-              ? 'fc-uoplan-fadein'
-              : undefined
-          }
+          className={morph.isHidingEvents ? 'fc-uoplan-morphing' : undefined}
           style={{
             flex: 1,
             minHeight: 0,
@@ -222,9 +216,7 @@ export const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
           }}
         >
           <style>{`
-            @keyframes uoplanFadeIn { from { opacity: 0; } to { opacity: 1; } }
             .fc-uoplan-morphing .fc-event { opacity: 0 !important; }
-            .fc-uoplan-fadein   .fc-event { animation: uoplanFadeIn 0.175s ease-out forwards !important; }
           `}</style>
           <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
             <FullCalendar

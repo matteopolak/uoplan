@@ -138,23 +138,25 @@ function StepItem({
           />
         )}
       </Box>
-      <Group
-        gap={6}
-        wrap="nowrap"
-        align="center"
-        style={{ paddingTop: isMobile ? 4 : 1 }}
-      >
-        <Text
-          size="xs"
-          fw={isActive ? 600 : 400}
-          style={{
-            color: labelColor,
-            lineHeight: 1.3,
-          }}
+      {!isMobile && (
+        <Group
+          gap={6}
+          wrap="nowrap"
+          align="center"
+          style={{ paddingTop: 1 }}
         >
-          {step.label}
-        </Text>
-      </Group>
+          <Text
+            size="xs"
+            fw={isActive ? 600 : 400}
+            style={{
+              color: labelColor,
+              lineHeight: 1.3,
+            }}
+          >
+            {step.label}
+          </Text>
+        </Group>
+      )}
     </Box>
   );
 }
@@ -172,20 +174,9 @@ export function StepNav({
   const visibleCount = visibleStepIndices.length;
 
   if (isMobile) {
+    const activeDisplayIdx = visibleStepIndices.indexOf(active);
     return (
       <Box style={{ width: "100%" }}>
-        <Text
-          size="xs"
-          fw={500}
-          mb={10}
-          style={{
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            color: "#A6A7AB",
-          }}
-        >
-          Steps
-        </Text>
         <Box style={{ position: "relative", width: "100%" }}>
           {visibleCount > 1 && (
             <Box
@@ -228,6 +219,14 @@ export function StepNav({
             ))}
           </Group>
         </Box>
+        <Text
+          size="xs"
+          fw={500}
+          mt={8}
+          style={{ textAlign: "center", color: "#F8F9FA" }}
+        >
+          Step {activeDisplayIdx + 1} of {visibleCount} · {STEPS[active].label}
+        </Text>
       </Box>
     );
   }
