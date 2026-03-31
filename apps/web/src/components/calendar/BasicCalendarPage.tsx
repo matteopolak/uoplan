@@ -314,7 +314,10 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
             label="Number of Electives"
             value={basicElectivesCount}
             onChange={(v) => {
-              setBasicElectivesCount(Number(v) || 0);
+              if (typeof v !== "number" || Number.isNaN(v)) return;
+              const nextCount = Math.max(0, Math.min(6, Math.trunc(v)));
+              if (nextCount === basicElectivesCount) return;
+              setBasicElectivesCount(nextCount);
               clearGeneratedSchedules();
             }}
             min={0}
