@@ -6,6 +6,10 @@ html {
   scrollbar-gutter: stable;
 }
 
+html.calendar-no-scrollbar-gutter {
+  scrollbar-gutter: auto;
+}
+
 /* FullCalendar v6 injects its own CSS; we only override below for dark theme */
 
 body {
@@ -73,19 +77,25 @@ a {
 }
 
 .fc .fc-scrollgrid {
-  border-width: 1px;
+  border-width: 0;
+}
+
+/* Avoid double-thick right edge where inner grid meets outer frame border. */
+.fc .fc-scrollgrid td:last-child,
+.fc .fc-scrollgrid th:last-child {
+  border-right-width: 0 !important;
 }
 
 .fc .fc-col-header-cell {
   background-color: #111113;
   color: #ADB5BD;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   text-transform: uppercase;
 }
 
 .fc .fc-timegrid-slot-label-cushion {
-  font-size: 10px;
+  font-size: 11px;
   color: #868E96;
   padding-right: 4px;
 }
@@ -108,7 +118,7 @@ a {
 }
 
 .fc .fc-scrollgrid-liquid {
-  border-radius: 4px;
+  border-radius: 0;
   overflow: hidden;
 }
 

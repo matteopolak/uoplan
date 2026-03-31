@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Box,
@@ -34,6 +34,13 @@ interface CalendarPageProps {
 }
 
 export function CalendarPage({ onBack }: CalendarPageProps) {
+  useEffect(() => {
+    document.documentElement.classList.add("calendar-no-scrollbar-gutter");
+    return () => {
+      document.documentElement.classList.remove("calendar-no-scrollbar-gutter");
+    };
+  }, []);
+
   const {
     generatedSchedules,
     selectedScheduleIndex,
@@ -381,10 +388,9 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
           minHeight: 0,
           display: "flex",
           flexDirection: "column",
-          padding: isMobile ? 0 : 24,
-          paddingBottom: isMobile ? 72 : 24,
+          padding: 0,
+          paddingBottom: isMobile ? 72 : 0,
           width: "100%",
-          maxWidth: 1200,
         }}
       >
         <CalendarView
