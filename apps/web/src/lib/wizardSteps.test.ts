@@ -15,6 +15,7 @@ describe("buildVisibleStepIndices", () => {
   it("includes options and assign when both needed", () => {
     expect(buildVisibleStepIndices(true, true)).toEqual([
       WizardStep.Term,
+      WizardStep.Mode,
       WizardStep.Program,
       WizardStep.Completed,
       WizardStep.Options,
@@ -26,6 +27,7 @@ describe("buildVisibleStepIndices", () => {
   it("skips options and assign when neither needed", () => {
     expect(buildVisibleStepIndices(false, false)).toEqual([
       WizardStep.Term,
+      WizardStep.Mode,
       WizardStep.Program,
       WizardStep.Completed,
       WizardStep.Generate,
@@ -35,6 +37,7 @@ describe("buildVisibleStepIndices", () => {
   it("includes only options when assign not needed", () => {
     expect(buildVisibleStepIndices(true, false)).toEqual([
       WizardStep.Term,
+      WizardStep.Mode,
       WizardStep.Program,
       WizardStep.Completed,
       WizardStep.Options,
@@ -45,6 +48,7 @@ describe("buildVisibleStepIndices", () => {
   it("includes only assign when options not needed", () => {
     expect(buildVisibleStepIndices(false, true)).toEqual([
       WizardStep.Term,
+      WizardStep.Mode,
       WizardStep.Program,
       WizardStep.Completed,
       WizardStep.Assign,
@@ -86,16 +90,22 @@ describe("normalizeActiveStep", () => {
 });
 
 describe("furthestReachedDisplayIndex", () => {
-  const skipBoth = [WizardStep.Term, WizardStep.Program, WizardStep.Completed, WizardStep.Generate];
+  const skipBoth = [
+    WizardStep.Term,
+    WizardStep.Mode,
+    WizardStep.Program,
+    WizardStep.Completed,
+    WizardStep.Generate,
+  ];
 
   it("uses the visible index when furthest actual is on the list", () => {
-    expect(furthestReachedDisplayIndex(skipBoth, WizardStep.Generate)).toBe(3);
-    expect(furthestReachedDisplayIndex(skipBoth, WizardStep.Completed)).toBe(2);
+    expect(furthestReachedDisplayIndex(skipBoth, WizardStep.Generate)).toBe(4);
+    expect(furthestReachedDisplayIndex(skipBoth, WizardStep.Completed)).toBe(3);
   });
 
   it("maps past a dropped optional step to the next visible row", () => {
-    expect(furthestReachedDisplayIndex(skipBoth, WizardStep.Assign)).toBe(3);
-    expect(furthestReachedDisplayIndex(skipBoth, WizardStep.Options)).toBe(3);
+    expect(furthestReachedDisplayIndex(skipBoth, WizardStep.Assign)).toBe(4);
+    expect(furthestReachedDisplayIndex(skipBoth, WizardStep.Options)).toBe(4);
   });
 });
 
