@@ -6,12 +6,13 @@ import {
   getValidSectionCombos,
   type GeneratedSchedule,
   type GenerationConstraints,
+  courseMatchesFilters,
 } from "schedule";
 import { cacheWithClosedFilter, getEffectiveSchedule } from "schedule";
 import { shuffleInPlace } from "../store/scheduleHelpers";
 import { diagnoseTimetableFailure, canTakeCourse, buildPrereqContext } from "schedule";
 import { buildColorMap, buildColorMaps } from "./colorMap";
-import { isWithinElectiveLevelCap } from "./electiveEligibility";
+import { isWithinElectiveLevelBuckets } from "./electiveEligibility";
 
 export interface GenerateBasicSchedulesResult {
   generatedSchedules: GeneratedSchedule[];
@@ -34,6 +35,9 @@ export async function generateBasicSchedulesAction(
     basicPinnedCourses,
     basicElectivesCount,
     basicExcludedCategories,
+    levelBuckets,
+    languageBuckets,
+    electiveLevelBuckets,
     generationMinStartMinutes,
     generationMaxEndMinutes,
     generationAllowedDays,
@@ -68,12 +72,14 @@ export async function generateBasicSchedulesAction(
   // Find valid electives
   let optionalPool: string[] = [];
   const excludedPrefixes = basicExcludedCategories.map(c => c.toLowerCase());
+  const filters = { levels: levelBuckets, languageBuckets };
   
   const prereqCtx = buildPrereqContext(completedCourses, effectiveCache, studentPrograms);
 
   for (const course of cache.getAllCourses()) {
     const code = course.code;
-    if (!isWithinElectiveLevelCap(code)) continue;
+    if (!courseMatchesFilters(code, filters)) continue;
+    if (!isWithinElectiveLevelBuckets(code, electiveLevelBuckets)) continue;
     
     // Check exclusions
     const prefixMatch = code.match(/^([A-Z]{3,4})/i);
