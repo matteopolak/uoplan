@@ -346,5 +346,127 @@ describe('schedule generation respects per-category limits', () => {
     expect(generatedSchedules).toHaveLength(0);
     expect(generationError).not.toBeNull();
   });
+
+  it("applies elective-level buckets only to elective pools", async () => {
+    const scopedCatalogue: Catalogue = {
+      courses: [
+        {
+          code: "CSI 4101",
+          title: "CSI 4101",
+          credits: 3,
+          description: "",
+          component: "LEC",
+        },
+        {
+          code: "ENG 1100",
+          title: "ENG 1100",
+          credits: 3,
+          description: "",
+          component: "LEC",
+        },
+        {
+          code: "ENG 2100",
+          title: "ENG 2100",
+          credits: 3,
+          description: "",
+          component: "LEC",
+        },
+      ],
+      programs: [],
+    };
+
+    const scopedSchedules: SchedulesData = {
+      termId: "2261",
+      schedules: [
+        {
+          subject: "CSI",
+          catalogNumber: "4101",
+          courseCode: "CSI 4101",
+          title: "CSI 4101",
+          timeZone: "America/Toronto",
+          components: {},
+        },
+        {
+          subject: "ENG",
+          catalogNumber: "1100",
+          courseCode: "ENG 1100",
+          title: "ENG 1100",
+          timeZone: "America/Toronto",
+          components: {},
+        },
+        {
+          subject: "ENG",
+          catalogNumber: "2100",
+          courseCode: "ENG 2100",
+          title: "ENG 2100",
+          timeZone: "America/Toronto",
+          components: {},
+        },
+      ],
+    };
+
+    const scopedProgram: Program = {
+      title: "Scoped elective filter test",
+      url: "",
+      requirements: [
+        { type: "course", code: "CSI 4101" },
+        { type: "free_elective", title: "3 elective credits", credits: 3 },
+      ],
+    };
+
+    const scopedCache = buildDataCache(scopedCatalogue, scopedSchedules);
+    const completedCourses: string[] = [];
+    const { remaining } = computeRequirementsState(
+      scopedProgram,
+      completedCourses,
+      scopedCache,
+    );
+    expect(remaining.length).toBeGreaterThan(0);
+    expect(remaining.some((r) => r.type === "free_elective")).toBe(true);
+    expect(remaining.some((r) => r.type === "course")).toBe(true);
+    const disciplineReq = remaining.find((r) => r.type === "free_elective");
+    const courseReq = remaining.find((r) => r.type === "course");
+    expect(disciplineReq?.candidateCourses?.includes("ENG 1100")).toBe(
+      true,
+    );
+    expect(courseReq?.candidateCourses).toContain("CSI 4101");
+
+    const store = useAppStore;
+    store.setState({
+      ...store.getState(),
+      catalogue: {
+        courses: scopedCatalogue.courses,
+        programs: [scopedProgram],
+      },
+      schedulesData: scopedSchedules,
+      cache: scopedCache,
+      program: scopedProgram,
+      completedCourses,
+      remainingRequirements: remaining,
+      requirementTreeWithStatus: [],
+      completedRequirementsList: [],
+      selectedPerRequirement: {},
+      requirementSlotsUserTouched: {},
+      selectedOptionsPerRequirement: {},
+      prereqEligibleCourses: scopedCatalogue.courses.map((c) => c.code),
+      filteredPrereqEligibleCourses: scopedCatalogue.courses.map((c) => c.code),
+      levelBuckets: ["undergrad"],
+      languageBuckets: ["en", "other"],
+      electiveLevelBuckets: [1000],
+      coursesThisSemester: 2,
+      generatedSchedules: [],
+      generationError: null,
+    });
+
+    await store.getState().generateSchedules();
+
+    const { generatedSchedules, generationError } = store.getState();
+    expect(generatedSchedules.length).toBeGreaterThan(0);
+    expect(generationError).toBeNull();
+    const firstCodes = generatedSchedules[0]?.enrollments.map((e) => e.courseCode) ?? [];
+    expect(firstCodes).toContain("CSI 4101");
+    expect(firstCodes).toContain("ENG 1100");
+    expect(firstCodes).not.toContain("ENG 2100");
+  });
 });
 
