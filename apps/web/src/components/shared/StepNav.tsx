@@ -102,12 +102,12 @@ function StepItem({
     !isActive &&
     displayIdx <= furthestDisplayIndex;
 
-  const borderColor = isActive
-    ? "#B197FC"
-    : skippedPassed
-      ? "#6C757D"
-      : isComplete
-        ? "#2F9E44"
+  const borderColor = skippedPassed
+    ? "#6C757D"
+    : isComplete
+      ? "#2F9E44"
+      : isActive
+        ? "#B197FC"
         : "#2C2E33";
   const backgroundColor = skippedPassed
     ? "#343A40"

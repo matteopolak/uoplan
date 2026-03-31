@@ -21,7 +21,7 @@ body {
 }
 
 ::selection {
-  background-color: #862E9C;
+  background-color: rgba(134, 46, 156, 0.2);
   color: #F5F2EC;
 }
 
