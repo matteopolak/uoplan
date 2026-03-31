@@ -178,7 +178,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
       {/* Sidebar */}
       <Box
         style={{
-          width: 320,
+          width: 360,
           flexShrink: 0,
           padding: "24px 20px",
           borderRight: "2px solid #2C2E33",

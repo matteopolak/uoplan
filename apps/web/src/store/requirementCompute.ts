@@ -252,7 +252,7 @@ export function recomputeStateForProgram(
   existingSelectedOptionsPerRequirement: Record<string, number>,
   levelBuckets: CourseLevelBucket[],
   languageBuckets: CourseLanguageBucket[],
-  includeClosedComponents: boolean,
+  _includeClosedComponents: boolean,
   studentPrograms: string[] = [],
   requirementSlotsUserTouched: Record<string, true> = {},
 ): RecomputedState {

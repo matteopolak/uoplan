@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Course } from "schemas";
-import type { CourseSchedule, DataCache } from "schedule";
+import type { Course, CourseSchedule } from "schemas";
+import type { DataCache } from "schedule";
 import type { RemainingRequirement } from "schedule";
 import { normalizeCourseCode } from "schedule";
 import { collectImplicitHonoursForSchedule } from "./implicitHonours";

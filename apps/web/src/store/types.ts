@@ -24,6 +24,11 @@ export type GenerationErrorState = {
 };
 
 export interface AppState {
+  wizardMode: "basic" | "advanced" | null;
+  basicPinnedCourses: string[];
+  basicElectivesCount: number;
+  basicExcludedCategories: string[];
+
   catalogue: { courses: unknown[]; programs: Program[] } | null;
   indices: Indices | null;
   schedulesData: { termId: string; schedules: unknown[] } | null;
@@ -83,6 +88,12 @@ export interface AppState {
 }
 
 export interface AppActions {
+  setWizardMode: (mode: "basic" | "advanced" | null) => void;
+  setBasicPinnedCourses: (courses: string[]) => void;
+  setBasicElectivesCount: (count: number) => void;
+  setBasicExcludedCategories: (categories: string[]) => void;
+  generateBasicSchedules: (options?: { appendFirstOnly?: boolean }) => Promise<void>;
+  
   loadData: () => Promise<void>;
   setSelectedTermId: (termId: string) => Promise<void>;
   setFirstYear: (year: number | null) => Promise<void>;
@@ -108,6 +119,7 @@ export interface AppActions {
   setGenerationMinProfessorRating: (rating: number | null) => void;
   setIncludeClosedComponents: (value: boolean) => void;
   generateSchedules: (options?: { appendFirstOnly?: boolean }) => Promise<void>;
+  clearGeneratedSchedules: () => void;
   setSelectedScheduleIndex: (idx: number) => void;
   swapCourseInSchedule: (
     scheduleIndex: number,

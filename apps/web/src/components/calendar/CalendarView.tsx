@@ -107,6 +107,9 @@ export const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
       []
     );
 
+    const fcRef = useRef<FullCalendar>(null);
+    useEffect(() => {}, [morph.displayedIndex, schedules.length]);
+
     if (schedules.length === 0) {
       return (
         <Text c="dimmed">
@@ -185,9 +188,6 @@ export const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
         />
       );
     })();
-
-    const fcRef = useRef<FullCalendar>(null);
-    useEffect(() => {}, [morph.displayedIndex, schedules.length]);
 
     return (
       <Box

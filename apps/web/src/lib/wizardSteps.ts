@@ -4,15 +4,17 @@
  */
 export enum WizardStep {
   Term = 0,
-  Program = 1,
-  Completed = 2,
-  Options = 3,
-  Assign = 4,
-  Generate = 5,
+  Mode = 1,
+  Program = 2,
+  Completed = 3,
+  Options = 4,
+  Assign = 5,
+  Generate = 6,
 }
 
 export const ALL_WIZARD_STEP_INDICES = [
   WizardStep.Term,
+  WizardStep.Mode,
   WizardStep.Program,
   WizardStep.Completed,
   WizardStep.Options,
@@ -25,7 +27,7 @@ export function buildVisibleStepIndices(
   needsOptions: boolean,
   needsAssign: boolean,
 ): number[] {
-  const out: number[] = [WizardStep.Term, WizardStep.Program, WizardStep.Completed];
+  const out: number[] = [WizardStep.Term, WizardStep.Mode, WizardStep.Program, WizardStep.Completed];
   if (needsOptions) out.push(WizardStep.Options);
   if (needsAssign) out.push(WizardStep.Assign);
   out.push(WizardStep.Generate);

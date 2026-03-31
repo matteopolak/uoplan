@@ -417,6 +417,7 @@ export async function generateSchedulesAction(
       swapPool: state.swapPool,
       chosenCourseToRequirementId: state.chosenCourseToRequirementId,
       schedulePoolMaps: state.schedulePoolMaps,
+      scheduleColorMaps: existingColorMaps,
       selectedScheduleIndex: state.selectedScheduleIndex,
       swapHistory: [],
       generationError: generationErrorState(
@@ -941,6 +942,7 @@ export async function generateSchedulesAction(
         swapPool: state.swapPool,
         chosenCourseToRequirementId: state.chosenCourseToRequirementId,
         schedulePoolMaps: state.schedulePoolMaps,
+        scheduleColorMaps: existingColorMaps,
         selectedScheduleIndex: state.selectedScheduleIndex,
         swapHistory: [],
         generationError: generationErrorState(
@@ -955,6 +957,7 @@ export async function generateSchedulesAction(
       swapPool,
       chosenCourseToRequirementId: {},
       schedulePoolMaps: [],
+      scheduleColorMaps: existingColorMaps,
       selectedScheduleIndex: 0,
       swapHistory: [],
       generationError: generationErrorState(

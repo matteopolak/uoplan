@@ -52,15 +52,15 @@ export function OptionsDrilldown({
     depth * REQUIREMENT_INDENT_PX + REQUIREMENT_BASE_PADDING_PX;
 
   const requirementNodeShared = {
-    cache: null as const,
+    cache: null,
     completedCourses,
     selectedPerRequirement: EMPTY_RECORD,
     onSelect: () => {},
     selectedOptionsPerRequirement,
     onSelectOption,
     prereqEligible: EMPTY_SET,
-    levelBuckets: ["undergrad", "grad"] as const,
-    languageBuckets: ["en", "fr", "other"] as const,
+    levelBuckets: ["undergrad", "grad"] as ("undergrad" | "grad")[],
+    languageBuckets: ["en", "fr", "other"] as ("en" | "fr" | "other")[],
     electiveLevelBuckets: [] as number[],
     unassignedCompletedSet: EMPTY_SET,
     unassignedCompletedSetNormalized: EMPTY_SET,

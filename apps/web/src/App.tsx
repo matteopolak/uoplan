@@ -29,7 +29,9 @@ import { STEPS, StepNav } from "./components/shared/StepNav";
 import { ResetModal } from "./components/shared/ResetModal";
 import { CalendarPage } from "./components/calendar/CalendarPage";
 import { TermStep } from "./components/steps/TermStep";
+import { ModeStep } from "./components/steps/ModeStep";
 import { ProgramStep } from "./components/steps/ProgramStep";
+import { BasicCalendarPage } from "./components/calendar/BasicCalendarPage";
 import { CompletedCoursesStep } from "./components/steps/CompletedCoursesStep";
 import { AssignStep } from "./components/requirements/AssignStep";
 import { ConstrainStep } from "./components/requirements/ConstrainStep";
@@ -63,6 +65,7 @@ function App() {
     error,
     terms,
     selectedTermId,
+    wizardMode,
     firstYear,
     program,
     completedCourses,
@@ -96,6 +99,7 @@ function App() {
       error: s.error,
       terms: s.terms,
       selectedTermId: s.selectedTermId,
+      wizardMode: s.wizardMode,
       firstYear: s.firstYear,
       program: s.program,
       completedCourses: s.completedCourses,
@@ -125,6 +129,7 @@ function App() {
 
   const loadData = useAppStore((s) => s.loadData);
   const getShareUrl = useAppStore((s) => s.getShareUrl);
+  const setWizardMode = useAppStore((s) => s.setWizardMode);
   const setProgram = useAppStore((s) => s.setProgram);
   const setSelectedTermId = useAppStore((s) => s.setSelectedTermId);
   const setCompletedCourses = useAppStore((s) => s.setCompletedCourses);
@@ -221,6 +226,7 @@ function App() {
 
   const canProceedFromStep = (() => {
     if (effectiveActive === WizardStep.Term) return hasTerms && Boolean(selectedTermId) && Boolean(cache);
+    if (effectiveActive === WizardStep.Mode) return Boolean(wizardMode);
     if (effectiveActive === WizardStep.Program) return firstYear !== null && program !== null;
     if (effectiveActive === WizardStep.Options) return !missingOptions;
     if (effectiveActive === WizardStep.Assign) return unassignedCompletedCourses.length === 0;
@@ -347,17 +353,50 @@ function App() {
     );
   }
 
-  if (showCalendar && generatedSchedules.length > 0) {
-    return (
-      <CalendarPage
-        onBack={() => {
-          setShowCalendar(false);
-        }}
-      />
-    );
-  }
+  const showAdvancedCalendar = showCalendar && generatedSchedules.length > 0 && wizardMode !== 'basic';
+  const showBasicCalendar = wizardMode === 'basic' && active > WizardStep.Mode;
 
   return (
+    <AnimatePresence mode="wait">
+      {showAdvancedCalendar ? (
+        <motion.div
+          key="advanced-calendar"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.3 }}
+          style={{ width: "100%", minHeight: "100vh" }}
+        >
+          <CalendarPage
+            onBack={() => {
+              setShowCalendar(false);
+            }}
+          />
+        </motion.div>
+      ) : showBasicCalendar ? (
+        <motion.div
+          key="basic-calendar"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.3 }}
+          style={{ width: "100%", minHeight: "100vh" }}
+        >
+          <BasicCalendarPage 
+            onBack={() => {
+              setActive(WizardStep.Mode);
+            }}
+          />
+        </motion.div>
+      ) : (
+        <motion.div
+          key="wizard"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.3 }}
+          style={{ width: "100%", minHeight: "100vh" }}
+        >
     <Box
       component="main"
       style={{
@@ -385,7 +424,7 @@ function App() {
       <Modal
         opened={helpModalOpen}
         onClose={() => setHelpModalOpen(false)}
-        title={WIZARD_STEP_CONTENT[effectiveActive]?.title ?? "Help"}
+        title={WIZARD_STEP_CONTENT[effectiveActive as WizardStep]?.title ?? "Help"}
         centered
         radius={0}
         styles={{
@@ -409,7 +448,7 @@ function App() {
               What this step is for
             </Text>
             <Text size="sm" style={{ color: "#ADB5BD", lineHeight: 1.5 }}>
-              {WIZARD_STEP_CONTENT[effectiveActive]?.purpose}
+              {WIZARD_STEP_CONTENT[effectiveActive as WizardStep]?.purpose}
             </Text>
           </Box>
           <Box>
@@ -423,7 +462,7 @@ function App() {
               What you should do
             </Text>
             <Text size="sm" style={{ color: "#ADB5BD", lineHeight: 1.5 }}>
-              {WIZARD_STEP_CONTENT[effectiveActive]?.whatToDo}
+              {WIZARD_STEP_CONTENT[effectiveActive as WizardStep]?.whatToDo}
             </Text>
           </Box>
         </Stack>
@@ -563,6 +602,19 @@ function App() {
                       terms={terms}
                       value={selectedTermId}
                       onChange={setSelectedTermId}
+                    />
+                  </Stack>
+                )}
+                {effectiveActive === WizardStep.Mode && (
+                  <Stack gap="md">
+                    <ModeStep
+                      value={wizardMode}
+                      onChange={(mode) => {
+                        setWizardMode(mode);
+                        if (mode === "basic") {
+                          // Jump to generate basic schedules directly if desired, but they have to proceed.
+                        }
+                      }}
                     />
                   </Stack>
                 )}
@@ -807,6 +859,9 @@ function App() {
         {!isMobile && <Box />}
       </Box>
     </Box>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 

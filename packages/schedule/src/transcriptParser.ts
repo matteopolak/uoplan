@@ -15,7 +15,7 @@ async function ensureWorker(): Promise<void> {
   if (workerInitialized) return;
   const [pdfjsLib, workerUrl] = await Promise.all([
     import("pdfjs-dist"),
-    // @ts-expect-error - pdf.worker.mjs is not typed
+    // @ts-ignore - pdf.worker.mjs is not typed in some environments
     import("pdfjs-dist/build/pdf.worker.mjs?url").then((m) => m.default),
   ]);
   if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
