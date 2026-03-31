@@ -1,0 +1,555 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Alert,
+  Box,
+  Button,
+  Select,
+  Stack,
+  Text,
+  TextInput,
+  Title,
+  MultiSelect,
+  NumberInput,
+  type OptionsFilter,
+} from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
+import {
+  IconMenu2,
+  IconX,
+} from "@tabler/icons-react";
+import { useAppStore } from "../../store/appStore";
+import { useShallow } from "zustand/react/shallow";
+import { CalendarView, type CalendarViewHandle } from "./CalendarView";
+import { GenerationErrorDetailBlocks } from "../GenerationErrorDetailBlocks";
+import { buildScheduleIcs, downloadTextFile, parseTranscriptPdf, isOptCourse, normalizeCourseCode } from "schedule";
+import { Loader } from "@mantine/core";
+import { createCourseOptions, renderCourseOption } from '../shared/CourseSelect';
+
+interface BasicCalendarPageProps {
+  onBack: () => void;
+}
+
+const requiredCoursesFilter: OptionsFilter = ({ options, search }) => {
+  const query = search.toLowerCase().trim();
+  if (!query) return options;
+
+  const exactMatches: typeof options = [];
+  const partialMatches: typeof options = [];
+
+  for (const option of options) {
+    if ("value" in option) {
+      const val = option.value.toLowerCase();
+      const label = typeof option.label === "string" ? option.label.toLowerCase() : "";
+      const valNoSpace = val.replace(/\s+/g, "");
+      const queryNoSpace = query.replace(/\s+/g, "");
+
+      if (val.includes(query) || valNoSpace.includes(queryNoSpace)) {
+        exactMatches.push(option);
+      } else if (label.includes(query)) {
+        partialMatches.push(option);
+      }
+    }
+  }
+
+  return [...exactMatches, ...partialMatches];
+};
+
+export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
+  const {
+    generatedSchedules,
+    selectedScheduleIndex,
+    generationError,
+    cache,
+    professorRatings,
+    scheduleColorMaps,
+    basicPinnedCourses,
+    basicElectivesCount,
+    basicExcludedCategories,
+    completedCourses,
+    indices,
+  } = useAppStore(
+    useShallow((s) => ({
+      generatedSchedules: s.generatedSchedules,
+      selectedScheduleIndex: s.selectedScheduleIndex,
+      generationError: s.generationError,
+      cache: s.cache,
+      professorRatings: s.professorRatings,
+      scheduleColorMaps: s.scheduleColorMaps,
+      basicPinnedCourses: s.basicPinnedCourses,
+      basicElectivesCount: s.basicElectivesCount,
+      basicExcludedCategories: s.basicExcludedCategories,
+      completedCourses: s.completedCourses,
+      indices: s.indices,
+    })),
+  );
+
+  const setSelectedScheduleIndex = useAppStore((s) => s.setSelectedScheduleIndex);
+  const generateBasicSchedules = useAppStore((s) => s.generateBasicSchedules);
+  const getSwapCandidates = useAppStore((s) => s.getSwapCandidates);
+  const swapCourseInSchedule = useAppStore((s) => s.swapCourseInSchedule);
+  const setBasicPinnedCourses = useAppStore((s) => s.setBasicPinnedCourses);
+  const setBasicElectivesCount = useAppStore((s) => s.setBasicElectivesCount);
+  const setBasicExcludedCategories = useAppStore((s) => s.setBasicExcludedCategories);
+  const setWizardMode = useAppStore((s) => s.setWizardMode);
+  const clearGeneratedSchedules = useAppStore((s) => s.clearGeneratedSchedules);
+  const setCompletedCourses = useAppStore((s) => s.setCompletedCourses);
+
+  const morphRef = useRef<CalendarViewHandle>(null);
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [transcriptLoading, setTranscriptLoading] = useState(false);
+  const [transcriptError, setTranscriptError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [timetableStartDate, setTimetableStartDate] = useState("");
+  const [timetableEndDate, setTimetableEndDate] = useState("");
+
+  const isMobile = useMediaQuery("(max-width: 768px)");
+
+  useEffect(() => {
+    if (generatedSchedules.length === 0) return;
+    const currentSchedule =
+      generatedSchedules[selectedScheduleIndex] ?? generatedSchedules[0];
+    let minStart: string | null = null;
+    let maxEnd: string | null = null;
+    for (const enrollment of currentSchedule.enrollments) {
+      for (const { section } of Object.values(enrollment.sectionCombo)) {
+        const md = section.meetingDates;
+        if (!md || md.length < 2) continue;
+        const start = md[0];
+        const end = md[1];
+        if (start && (!minStart || start < minStart)) minStart = start;
+        if (end && (!maxEnd || end > maxEnd)) maxEnd = end;
+      }
+    }
+    if (!timetableStartDate && minStart) setTimetableStartDate(minStart);
+    if (!timetableEndDate && maxEnd) setTimetableEndDate(maxEnd);
+  }, [
+    generatedSchedules,
+    selectedScheduleIndex,
+    timetableStartDate,
+    timetableEndDate,
+  ]);
+
+  const scheduleOptions = generatedSchedules.map((_, i) => ({
+    value: String(i),
+    label: `Schedule #${i + 1}`,
+  }));
+  const currentSchedule =
+    generatedSchedules[selectedScheduleIndex] ?? generatedSchedules[0];
+
+  const startOk =
+    Boolean(timetableStartDate) &&
+    !Number.isNaN(Date.parse(`${timetableStartDate}T00:00:00Z`));
+  const endOk =
+    Boolean(timetableEndDate) &&
+    !Number.isNaN(Date.parse(`${timetableEndDate}T00:00:00Z`));
+  const dateRangeOk = startOk && endOk && timetableStartDate <= timetableEndDate;
+
+  const genErrDetails = generationError?.details ?? null;
+
+  const handleTranscriptFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !cache) return;
+    setTranscriptError(null);
+    setTranscriptLoading(true);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const { courses: parsedCourses } = await parseTranscriptPdf(arrayBuffer);
+      const inCatalogue: string[] = [];
+      const indexedCodes = indices ? new Set(indices.courses.map(normalizeCourseCode)) : new Set<string>();
+      for (const code of parsedCourses) {
+        if (isOptCourse(normalizeCourseCode(code)) || cache.getCourse(code) || indexedCodes.has(normalizeCourseCode(code))) {
+          inCatalogue.push(code);
+        }
+      }
+      const merged = [...new Set([...completedCourses, ...inCatalogue])];
+      setCompletedCourses(merged);
+      clearGeneratedSchedules();
+    } catch (err) {
+      setTranscriptError(
+        err instanceof Error ? err.message : 'Failed to parse transcript PDF'
+      );
+    } finally {
+      setTranscriptLoading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleGenerate = () => {
+    setGenerating(true);
+    generateBasicSchedules({ appendFirstOnly: true }).then(() => {
+      setGenerating(false);
+      const newIndex = useAppStore.getState().generatedSchedules.length - 1;
+      setSelectedScheduleIndex(Math.max(0, newIndex));
+      morphRef.current?.animate(Math.max(0, newIndex));
+    });
+  };
+
+  const handleDownloadIcs = () => {
+    if (!currentSchedule) return;
+    const ics = buildScheduleIcs({
+      schedule: currentSchedule,
+      cache: cache!,
+      startDate: timetableStartDate,
+      endDate: timetableEndDate,
+    });
+    const idx = (selectedScheduleIndex ?? 0) + 1;
+    const filename = `uoplan-basic-schedule-${idx}-${timetableStartDate}-to-${timetableEndDate}.ics`;
+    downloadTextFile(filename, ics, "text/calendar;charset=utf-8");
+  };
+
+  // Build categories for excluded select
+  const allCategories = [...new Set(cache?.getAllCourses().map((c) => {
+    const match = c.code.match(/^([A-Z]{3,4})/i);
+    return match ? match[1].toUpperCase() : null;
+  }).filter((c) => c !== null))] as string[];
+  
+  allCategories.sort();
+
+  const completedCourseOptions = useMemo(() => {
+    if (!cache) return [];
+    return createCourseOptions(cache.getAllCourses().map((c) => c.code), cache);
+  }, [cache]);
+
+  const requiredCourseOptions = useMemo(() => {
+    if (!cache) return [];
+    return cache.getAllSchedules().map((sched) => {
+      const course = cache.getCourse(sched.courseCode);
+      if (!course) return null;
+      return {
+        value: course.code,
+        label: `${course.code} - ${course.title}`,
+      };
+    }).filter((o): o is NonNullable<typeof o> => o !== null)
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [cache]);
+
+  return (
+    <Box
+      component="main"
+      style={{
+        width: "100%",
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "row",
+        boxSizing: "border-box",
+      }}
+    >
+      {isMobile && sidebarOpen && (
+        <Box
+          aria-hidden
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            zIndex: 199,
+          }}
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <Box
+        style={{
+          width: 360,
+          flexShrink: 0,
+          padding: "24px 20px",
+          borderRight: "2px solid #2C2E33",
+          backgroundColor: "#1E1E20",
+          display: "flex",
+          flexDirection: "column",
+          gap: 24,
+          overflowY: "auto",
+          ...(isMobile
+            ? {
+                position: "fixed",
+                top: 0,
+                left: 0,
+                height: "100vh",
+                zIndex: 200,
+                transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
+                transition: "transform 0.2s ease",
+                boxShadow: sidebarOpen ? "4px 0 24px rgba(0,0,0,0.3)" : "none",
+              }
+            : {}),
+        }}
+      >
+        {isMobile && (
+          <Button
+            variant="subtle"
+            color="gray"
+            size="sm"
+            radius={0}
+            leftSection={<IconX size={18} />}
+            onClick={() => setSidebarOpen(false)}
+            style={{ border: "none", alignSelf: "flex-start", marginBottom: 8 }}
+          >
+            Close
+          </Button>
+        )}
+
+        <Title
+          order={1}
+          style={{
+            fontFamily: '"DM Serif Display", serif',
+            color: "#F8F9FA",
+            marginBottom: 0,
+          }}
+        >
+          Basic Builder
+        </Title>
+        <Text size="sm" style={{ color: "#ADB5BD", marginTop: -8 }}>
+          Add required courses and electives to generate a schedule.
+        </Text>
+
+        <Stack gap="md">
+          <MultiSelect
+            label="Required Courses"
+            placeholder="Select required courses"
+            searchable
+            data={requiredCourseOptions}
+            value={basicPinnedCourses}
+            onChange={(v) => {
+              setBasicPinnedCourses(v);
+              clearGeneratedSchedules();
+            }}
+            filter={requiredCoursesFilter}
+            radius={0}
+          />
+
+          <NumberInput
+            label="Number of Electives"
+            value={basicElectivesCount}
+            onChange={(v) => {
+              setBasicElectivesCount(Number(v) || 0);
+              clearGeneratedSchedules();
+            }}
+            min={0}
+            max={6}
+            radius={0}
+          />
+
+          <MultiSelect
+            label="Exclude Elective Subjects"
+            placeholder="e.g. ADM, CSI"
+            searchable
+            data={allCategories.map(c => ({ value: c, label: c }))}
+            value={basicExcludedCategories}
+            onChange={(v) => {
+              setBasicExcludedCategories(v);
+              clearGeneratedSchedules();
+            }}
+            radius={0}
+          />
+
+
+
+          <Button
+            variant="filled"
+            color="violet"
+            size="md"
+            radius={0}
+            loading={generating}
+            onClick={handleGenerate}
+          >
+            Generate schedule
+          </Button>
+
+          <Box style={{ borderTop: "1px solid #2C2E33", paddingTop: 16, marginTop: 8 }}>
+            <Text size="sm" fw={600} mb={8} style={{ color: "#F8F9FA" }}>Have you taken courses before?</Text>
+            <Text size="xs" style={{ color: "#ADB5BD", marginBottom: 12 }}>
+              Add completed courses to automatically unlock more electives that require prerequisites.
+            </Text>
+            <Stack gap="sm">
+              <MultiSelect
+                placeholder="Search by code or title..."
+                data={completedCourseOptions}
+                value={completedCourses}
+                onChange={(v) => {
+                  setCompletedCourses(v);
+                  clearGeneratedSchedules();
+                }}
+                searchable
+                clearable
+                renderOption={renderCourseOption(cache)}
+                filter={({ options, search }) => {
+                  const q = search.toLowerCase().trim();
+                  if (!q) return options;
+                  return (options as any[]).filter(
+                    (o) =>
+                      o.value.toLowerCase().includes(q) ||
+                      o.label.toLowerCase().includes(q)
+                  );
+                }}
+                nothingFoundMessage="No courses found"
+                radius={0}
+              />
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf"
+                onChange={handleTranscriptFile}
+                disabled={transcriptLoading}
+                style={{ display: 'none' }}
+              />
+              <Button
+                size="sm"
+                color="gray"
+                variant="light"
+                radius={0}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={transcriptLoading}
+                leftSection={transcriptLoading ? <Loader size="xs" /> : undefined}
+                fullWidth
+              >
+                {transcriptLoading ? 'Parsing...' : 'Upload transcript'}
+              </Button>
+              {transcriptError && (
+                <Alert color="red" variant="light" py="xs">
+                  <Text size="xs">{transcriptError}</Text>
+                </Alert>
+              )}
+            </Stack>
+          </Box>
+        </Stack>
+
+        {generationError && (
+          <Alert
+            color="red"
+            variant="light"
+            radius={0}
+            py="xs"
+            title={generationError.message}
+          >
+            <GenerationErrorDetailBlocks
+              errorDetails={genErrDetails}
+              summarizeEmptyPools={false}
+            />
+          </Alert>
+        )}
+
+        {generatedSchedules.length > 0 && (
+          <>
+            <Select
+              label="Generated Schedules"
+              data={scheduleOptions}
+              value={String(
+                Math.min(selectedScheduleIndex, generatedSchedules.length - 1),
+              )}
+              onChange={(v) => {
+                const idx = Number(v ?? 0);
+                setSelectedScheduleIndex(idx);
+                morphRef.current?.animate(idx);
+              }}
+              size="md"
+              radius={0}
+            />
+            
+            <Stack gap={4}>
+              <TextInput
+                label="Start date"
+                placeholder="YYYY-MM-DD"
+                value={timetableStartDate}
+                onChange={(e) => setTimetableStartDate(e.currentTarget.value)}
+                size="sm"
+              />
+              <TextInput
+                label="End date"
+                placeholder="YYYY-MM-DD"
+                value={timetableEndDate}
+                onChange={(e) => setTimetableEndDate(e.currentTarget.value)}
+                size="sm"
+              />
+            </Stack>
+
+            <Button
+              size="sm"
+              color="violet"
+              variant="filled"
+              radius={0}
+              disabled={!dateRangeOk}
+              onClick={handleDownloadIcs}
+            >
+              Download ICS
+            </Button>
+          </>
+        )}
+
+        <Box style={{ flex: 1, minHeight: 24 }} />
+
+        <Button
+          variant="subtle"
+          color="gray"
+          size="sm"
+          radius={0}
+          onClick={() => {
+            setWizardMode(null);
+            onBack();
+          }}
+          style={{ alignSelf: "stretch" }}
+        >
+          Change Mode
+        </Button>
+      </Box>
+
+      {/* Calendar area */}
+      <Box
+        style={{
+          flex: 1,
+          minWidth: 0,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          padding: isMobile ? 0 : 24,
+          paddingBottom: isMobile ? 72 : 24,
+          width: "100%",
+          maxWidth: 1200,
+        }}
+      >
+        <CalendarView
+          ref={morphRef}
+          schedules={generatedSchedules}
+          selectedIndex={selectedScheduleIndex}
+          onSelectIndex={setSelectedScheduleIndex}
+          cache={cache}
+          professorRatings={professorRatings}
+          getSwapCandidates={getSwapCandidates}
+          onSwap={swapCourseInSchedule}
+          colorMaps={scheduleColorMaps}
+        />
+      </Box>
+
+      {/* Mobile bottom nav */}
+      {isMobile && (
+        <Box
+          component="nav"
+          style={{
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            display: "flex",
+            gap: 0,
+            backgroundColor: "#1E1E20",
+            borderTop: "2px solid #2C2E33",
+            paddingBottom: "env(safe-area-inset-bottom, 0)",
+            zIndex: 198,
+          }}
+        >
+          <Button
+            variant="subtle"
+            color="gray"
+            size="md"
+            radius={0}
+            style={{ flex: 1, border: "none", height: 56 }}
+            leftSection={<IconMenu2 size={22} />}
+            onClick={() => setSidebarOpen(true)}
+          >
+            Menu
+          </Button>
+        </Box>
+      )}
+    </Box>
+  );
+}

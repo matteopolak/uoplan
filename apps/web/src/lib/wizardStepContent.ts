@@ -20,6 +20,13 @@ export const WIZARD_STEP_CONTENT: Record<WizardStep, WizardContentStep> = {
     whatToDo:
       "Select the term you are planning for from the list. You must have a term selected before you can generate schedules.",
   },
+  [WizardStep.Mode]: {
+    title: "Choose mode",
+    purpose:
+      "UOPlan supports two modes. Basic mode lets you quickly select required courses and electives without full program planning. Advanced mode builds your entire degree structure.",
+    whatToDo:
+      "Select either Basic mode for quick scheduling, or Advanced mode for comprehensive degree planning.",
+  },
   [WizardStep.Program]: {
     title: "Select program",
     purpose:
@@ -94,6 +101,7 @@ function escapeHtml(s: string): string {
 /** `data-tour` selector per wizard step index (main panel highlight). */
 export const WIZARD_TOUR_SELECTOR: Record<WizardStep, string> = {
   [WizardStep.Term]: '[data-tour="term-select"]',
+  [WizardStep.Mode]: '[data-tour="mode-select"]',
   [WizardStep.Program]: '[data-tour="program-step"]',
   [WizardStep.Completed]: '[data-tour="completed-courses"]',
   [WizardStep.Options]: '[data-tour="options"]',

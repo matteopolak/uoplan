@@ -29,8 +29,8 @@ export function runTour(
   const steps: DriveStep[] = [];
 
   for (const wizardIdx of visibleStepIndices) {
-    const selector = WIZARD_TOUR_SELECTOR[wizardIdx];
-    const content = WIZARD_STEP_CONTENT[wizardIdx];
+    const selector = WIZARD_TOUR_SELECTOR[wizardIdx as WizardStep];
+    const content = WIZARD_STEP_CONTENT[wizardIdx as WizardStep];
     if (!selector || !content) continue;
 
     descriptionHtmlList.push(

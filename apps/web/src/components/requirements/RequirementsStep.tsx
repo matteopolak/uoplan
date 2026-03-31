@@ -27,7 +27,6 @@ import {
   type ExpandRegistry,
 } from "./RequirementNode";
 import {
-  applyOptionSelections,
   countSatisfiedTopLevelRoots,
 } from "./requirementUtils";
 
@@ -190,14 +189,6 @@ export function RequirementsStep({
     unassignedCompletedCourses.map((c) => normalizeCourseCode(c)),
   );
 
-  const flattenedTree = useMemo(
-    () =>
-      applyOptionSelections(
-        requirementTreeWithStatus,
-        selectedOptionsPerRequirement,
-      ),
-    [requirementTreeWithStatus, selectedOptionsPerRequirement],
-  );
   const satisfiedTopLevelCount = useMemo(
     () =>
       countSatisfiedTopLevelRoots(

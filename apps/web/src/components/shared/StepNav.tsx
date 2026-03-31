@@ -7,6 +7,7 @@ import {
 
 export const STEPS = [
   { label: "Choose term", description: "Choose term" },
+  { label: "Choose mode", description: "Select mode" },
   { label: "Select program", description: "Program & transcript" },
   { label: "Add completed courses", description: "Mark completed courses" },
   { label: "Choose path", description: "Choose program options" },

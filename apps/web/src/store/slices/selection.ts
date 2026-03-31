@@ -34,6 +34,10 @@ function getMergedCatalogue(
 }
 
 export interface SelectionSlice {
+  setWizardMode: AppStore["setWizardMode"];
+  setBasicPinnedCourses: AppStore["setBasicPinnedCourses"];
+  setBasicElectivesCount: AppStore["setBasicElectivesCount"];
+  setBasicExcludedCategories: AppStore["setBasicExcludedCategories"];
   setProgram: AppStore["setProgram"];
   setStudentPrograms: AppStore["setStudentPrograms"];
   setCompletedCourses: AppStore["setCompletedCourses"];
@@ -55,6 +59,11 @@ export const createSelectionSlice: StateCreator<
   [],
   SelectionSlice
 > = (set, get) => ({
+  setWizardMode: (mode) => set({ wizardMode: mode }),
+  setBasicPinnedCourses: (courses) => set({ basicPinnedCourses: courses }),
+  setBasicElectivesCount: (count) => set({ basicElectivesCount: count }),
+  setBasicExcludedCategories: (categories) => set({ basicExcludedCategories: categories }),
+
   setProgram: (program) => {
     const studentPrograms = getDisciplineCodesForProgram(program);
     set({

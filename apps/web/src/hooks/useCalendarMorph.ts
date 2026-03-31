@@ -251,7 +251,7 @@ export function useCalendarMorph(
       const built = buildPhantoms(oldCapturesRef.current, newCaptures);
       if (built.length === 0) {
         setPhantoms([]);
-        setPhaseAndRef("fading-in");
+        setPhaseAndRef("idle");
         return;
       }
       setPhantoms(built);
