@@ -121,10 +121,21 @@ export const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
             flex: 1,
             minHeight: 0,
             width: '100%',
-            backgroundColor: '#1E1E20',
             ...(isMobile
-              ? { border: 'none', padding: 0 }
-              : { border: '2px solid #2C2E33', padding: 12 }),
+              ? {
+                  border: 'none',
+                  outline: 'none',
+                  boxShadow: 'none',
+                  backgroundColor: 'transparent',
+                  padding: 0,
+                }
+              : {
+                  border: 'none',
+                  outline: 'none',
+                  boxShadow: 'none',
+                  backgroundColor: 'transparent',
+                  padding: 0,
+                }),
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
