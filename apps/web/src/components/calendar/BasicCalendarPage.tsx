@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Alert,
   Box,
@@ -6,7 +6,6 @@ import {
   Select,
   Stack,
   Text,
-  TextInput,
   Title,
   MultiSelect,
   NumberInput,
@@ -24,6 +23,7 @@ import { GenerationErrorDetailBlocks } from "../GenerationErrorDetailBlocks";
 import { buildScheduleIcs, downloadTextFile, parseTranscriptPdf, isOptCourse, normalizeCourseCode } from "schedule";
 import { Loader } from "@mantine/core";
 import { createCourseOptions, renderCourseOption } from '../shared/CourseSelect';
+import { useTimetableDateRangeFromSchedule } from "../../hooks/useTimetableDateRange";
 
 interface BasicCalendarPageProps {
   onBack: () => void;
@@ -106,30 +106,14 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
 
   const isMobile = useMediaQuery("(max-width: 768px)");
 
-  useEffect(() => {
-    if (generatedSchedules.length === 0) return;
-    const currentSchedule =
-      generatedSchedules[selectedScheduleIndex] ?? generatedSchedules[0];
-    let minStart: string | null = null;
-    let maxEnd: string | null = null;
-    for (const enrollment of currentSchedule.enrollments) {
-      for (const { section } of Object.values(enrollment.sectionCombo)) {
-        const md = section.meetingDates;
-        if (!md || md.length < 2) continue;
-        const start = md[0];
-        const end = md[1];
-        if (start && (!minStart || start < minStart)) minStart = start;
-        if (end && (!maxEnd || end > maxEnd)) maxEnd = end;
-      }
-    }
-    if (!timetableStartDate && minStart) setTimetableStartDate(minStart);
-    if (!timetableEndDate && maxEnd) setTimetableEndDate(maxEnd);
-  }, [
+  useTimetableDateRangeFromSchedule(
     generatedSchedules,
     selectedScheduleIndex,
     timetableStartDate,
     timetableEndDate,
-  ]);
+    setTimetableStartDate,
+    setTimetableEndDate,
+  );
 
   const scheduleOptions = generatedSchedules.map((_, i) => ({
     value: String(i),
@@ -200,12 +184,21 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
   };
 
   // Build categories for excluded select
-  const allCategories = [...new Set(cache?.getAllCourses().map((c) => {
-    const match = c.code.match(/^([A-Z]{3,4})/i);
-    return match ? match[1].toUpperCase() : null;
-  }).filter((c) => c !== null))] as string[];
-  
-  allCategories.sort();
+  const allCategories = useMemo(() => {
+    if (!cache) return [] as string[];
+
+    const categories = [
+      ...new Set(
+        cache.getAllCourses().map((c) => {
+          const match = c.code.match(/^([A-Z]{3,4})/i);
+          return match ? match[1].toUpperCase() : null;
+        }),
+      ),
+    ].filter((c): c is string => c !== null);
+
+    categories.sort();
+    return categories;
+  }, [cache]);
 
   const completedCourseOptions = useMemo(() => {
     if (!cache) return [];
@@ -354,64 +347,6 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
           >
             Generate schedule
           </Button>
-
-          <Box style={{ borderTop: "1px solid #2C2E33", paddingTop: 16, marginTop: 8 }}>
-            <Text size="sm" fw={600} mb={8} style={{ color: "#F8F9FA" }}>Have you taken courses before?</Text>
-            <Text size="xs" style={{ color: "#ADB5BD", marginBottom: 12 }}>
-              Add completed courses to automatically unlock more electives that require prerequisites.
-            </Text>
-            <Stack gap="sm">
-              <MultiSelect
-                placeholder="Search by code or title..."
-                data={completedCourseOptions}
-                value={completedCourses}
-                onChange={(v) => {
-                  setCompletedCourses(v);
-                  clearGeneratedSchedules();
-                }}
-                searchable
-                clearable
-                renderOption={renderCourseOption(cache)}
-                filter={({ options, search }) => {
-                  const q = search.toLowerCase().trim();
-                  if (!q) return options;
-                  return (options as any[]).filter(
-                    (o) =>
-                      o.value.toLowerCase().includes(q) ||
-                      o.label.toLowerCase().includes(q)
-                  );
-                }}
-                nothingFoundMessage="No courses found"
-                radius={0}
-              />
-              
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf"
-                onChange={handleTranscriptFile}
-                disabled={transcriptLoading}
-                style={{ display: 'none' }}
-              />
-              <Button
-                size="sm"
-                color="gray"
-                variant="light"
-                radius={0}
-                onClick={() => fileInputRef.current?.click()}
-                disabled={transcriptLoading}
-                leftSection={transcriptLoading ? <Loader size="xs" /> : undefined}
-                fullWidth
-              >
-                {transcriptLoading ? 'Parsing...' : 'Upload transcript'}
-              </Button>
-              {transcriptError && (
-                <Alert color="red" variant="light" py="xs">
-                  <Text size="xs">{transcriptError}</Text>
-                </Alert>
-              )}
-            </Stack>
-          </Box>
         </Stack>
 
         {generationError && (
@@ -445,23 +380,6 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
               size="md"
               radius={0}
             />
-            
-            <Stack gap={4}>
-              <TextInput
-                label="Start date"
-                placeholder="YYYY-MM-DD"
-                value={timetableStartDate}
-                onChange={(e) => setTimetableStartDate(e.currentTarget.value)}
-                size="sm"
-              />
-              <TextInput
-                label="End date"
-                placeholder="YYYY-MM-DD"
-                value={timetableEndDate}
-                onChange={(e) => setTimetableEndDate(e.currentTarget.value)}
-                size="sm"
-              />
-            </Stack>
 
             <Button
               size="sm"
@@ -475,6 +393,66 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
             </Button>
           </>
         )}
+
+        <Box style={{ borderTop: "1px solid #2C2E33", paddingTop: 16, marginTop: 8 }}>
+          <Text size="sm" fw={600} mb={8} style={{ color: "#F8F9FA" }}>
+            Have you taken courses before?
+          </Text>
+          <Text size="xs" style={{ color: "#ADB5BD", marginBottom: 12 }}>
+            Add completed courses to automatically unlock more electives that require prerequisites.
+          </Text>
+          <Stack gap="sm">
+            <MultiSelect
+              placeholder="Search by code or title..."
+              data={completedCourseOptions}
+              value={completedCourses}
+              onChange={(v) => {
+                setCompletedCourses(v);
+                clearGeneratedSchedules();
+              }}
+              searchable
+              clearable
+              renderOption={renderCourseOption(cache)}
+              filter={({ options, search }) => {
+                const q = search.toLowerCase().trim();
+                if (!q) return options;
+                return (options as any[]).filter(
+                  (o) =>
+                    o.value.toLowerCase().includes(q) ||
+                    o.label.toLowerCase().includes(q),
+                );
+              }}
+              nothingFoundMessage="No courses found"
+              radius={0}
+            />
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf"
+              onChange={handleTranscriptFile}
+              disabled={transcriptLoading}
+              style={{ display: "none" }}
+            />
+            <Button
+              size="sm"
+              color="gray"
+              variant="light"
+              radius={0}
+              onClick={() => fileInputRef.current?.click()}
+              disabled={transcriptLoading}
+              leftSection={transcriptLoading ? <Loader size="xs" /> : undefined}
+              fullWidth
+            >
+              {transcriptLoading ? "Parsing..." : "Upload transcript"}
+            </Button>
+            {transcriptError && (
+              <Alert color="red" variant="light" py="xs">
+                <Text size="xs">{transcriptError}</Text>
+              </Alert>
+            )}
+          </Stack>
+        </Box>
 
         <Box style={{ flex: 1, minHeight: 24 }} />
 
