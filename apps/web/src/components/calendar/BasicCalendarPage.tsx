@@ -223,10 +223,12 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
       component="main"
       style={{
         width: "100%",
-        minHeight: "100vh",
+        minHeight: isMobile ? "100vh" : 0,
+        height: isMobile ? "auto" : "100dvh",
         display: "flex",
         flexDirection: "row",
         boxSizing: "border-box",
+        overflow: isMobile ? "visible" : "hidden",
       }}
     >
       {isMobile && sidebarOpen && (
@@ -252,6 +254,8 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
           display: "flex",
           flexDirection: "column",
           gap: 24,
+          minHeight: 0,
+          maxHeight: "100%",
           overflowY: "auto",
           ...(isMobile
             ? {
