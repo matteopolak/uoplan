@@ -14,6 +14,7 @@ import { useCalendarEvents, type CalendarEvent } from '../../hooks/useCalendarEv
 import { useSwapModal, type SwapCandidatesGetter } from '../../hooks/useSwapModal';
 import { useCalendarMorph } from '../../hooks/useCalendarMorph';
 import { ScheduleMorphOverlay } from './ScheduleMorphOverlay';
+import { tr } from '../../i18n';
 
 const EMPTY_COLOR_MAP: Record<string, number> = {};
 
@@ -98,9 +99,24 @@ export const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
 
     if (schedules.length === 0) {
       return (
-        <Text c="dimmed">
-          No schedules generated yet. Complete the steps above and click Generate.
-        </Text>
+        <Box
+          style={{
+            width: '100%',
+            height: '100%',
+            minHeight: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            padding: 16,
+          }}
+        >
+          <Text c="dimmed">
+            {tr(
+              'calendarView.empty',
+            )}
+          </Text>
+        </Box>
       );
     }
 

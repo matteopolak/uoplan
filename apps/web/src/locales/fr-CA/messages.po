@@ -1,0 +1,487 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-03-31 00:00+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: fr-CA\n"
+
+msgid "app.beta"
+msgstr "Beta"
+
+msgid "app.constraints.description"
+msgstr "Épinglez des cours à des exigences précises - le générateur utilise d'abord vos choix, puis complète les placés restantes avec d'autres cours admissibles."
+
+msgid "app.constraints.heading"
+msgstr "Choisir des cours précis"
+
+msgid "app.constraints.optional"
+msgstr "Optionnel"
+
+msgid "app.errorTitle"
+msgstr "Erreur"
+
+msgid "app.generate.disableReason"
+msgstr "Vous devez encore assigner {count} cours terminé{suffix} dans Exigences avant de pouvoir générer des horaires."
+
+msgid "app.help.action"
+msgstr "Aide"
+
+msgid "app.help.whatFor"
+msgstr "À quoi sert cette étape"
+
+msgid "app.help.whatToDo"
+msgstr "Ce que vous devez faire"
+
+msgid "app.helpFallback"
+msgstr "Aide"
+
+msgid "app.loadingData"
+msgstr "Chargement des données de cours..."
+
+msgid "app.nav.back"
+msgstr "Retour"
+
+msgid "app.nav.next"
+msgstr "Suivant"
+
+msgid "app.reset.action"
+msgstr "Réinitialiser"
+
+msgid "app.share.action"
+msgstr "Partager"
+
+msgid "app.share.copied"
+msgstr "Lien copié"
+
+msgid "app.tour.action"
+msgstr "Visite"
+
+msgid "basicCalendar.changeMode"
+msgstr "Changer de mode"
+
+msgid "basicCalendar.completed.notFound"
+msgstr "Aucun cours trouvé"
+
+msgid "basicCalendar.completed.placeholder"
+msgstr "Rechercher par code ou titre..."
+
+msgid "basicCalendar.downloadIcs"
+msgstr "Télécharger ICS"
+
+msgid "basicCalendar.electives.label"
+msgstr "Nombre de cours au choix"
+
+msgid "basicCalendar.exclude.label"
+msgstr "Exclure des matières au choix"
+
+msgid "basicCalendar.exclude.placeholder"
+msgstr "ex. ADM, CSI"
+
+msgid "basicCalendar.generate"
+msgstr "Générer un horaire"
+
+msgid "basicCalendar.generatedSchedules"
+msgstr "Horaires générés"
+
+msgid "basicCalendar.mobile.close"
+msgstr "Fermer"
+
+msgid "basicCalendar.mobile.menu"
+msgstr "Menu"
+
+msgid "basicCalendar.prereq.description"
+msgstr "Ajoutez vos cours complétés pour débloquer automatiquement plus de cours au choix qui exigent des préalables."
+
+msgid "basicCalendar.prereq.heading"
+msgstr "Avez-vous déjà suivi des cours?"
+
+msgid "basicCalendar.required.label"
+msgstr "Cours obligatoires"
+
+msgid "basicCalendar.required.placeholder"
+msgstr "Sélectionner des cours obligatoires"
+
+msgid "basicCalendar.schedule.label"
+msgstr "Horaire no {index}"
+
+msgid "basicCalendar.subtitle"
+msgstr "Ajoutez des cours obligatoires et des cours au choix pour générer un horaire."
+
+msgid "basicCalendar.title"
+msgstr "Constructeur de base"
+
+msgid "basicCalendar.transcript.parseFailed"
+msgstr "Impossible d'analyser le relevé PDF"
+
+msgid "basicCalendar.transcript.parsing"
+msgstr "Analyse..."
+
+msgid "basicCalendar.transcript.upload"
+msgstr "Téléverser le relevé"
+
+msgid "calendarPage.backToSetup"
+msgstr "Retour à la configuration"
+
+msgid "calendarPage.downloadIcs"
+msgstr "Télécharger ICS"
+
+msgid "calendarPage.generateNew"
+msgstr "Générer un nouvel horaire"
+
+msgid "calendarPage.generatedTotal"
+msgstr "{count} tôtal - cliquez sur un bloc pour échanger"
+
+msgid "calendarPage.mobile.close"
+msgstr "Fermer"
+
+msgid "calendarPage.mobile.menu"
+msgstr "Menu"
+
+msgid "calendarPage.mobile.tryAnother"
+msgstr "Essayer un autre"
+
+msgid "calendarPage.reset"
+msgstr "Réinitialiser"
+
+msgid "calendarPage.schedule.label"
+msgstr "Horaire no {index}"
+
+msgid "calendarPage.schedule.selectLabel"
+msgstr "Horaire"
+
+msgid "calendarPage.share"
+msgstr "Partager"
+
+msgid "calendarPage.shareModal.copied"
+msgstr "Copié dans le presse-papiers"
+
+msgid "calendarPage.shareModal.copy"
+msgstr "Copiér le lien partageable"
+
+msgid "calendarPage.shareModal.description"
+msgstr "Partagez cette URL pour permettre à d'autres personnes de charger votre programme, vos cours complétés et vos sélections. Le code est l'état intégré dans l'URL."
+
+msgid "calendarPage.shareModal.stateCode"
+msgstr "Code d'état"
+
+msgid "calendarPage.shareModal.title"
+msgstr "Partager l'état de l'horaire"
+
+msgid "calendarPage.shareModal.url"
+msgstr "URL"
+
+msgid "calendarPage.showingBlocks"
+msgstr "{count} bloc{suffix} de cours affiché{suffix} cette semaine"
+
+msgid "calendarPage.subtitle"
+msgstr "Passez en revue vos horaires générés. Cliquez sur un bloc pour échanger des cours."
+
+msgid "calendarPage.title"
+msgstr "Votre horaire hebdomadaire"
+
+msgid "calendarPage.undoSwap"
+msgstr "Annuler l'echange"
+
+msgid "calendarPage.undoSwapCount"
+msgstr "Annuler l'echange ({count})"
+
+msgid "calendarView.empty"
+msgstr "Aucun horaire n'à encore ete généré. Completez les étapes ci-dessus et cliquez sur Générer."
+
+msgid "languageSwitcher.ariaLabel"
+msgstr "Choisir la langue de l'application"
+
+msgid "modeStep.advanced.aria"
+msgstr "Mode avancé"
+
+msgid "modeStep.advanced.badge"
+msgstr "plus précis"
+
+msgid "modeStep.advanced.description"
+msgstr "Sélectionnez votre programme et créez un plan de diplôme complet. Suit les cours complétés et les compare à vos exigences de programme."
+
+msgid "modeStep.advanced.title"
+msgstr "Mode avancé"
+
+msgid "modeStep.basic.aria"
+msgstr "Mode de base"
+
+msgid "modeStep.basic.badge"
+msgstr "moins de configuration"
+
+msgid "modeStep.basic.description"
+msgstr "Sélectionnez rapidement des cours obligatoires et des cours au choix pour générer un horaire. Idéal pour une planification simple sans suivi complet du programme."
+
+msgid "modeStep.basic.title"
+msgstr "Mode de base"
+
+msgid "programStep.disciplines.description"
+msgstr "Utilisé pour évaluer les préalables propres au programme. Rempli automatiquement à partir des cours de votre programme."
+
+msgid "programStep.disciplines.label"
+msgstr "Disciplines de votre programme"
+
+msgid "programStep.firstYear.description"
+msgstr "Determiné quelles exigences de programme s'appliquent à vous."
+
+msgid "programStep.firstYear.label"
+msgstr "Année initiale d'études"
+
+msgid "programStep.firstYear.placeholder"
+msgstr "Sélectionnez votre année de début..."
+
+msgid "programStep.optional"
+msgstr "Optionnel."
+
+msgid "programStep.program.label"
+msgstr "Sélectionnez votre programme"
+
+msgid "programStep.program.notFound"
+msgstr "Aucun programme trouvé"
+
+msgid "programStep.program.placeholder"
+msgstr "Rechercher votre programme..."
+
+msgid "programStep.transcript.addAnyway"
+msgstr "Ajouter quand même"
+
+msgid "programStep.transcript.added"
+msgstr "{count} cours{suffix} ajouté{suffix} depuis le relevé."
+
+msgid "programStep.transcript.choose"
+msgstr "Choisir le relevé"
+
+msgid "programStep.transcript.codesNotFound"
+msgstr "{count} code{suffix} du PDF n'ont pas été trouvés dans le catalogue : {codes}"
+
+msgid "programStep.transcript.description"
+msgstr "Téléverser votre relevé vous évite de sélectionner manuellement votre année de début, votre programme et vos cours complétés - tout est détecté automatiquement. Votre PDF est traité entièrement sur votre appareil et n'est jamais envoyé à un serveur."
+
+msgid "programStep.transcript.notInCatalogue"
+msgstr "Introuvable dans le catalogue"
+
+msgid "programStep.transcript.parseFailed"
+msgstr "Impossible d'analyser le relevé PDF"
+
+msgid "programStep.transcript.parsing"
+msgstr "Analyse..."
+
+msgid "programStep.transcript.programSet"
+msgstr "Programme défini à : {program}."
+
+msgid "programStep.transcript.request"
+msgstr "Demander un relevé sur uoZone"
+
+msgid "programStep.transcript.uploadAria"
+msgstr "Téléverser un relevé PDF"
+
+msgid "programStep.transcript.uploadFailed"
+msgstr "Téléversement échoué"
+
+msgid "scheduleCount.compressed.description"
+msgstr "Au plus une pause par jour, jusqu'à 90 minutes."
+
+msgid "scheduleCount.compressed.label"
+msgstr "Horaire compact"
+
+msgid "scheduleCount.courses.label"
+msgstr "Combien de cours voulez-vous cette session?"
+
+msgid "scheduleCount.day.friday"
+msgstr "Vendredi"
+
+msgid "scheduleCount.day.monday"
+msgstr "Lundi"
+
+msgid "scheduleCount.day.saturday"
+msgstr "Samedi"
+
+msgid "scheduleCount.day.sunday"
+msgstr "Dimanche"
+
+msgid "scheduleCount.day.thursday"
+msgstr "Jeudi"
+
+msgid "scheduleCount.day.tuesday"
+msgstr "Mardi"
+
+msgid "scheduleCount.day.wednesday"
+msgstr "Mercredi"
+
+msgid "scheduleCount.days.description"
+msgstr "Si vous videz ce champ, les jours de semaine (lun-ven) seront utilisés pour la génération."
+
+msgid "scheduleCount.days.label"
+msgstr "Jours de la semaine permis"
+
+msgid "scheduleCount.days.placeholder"
+msgstr "Sélectionner les jours"
+
+msgid "scheduleCount.firstYear.limitDescription"
+msgstr "Vous avez actuellement {credits} credit{suffix} de cours de niveau 1000 (terminés + sélectionnés). La limite du premier cycle est de 48."
+
+msgid "scheduleCount.firstYear.limitLabel"
+msgstr "Limiter les cours de niveau 1000 à 48 crédits"
+
+msgid "scheduleCount.firstYear.warning"
+msgstr "Vos cours sélectionnés pourraient porter votre total de crédits de niveau 1000 à {credits}/48, dépassant la limite du premier cycle. Activez l'option ci-dessous pour plafonner à 48."
+
+msgid "scheduleCount.generate"
+msgstr "Générer des horaires"
+
+msgid "scheduleCount.needMore"
+msgstr "Vous avez sélectionné {count} cours. Nous proposerons des cours additionnels de vos exigences restantes pour compléter votre horaire."
+
+msgid "scheduleCount.rating.description"
+msgstr "Les professeurs sans note sont toujours permis."
+
+msgid "scheduleCount.rating.label"
+msgstr "Note minimale RateMyProfessors"
+
+msgid "scheduleCount.rating.placeholder"
+msgstr "Aucun minimum"
+
+msgid "scheduleCount.time.earliest"
+msgstr "Début de cours le plus tôt"
+
+msgid "scheduleCount.time.latest"
+msgstr "Fin de cours la plus tard"
+
+msgid "stepNav.mobileProgress"
+msgstr "Étape {current} sur {total} · {label}"
+
+msgid "stepNav.step.completed.description"
+msgstr "Marquer les cours complétés"
+
+msgid "stepNav.step.completed.label"
+msgstr "Ajouter les cours complétés"
+
+msgid "stepNav.step.generate.description"
+msgstr "Préférences et génération"
+
+msgid "stepNav.step.generate.label"
+msgstr "Générer des horaires"
+
+msgid "stepNav.step.mode.description"
+msgstr "Sélectionner le mode"
+
+msgid "stepNav.step.mode.label"
+msgstr "Choisir le mode"
+
+msgid "stepNav.step.path.description"
+msgstr "Choisir les options de programme"
+
+msgid "stepNav.step.path.label"
+msgstr "Choisir le parcours"
+
+msgid "stepNav.step.program.description"
+msgstr "Programme et relevé"
+
+msgid "stepNav.step.program.label"
+msgstr "Sélectionner le programme"
+
+msgid "stepNav.step.requirements.description"
+msgstr "Assigner les cours complétés"
+
+msgid "stepNav.step.requirements.label"
+msgstr "Remplir les exigences"
+
+msgid "stepNav.step.term.description"
+msgstr "Choisir la session"
+
+msgid "stepNav.step.term.label"
+msgstr "Choisir la session"
+
+msgid "stepNav.title"
+msgstr "Étapes"
+
+msgid "tour.back"
+msgstr "Retour"
+
+msgid "tour.done"
+msgstr "Terminé"
+
+msgid "tour.next"
+msgstr "Suivant"
+
+msgid "tour.progress"
+msgstr "{{current}} sur {{total}}"
+
+msgid "wizardContent.assign.purpose"
+msgstr "Chaque cours complété doit être placé sous une exigence qu'il satisfait. Les cours non assignés bloquent la génération d'horaires tant qu'ils ne sont pas placés."
+
+msgid "wizardContent.assign.title"
+msgstr "Remplir les exigences"
+
+msgid "wizardContent.assign.whatToDo"
+msgstr "Assignez chaque cours complété au nœud d'exigence qu'il remplit. Continuez jusqu'à ce que le planificateur indique que tous les cours sont assignés."
+
+msgid "wizardContent.completed.purpose"
+msgstr "Le planificateur soustrait ce que vous avez déjà fait de vos exigences et utilise cette liste lors de l'assignation des cours aux emplacements d'exigences."
+
+msgid "wizardContent.completed.title"
+msgstr "Ajouter les cours complétés"
+
+msgid "wizardContent.completed.whatToDo"
+msgstr "Ajoutez tous les cours que vous avez terminés ou que vous suivez actuellement en utilisant les codes de cours. Vous pouvez ajuster cette liste après un téléversement de relevé depuis l'étape Programme."
+
+msgid "wizardContent.generate.purpose"
+msgstr "Le solveur construit des horaires sans conflit à partir de vos sélections selon vos préférences de charge, d'heures et de jours."
+
+msgid "wizardContent.generate.title"
+msgstr "Générer des horaires"
+
+msgid "wizardContent.generate.whatToDo"
+msgstr "Définissez le nombre de cours pour cette session, l'heure de début la plus tôt et de fin la plus tard, les jours permis et une note minimale de professeur optionnelle. Ajustez le plafond de crédits de première année ou l'horaire compact si affiché, puis cliquez sur Générer des horaires."
+
+msgid "wizardContent.mode.purpose"
+msgstr "UOPlan prend en charge deux modes. Le mode de base permet de choisir rapidement des cours obligatoires et des cours au choix sans planification complète du programme. Le mode avancé construit la structure complète de votre diplôme."
+
+msgid "wizardContent.mode.title"
+msgstr "Choisir le mode"
+
+msgid "wizardContent.mode.whatToDo"
+msgstr "Choisissez le mode de base pour une planification rapide, ou le mode avancé pour une planification complète du diplôme."
+
+msgid "wizardContent.options.purpose"
+msgstr "Certains programmes incluent des branches, des concentrations ou des groupes d'options. Cette étape enregistre le parcours que vous suivez pour utiliser la bonne sous-arborescence d'exigences."
+
+msgid "wizardContent.options.title"
+msgstr "Choisir le parcours"
+
+msgid "wizardContent.options.whatToDo"
+msgstr "Parcourez chaque choix dans l'ordre. Sélectionnez une option lorsque requis; utilisez le bouton retour dans un détail si vous devez changer de branche."
+
+msgid "wizardContent.program.purpose"
+msgstr "Votre programme et votre année de début déterminent quelles exigences de diplôme s'appliquent. Les listes de disciplines aident à évaluer les préalables propres au programme."
+
+msgid "wizardContent.program.title"
+msgstr "Sélectionner le programme"
+
+msgid "wizardContent.program.whatToDo"
+msgstr "Définissez votre année de début, puis recherchez et sélectionnez votre programme. Vous pouvez aussi téléverser un relevé non officiel en PDF pour détecter automatiquement l'année, le programme et les cours complétés - le traitement reste entièrement sur votre appareil."
+
+msgid "wizardContent.share.purpose"
+msgstr "Un lien partageable encode votre session, votre programme, vos cours complétés et vos sélections du planificateur afin que vous puissiez revenir plus tard ou envoyer votre plan à quelqu'un d'autre."
+
+msgid "wizardContent.share.title"
+msgstr "Partager"
+
+msgid "wizardContent.share.whatToDo"
+msgstr "Cliquez sur Partager dans l'en-tête pour copier l'URL dans votre presse-papiers. Après avoir généré des horaires, vous pouvez aussi partager depuis la vue calendrier."
+
+msgid "wizardContent.term.purpose"
+msgstr "Les données d'horaire et les sections offertes sont liées à une session académique précise. Choisir la bonne session garantit que le planificateur utilise des cours réellement offerts quand vous voulez étudier."
+
+msgid "wizardContent.term.title"
+msgstr "Choisir la session"
+
+msgid "wizardContent.term.whatToDo"
+msgstr "Sélectionnez la session que vous planifiez dans la liste. Une session doit être sélectionnée avant de pouvoir générer des horaires."
+
+msgid "wizardContent.tour.whatFor"
+msgstr "À quoi sert cette étape"
+
+msgid "wizardContent.tour.whatToDo"
+msgstr "Ce que vous devez faire"

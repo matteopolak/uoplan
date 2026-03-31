@@ -1,18 +1,46 @@
 import { Box, Group, Stack, Text } from "@mantine/core";
 import { IconCheck } from "@tabler/icons-react";
+import { tr } from "../../i18n";
 import {
   isWizardStepSkipped,
   skippedWizardStepIsPassed,
 } from "../../lib/wizardSteps";
 
 export const STEPS = [
-  { label: "Choose term", description: "Choose term" },
-  { label: "Choose mode", description: "Select mode" },
-  { label: "Select program", description: "Program & transcript" },
-  { label: "Add completed courses", description: "Mark completed courses" },
-  { label: "Choose path", description: "Choose program options" },
-  { label: "Fill requirements", description: "Assign completed courses" },
-  { label: "Generate schedules", description: "Preferences & generate" },
+  {
+    label: () => tr("stepNav.step.term.label"),
+    description: () => tr("stepNav.step.term.description"),
+  },
+  {
+    label: () => tr("stepNav.step.mode.label"),
+    description: () => tr("stepNav.step.mode.description"),
+  },
+  {
+    label: () => tr("stepNav.step.program.label"),
+    description: () =>
+      tr("stepNav.step.program.description"),
+  },
+  {
+    label: () =>
+      tr("stepNav.step.completed.label"),
+    description: () =>
+      tr("stepNav.step.completed.description"),
+  },
+  {
+    label: () => tr("stepNav.step.path.label"),
+    description: () =>
+      tr("stepNav.step.path.description"),
+  },
+  {
+    label: () => tr("stepNav.step.requirements.label"),
+    description: () =>
+      tr("stepNav.step.requirements.description"),
+  },
+  {
+    label: () => tr("stepNav.step.generate.label"),
+    description: () =>
+      tr("stepNav.step.generate.description"),
+  },
 ] as const;
 
 export type Step = (typeof STEPS)[number];
@@ -153,7 +181,7 @@ function StepItem({
               lineHeight: 1.3,
             }}
           >
-            {step.label}
+            {step.label()}
           </Text>
         </Group>
       )}
@@ -225,7 +253,14 @@ export function StepNav({
           mt={8}
           style={{ textAlign: "center", color: "#F8F9FA" }}
         >
-          Step {activeDisplayIdx + 1} of {visibleCount} · {STEPS[active].label}
+          {tr(
+            "stepNav.mobileProgress",
+            {
+              current: activeDisplayIdx + 1,
+              total: visibleCount,
+              label: STEPS[active].label(),
+            },
+          )}
         </Text>
       </Box>
     );
@@ -243,7 +278,7 @@ export function StepNav({
           color: "#A6A7AB",
         }}
       >
-        Steps
+        {tr("stepNav.title")}
       </Text>
       <Box style={{ position: "relative" }}>
         {visibleCount > 1 && (

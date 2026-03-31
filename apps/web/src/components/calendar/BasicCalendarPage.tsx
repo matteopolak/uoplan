@@ -24,6 +24,8 @@ import { buildScheduleIcs, downloadTextFile, parseTranscriptPdf, isOptCourse, no
 import { Loader } from "@mantine/core";
 import { createCourseOptions, renderCourseOption } from '../shared/CourseSelect';
 import { useTimetableDateRangeFromSchedule } from "../../hooks/useTimetableDateRange";
+import { tr } from "../../i18n";
+import { LanguageSwitcher } from "../shared/LanguageSwitcher";
 
 interface BasicCalendarPageProps {
   onBack: () => void;
@@ -124,7 +126,9 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
 
   const scheduleOptions = generatedSchedules.map((_, i) => ({
     value: String(i),
-    label: `Schedule #${i + 1}`,
+    label: tr("basicCalendar.schedule.label", "Schedule #{index}", {
+      index: i + 1,
+    }),
   }));
   const currentSchedule =
     generatedSchedules[selectedScheduleIndex] ?? generatedSchedules[0];
@@ -159,7 +163,9 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
       clearGeneratedSchedules();
     } catch (err) {
       setTranscriptError(
-        err instanceof Error ? err.message : 'Failed to parse transcript PDF'
+        err instanceof Error
+          ? err.message
+          : tr("basicCalendar.transcript.parseFailed")
       );
     } finally {
       setTranscriptLoading(false);
@@ -288,7 +294,7 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
             onClick={() => setSidebarOpen(false)}
             style={{ border: "none", alignSelf: "flex-start", marginBottom: 8 }}
           >
-            Close
+            {tr("basicCalendar.mobile.close")}
           </Button>
         )}
 
@@ -300,16 +306,17 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
             marginBottom: 0,
           }}
         >
-          Basic Builder
+          {tr("basicCalendar.title")}
         </Title>
         <Text size="sm" style={{ color: "#ADB5BD", marginTop: -8 }}>
-          Add required courses and electives to generate a schedule.
+          {tr("basicCalendar.subtitle")}
         </Text>
 
         <Stack gap="md">
+          <LanguageSwitcher />
           <MultiSelect
-            label="Required Courses"
-            placeholder="Select required courses"
+            label={tr("basicCalendar.required.label")}
+            placeholder={tr("basicCalendar.required.placeholder")}
             searchable
             data={requiredCourseOptions}
             value={basicPinnedCourses}
@@ -322,7 +329,7 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
           />
 
           <NumberInput
-            label="Number of Electives"
+            label={tr("basicCalendar.electives.label")}
             value={basicElectivesCount}
             onChange={(v) => {
               if (typeof v !== "number" || Number.isNaN(v)) return;
@@ -337,8 +344,8 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
           />
 
           <MultiSelect
-            label="Exclude Elective Subjects"
-            placeholder="e.g. ADM, CSI"
+            label={tr("basicCalendar.exclude.label")}
+            placeholder={tr("basicCalendar.exclude.placeholder")}
             searchable
             data={allCategories.map(c => ({ value: c, label: c }))}
             value={basicExcludedCategories}
@@ -359,7 +366,7 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
             loading={generating}
             onClick={handleGenerate}
           >
-            Generate schedule
+            {tr("basicCalendar.generate")}
           </Button>
         </Stack>
 
@@ -381,7 +388,7 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
         {generatedSchedules.length > 0 && (
           <>
             <Select
-              label="Generated Schedules"
+              label={tr("basicCalendar.generatedSchedules")}
               data={scheduleOptions}
               value={String(
                 Math.min(selectedScheduleIndex, generatedSchedules.length - 1),
@@ -403,21 +410,21 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
               disabled={!dateRangeOk}
               onClick={handleDownloadIcs}
             >
-              Download ICS
+              {tr("basicCalendar.downloadIcs")}
             </Button>
           </>
         )}
 
         <Box style={{ borderTop: "1px solid #2C2E33", paddingTop: 16, marginTop: 8 }}>
           <Text size="sm" fw={600} mb={8} style={{ color: "#F8F9FA" }}>
-            Have you taken courses before?
+            {tr("basicCalendar.prereq.heading")}
           </Text>
           <Text size="xs" style={{ color: "#ADB5BD", marginBottom: 12 }}>
-            Add completed courses to automatically unlock more electives that require prerequisites.
+            {tr("basicCalendar.prereq.description")}
           </Text>
           <Stack gap="sm">
             <MultiSelect
-              placeholder="Search by code or title..."
+              placeholder={tr("basicCalendar.completed.placeholder")}
               data={completedCourseOptions}
               value={completedCourses}
               onChange={(v) => {
@@ -436,7 +443,7 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
                     o.label.toLowerCase().includes(q),
                 );
               }}
-              nothingFoundMessage="No courses found"
+              nothingFoundMessage={tr("basicCalendar.completed.notFound")}
               radius={0}
             />
 
@@ -458,7 +465,9 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
               leftSection={transcriptLoading ? <Loader size="xs" /> : undefined}
               fullWidth
             >
-              {transcriptLoading ? "Parsing..." : "Upload transcript"}
+              {transcriptLoading
+                ? tr("basicCalendar.transcript.parsing")
+                : tr("basicCalendar.transcript.upload")}
             </Button>
             {transcriptError && (
               <Alert color="red" variant="light" py="xs">
@@ -481,7 +490,7 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
           }}
           style={{ alignSelf: "stretch" }}
         >
-          Change Mode
+          {tr("basicCalendar.changeMode")}
         </Button>
       </Box>
 
@@ -537,7 +546,7 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
             leftSection={<IconMenu2 size={22} />}
             onClick={() => setSidebarOpen(true)}
           >
-            Menu
+            {tr("basicCalendar.mobile.menu")}
           </Button>
         </Box>
       )}

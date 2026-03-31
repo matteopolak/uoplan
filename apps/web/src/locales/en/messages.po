@@ -1,0 +1,488 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-03-31 00:00+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: en\n"
+
+msgid "app.beta"
+msgstr "Beta"
+
+msgid "app.constraints.description"
+msgstr "Pin courses to specific requirements - the generator uses your picks first, filling any remaining slots from other eligible courses."
+
+msgid "app.constraints.heading"
+msgstr "Pick specific courses"
+
+msgid "app.constraints.optional"
+msgstr "Optional"
+
+msgid "app.errorTitle"
+msgstr "Error"
+
+msgid "app.generate.disableReason"
+msgstr "You still need to assign {count} completed course{suffix} in Requirements before you can generate schedules."
+
+msgid "app.help.action"
+msgstr "Help"
+
+msgid "app.help.whatFor"
+msgstr "What this step is for"
+
+msgid "app.help.whatToDo"
+msgstr "What you should do"
+
+msgid "app.helpFallback"
+msgstr "Help"
+
+msgid "app.loadingData"
+msgstr "Loading course data..."
+
+msgid "app.nav.back"
+msgstr "Back"
+
+msgid "app.nav.next"
+msgstr "Next"
+
+msgid "app.reset.action"
+msgstr "Reset"
+
+msgid "app.share.action"
+msgstr "Share"
+
+msgid "app.share.copied"
+msgstr "Link copied"
+
+msgid "app.tour.action"
+msgstr "Tour"
+
+msgid "basicCalendar.changeMode"
+msgstr "Change Mode"
+
+msgid "basicCalendar.completed.notFound"
+msgstr "No courses found"
+
+msgid "basicCalendar.completed.placeholder"
+msgstr "Search by code or title..."
+
+msgid "basicCalendar.downloadIcs"
+msgstr "Download ICS"
+
+msgid "basicCalendar.electives.label"
+msgstr "Number of Electives"
+
+msgid "basicCalendar.exclude.label"
+msgstr "Exclude Elective Subjects"
+
+msgid "basicCalendar.exclude.placeholder"
+msgstr "e.g. ADM, CSI"
+
+msgid "basicCalendar.generate"
+msgstr "Generate schedule"
+
+msgid "basicCalendar.generatedSchedules"
+msgstr "Generated Schedules"
+
+msgid "basicCalendar.mobile.close"
+msgstr "Close"
+
+msgid "basicCalendar.mobile.menu"
+msgstr "Menu"
+
+msgid "basicCalendar.prereq.description"
+msgstr "Add completed courses to automatically unlock more electives that require prerequisites."
+
+msgid "basicCalendar.prereq.heading"
+msgstr "Have you taken courses before?"
+
+msgid "basicCalendar.required.label"
+msgstr "Required Courses"
+
+msgid "basicCalendar.required.placeholder"
+msgstr "Select required courses"
+
+msgid "basicCalendar.schedule.label"
+msgstr "Schedule #{index}"
+
+msgid "basicCalendar.subtitle"
+msgstr "Add required courses and electives to generate a schedule."
+
+msgid "basicCalendar.title"
+msgstr "Basic Builder"
+
+msgid "basicCalendar.transcript.parseFailed"
+msgstr "Failed to parse transcript PDF"
+
+msgid "basicCalendar.transcript.parsing"
+msgstr "Parsing..."
+
+msgid "basicCalendar.transcript.upload"
+msgstr "Upload transcript"
+
+msgid "calendarPage.backToSetup"
+msgstr "Back to setup"
+
+msgid "calendarView.empty"
+msgstr "No schedules generated yet. Complete the steps above and click Generate."
+
+msgid "calendarPage.downloadIcs"
+msgstr "Download ICS"
+
+msgid "calendarPage.generateNew"
+msgstr "Generate new schedule"
+
+msgid "calendarPage.generatedTotal"
+msgstr "{count} total - click a block to swap"
+
+msgid "calendarPage.mobile.close"
+msgstr "Close"
+
+msgid "calendarPage.mobile.menu"
+msgstr "Menu"
+
+msgid "calendarPage.mobile.tryAnother"
+msgstr "Try another"
+
+msgid "calendarPage.reset"
+msgstr "Reset"
+
+msgid "calendarPage.schedule.label"
+msgstr "Schedule #{index}"
+
+msgid "calendarPage.schedule.selectLabel"
+msgstr "Schedule"
+
+msgid "calendarPage.share"
+msgstr "Share"
+
+msgid "calendarPage.shareModal.copied"
+msgstr "Copied to clipboard"
+
+msgid "calendarPage.shareModal.copy"
+msgstr "Copy shareable link"
+
+msgid "calendarPage.shareModal.description"
+msgstr "Share this URL to let others load your program, completed courses, and selections. The code is the state embedded in the URL."
+
+msgid "calendarPage.shareModal.stateCode"
+msgstr "State code"
+
+msgid "calendarPage.shareModal.title"
+msgstr "Share timetable state"
+
+msgid "calendarPage.shareModal.url"
+msgstr "URL"
+
+msgid "calendarPage.showingBlocks"
+msgstr "Showing {count} course block{suffix} this week"
+
+msgid "calendarPage.subtitle"
+msgstr "Review your generated schedules. Click a block to swap courses."
+
+msgid "calendarPage.title"
+msgstr "Your weekly timetable"
+
+msgid "calendarPage.undoSwap"
+msgstr "Undo swap"
+
+msgid "calendarPage.undoSwapCount"
+msgstr "Undo swap ({count})"
+
+msgid "languageSwitcher.ariaLabel"
+msgstr "Select application language"
+
+msgid "modeStep.advanced.aria"
+msgstr "Advanced mode"
+
+msgid "modeStep.advanced.badge"
+msgstr "more accurate"
+
+msgid "modeStep.advanced.description"
+msgstr "Select your program and build a comprehensive degree plan. Tracks completed courses and maps them against your specific degree requirements."
+
+msgid "modeStep.advanced.title"
+msgstr "Advanced Mode"
+
+msgid "modeStep.basic.aria"
+msgstr "Basic mode"
+
+msgid "modeStep.basic.badge"
+msgstr "less setup"
+
+msgid "modeStep.basic.description"
+msgstr "Quickly select required courses and electives to generate a schedule. Best for simple scheduling without needing to track full degree progress."
+
+msgid "modeStep.basic.title"
+msgstr "Basic Mode"
+
+msgid "programStep.disciplines.description"
+msgstr "Used to evaluate program-specific prerequisites. Auto-filled from your program's courses."
+
+msgid "programStep.disciplines.label"
+msgstr "Your program disciplines"
+
+msgid "programStep.firstYear.description"
+msgstr "Determines which program requirements apply to you."
+
+msgid "programStep.firstYear.label"
+msgstr "First year of study"
+
+msgid "programStep.firstYear.placeholder"
+msgstr "Select your starting year..."
+
+msgid "programStep.optional"
+msgstr "Optional."
+
+msgid "programStep.program.label"
+msgstr "Select your program"
+
+msgid "programStep.program.notFound"
+msgstr "No program found"
+
+msgid "programStep.program.placeholder"
+msgstr "Search for your program..."
+
+msgid "programStep.transcript.addAnyway"
+msgstr "Add anyway"
+
+msgid "programStep.transcript.added"
+msgstr "Added {count} course{suffix} from transcript."
+
+msgid "programStep.transcript.choose"
+msgstr "Choose transcript"
+
+msgid "programStep.transcript.codesNotFound"
+msgstr "{count} code{suffix} from the PDF were not found in the catalogue: {codes}"
+
+msgid "programStep.transcript.description"
+msgstr "Uploading your transcript saves you from manually selecting your start year, program, and completed courses - everything is auto-detected. Your PDF is processed entirely on your device and is never sent to any server."
+
+msgid "programStep.transcript.notInCatalogue"
+msgstr "Not found in catalogue"
+
+msgid "programStep.transcript.parseFailed"
+msgstr "Failed to parse transcript PDF"
+
+msgid "programStep.transcript.parsing"
+msgstr "Parsing..."
+
+msgid "programStep.transcript.programSet"
+msgstr "Program set to: {program}."
+
+msgid "programStep.transcript.request"
+msgstr "Request transcript on uoZone"
+
+msgid "programStep.transcript.uploadAria"
+msgstr "Upload transcript PDF"
+
+msgid "programStep.transcript.uploadFailed"
+msgstr "Upload failed"
+
+msgid "scheduleCount.compressed.description"
+msgstr "At most one break per day, up to 90 minutes."
+
+msgid "scheduleCount.compressed.label"
+msgstr "Compressed schedule"
+
+msgid "scheduleCount.courses.label"
+msgstr "How many courses do you want this semester?"
+
+msgid "scheduleCount.day.friday"
+msgstr "Friday"
+
+msgid "scheduleCount.day.monday"
+msgstr "Monday"
+
+msgid "scheduleCount.day.saturday"
+msgstr "Saturday"
+
+msgid "scheduleCount.day.sunday"
+msgstr "Sunday"
+
+msgid "scheduleCount.day.thursday"
+msgstr "Thursday"
+
+msgid "scheduleCount.day.tuesday"
+msgstr "Tuesday"
+
+msgid "scheduleCount.day.wednesday"
+msgstr "Wednesday"
+
+msgid "scheduleCount.days.description"
+msgstr "If you clear this, weekdays (Mon-Fri) are used for generation."
+
+msgid "scheduleCount.days.label"
+msgstr "Days of the week allowed"
+
+msgid "scheduleCount.days.placeholder"
+msgstr "Select days"
+
+msgid "scheduleCount.firstYear.limitDescription"
+msgstr "You currently have {credits} credit{suffix} of 1000-level courses (completed + selected). The undergraduate limit is 48."
+
+msgid "scheduleCount.firstYear.limitLabel"
+msgstr "Limit 1000-level courses to 48 credits"
+
+msgid "scheduleCount.firstYear.warning"
+msgstr "Your selected courses may push your total 1000-level credits to {credits}/48, exceeding the undergraduate limit. Enable the option below to cap them at 48."
+
+msgid "scheduleCount.generate"
+msgstr "Generate Schedules"
+
+msgid "scheduleCount.needMore"
+msgstr "You selected {count} course(s). We will suggest additional courses from your remaining requirements to fill your schedule."
+
+msgid "scheduleCount.rating.description"
+msgstr "Professors without a rating are always allowed."
+
+msgid "scheduleCount.rating.label"
+msgstr "Minimum RateMyProfessors rating"
+
+msgid "scheduleCount.rating.placeholder"
+msgstr "No minimum"
+
+msgid "scheduleCount.time.earliest"
+msgstr "Earliest class start"
+
+msgid "scheduleCount.time.latest"
+msgstr "Latest class end"
+
+msgid "stepNav.mobileProgress"
+msgstr "Step {current} of {total} · {label}"
+
+msgid "stepNav.step.completed.description"
+msgstr "Mark completed courses"
+
+msgid "stepNav.step.completed.label"
+msgstr "Add completed courses"
+
+msgid "stepNav.step.generate.description"
+msgstr "Preferences & generate"
+
+msgid "stepNav.step.generate.label"
+msgstr "Generate schedules"
+
+msgid "stepNav.step.mode.description"
+msgstr "Select mode"
+
+msgid "stepNav.step.mode.label"
+msgstr "Choose mode"
+
+msgid "stepNav.step.path.description"
+msgstr "Choose program options"
+
+msgid "stepNav.step.path.label"
+msgstr "Choose path"
+
+msgid "stepNav.step.program.description"
+msgstr "Program & transcript"
+
+msgid "stepNav.step.program.label"
+msgstr "Select program"
+
+msgid "stepNav.step.requirements.description"
+msgstr "Assign completed courses"
+
+msgid "stepNav.step.requirements.label"
+msgstr "Fill requirements"
+
+msgid "stepNav.step.term.description"
+msgstr "Choose term"
+
+msgid "stepNav.step.term.label"
+msgstr "Choose term"
+
+msgid "stepNav.title"
+msgstr "Steps"
+
+msgid "tour.back"
+msgstr "Back"
+
+msgid "tour.done"
+msgstr "Done"
+
+msgid "tour.next"
+msgstr "Next"
+
+msgid "tour.progress"
+msgstr "{{current}} of {{total}}"
+
+msgid "wizardContent.assign.purpose"
+msgstr "Each completed course must sit under a requirement it satisfies. Unassigned courses block schedule generation until they are placed."
+
+msgid "wizardContent.assign.title"
+msgstr "Fill requirements"
+
+msgid "wizardContent.assign.whatToDo"
+msgstr "Assign every completed course to the requirement node it fulfills. Continue until the planner reports that all courses are assigned."
+
+msgid "wizardContent.completed.purpose"
+msgstr "The planner subtracts what you have already done from your requirements and uses this list when assigning courses to requirement slots."
+
+msgid "wizardContent.completed.title"
+msgstr "Add completed courses"
+
+msgid "wizardContent.completed.whatToDo"
+msgstr "Add every course you have completed or are currently taking, using course codes. You can refine this list after a transcript upload from the Program step."
+
+msgid "wizardContent.generate.purpose"
+msgstr "The solver builds conflict-free timetables from your selections using your preferences for load, times, and days."
+
+msgid "wizardContent.generate.title"
+msgstr "Generate schedules"
+
+msgid "wizardContent.generate.whatToDo"
+msgstr "Set how many courses you want this term, earliest start and latest end times, allowed days, and optional minimum professor rating. Adjust first-year credit cap or compressed schedule if shown, then click Generate Schedules."
+
+msgid "wizardContent.mode.purpose"
+msgstr "UOPlan supports two modes. Basic mode lets you quickly select required courses and electives without full program planning. Advanced mode builds your entire degree structure."
+
+msgid "wizardContent.mode.title"
+msgstr "Choose mode"
+
+msgid "wizardContent.mode.whatToDo"
+msgstr "Select either Basic mode for quick scheduling, or Advanced mode for comprehensive degree planning."
+
+msgid "wizardContent.options.purpose"
+msgstr "Some programs include branches, majors, or option groups. This step records which path you are following so the correct requirement subtree is used."
+
+msgid "wizardContent.options.title"
+msgstr "Choose path"
+
+msgid "wizardContent.options.whatToDo"
+msgstr "Work through each choice in order. Pick one option where required; use the back control inside a drilldown if you need to change a branch."
+
+msgid "wizardContent.program.purpose"
+msgstr "Your program and starting year determine which degree requirements apply. Discipline lists help evaluate program-specific prerequisites."
+
+msgid "wizardContent.program.title"
+msgstr "Select program"
+
+msgid "wizardContent.program.whatToDo"
+msgstr "Set your first year of study, then search and select your program. Optionally upload an unofficial transcript PDF to auto-detect year, program, and completed courses - processing stays entirely on your device."
+
+msgid "wizardContent.share.purpose"
+msgstr "A shareable link encodes your term, program, completed courses, and planner selections so you can revisit or send your plan to someone else."
+
+msgid "wizardContent.share.title"
+msgstr "Share"
+
+msgid "wizardContent.share.whatToDo"
+msgstr "Click Share in the header to copy the URL to your clipboard. After you generate timetables, you can also share from the calendar view."
+
+msgid "wizardContent.term.purpose"
+msgstr "Schedule data and section offerings are tied to a specific academic term. Choosing the right term ensures the planner uses courses that are actually offered when you plan to study."
+
+msgid "wizardContent.term.title"
+msgstr "Choose term"
+
+msgid "wizardContent.term.whatToDo"
+msgstr "Select the term you are planning for from the list. You must have a term selected before you can generate schedules."
+
+msgid "wizardContent.tour.whatFor"
+msgstr "What this step is for"
+
+msgid "wizardContent.tour.whatToDo"
+msgstr "What you should do"
+
