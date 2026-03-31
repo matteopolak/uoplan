@@ -28,6 +28,8 @@ import { GenerationErrorDetailBlocks } from "../GenerationErrorDetailBlocks";
 import { buildScheduleIcs, downloadTextFile } from "schedule";
 import { useShareUrl } from "../../hooks/useShareUrl";
 import { useTimetableDateRangeFromSchedule } from "../../hooks/useTimetableDateRange";
+import { tr } from "../../i18n";
+import { LanguageSwitcher } from "../shared/LanguageSwitcher";
 
 interface CalendarPageProps {
   onBack: () => void;
@@ -96,7 +98,9 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
 
   const scheduleOptions = generatedSchedules.map((_, i) => ({
     value: String(i),
-    label: `Schedule #${i + 1}`,
+    label: tr("calendarPage.schedule.label", "Schedule #{index}", {
+      index: i + 1,
+    }),
   }));
   const currentSchedule =
     generatedSchedules[selectedScheduleIndex] ?? generatedSchedules[0];
@@ -202,7 +206,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
             onClick={() => setSidebarOpen(false)}
             style={{ border: "none", alignSelf: "flex-start", marginBottom: 8 }}
           >
-            Close
+            {tr("calendarPage.mobile.close")}
           </Button>
         )}
 
@@ -214,10 +218,10 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
             marginBottom: 0,
           }}
         >
-          Your weekly timetable
+          {tr("calendarPage.title")}
         </Title>
         <Text size="sm" style={{ color: "#ADB5BD", marginTop: -8 }}>
-          Review your generated schedules. Click a block to swap courses.
+          {tr("calendarPage.subtitle")}
         </Text>
 
         {swapHistory.length > 0 && (
@@ -230,12 +234,15 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
             onClick={() => undoLastSwap()}
           >
             {swapHistory.length === 1
-              ? "Undo swap"
-              : `Undo swap (${swapHistory.length})`}
+              ? tr("calendarPage.undoSwap")
+              : tr("calendarPage.undoSwapCount", "Undo swap ({count})", {
+                  count: swapHistory.length,
+                })}
           </Button>
         )}
 
         <Group gap="xs">
+          <LanguageSwitcher />
           {indices && (
             <Button
               variant="filled"
@@ -246,7 +253,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
               onClick={() => setShareModalOpen(true)}
               style={{ backgroundColor: "#141517" }}
             >
-              Share
+              {tr("calendarPage.share")}
             </Button>
           )}
           <Button
@@ -258,7 +265,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
             onClick={() => setResetModalOpen(true)}
             style={{ backgroundColor: "#141517" }}
           >
-            Reset
+            {tr("calendarPage.reset")}
           </Button>
         </Group>
 
@@ -273,7 +280,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
         />
 
         <Select
-          label="Schedule"
+          label={tr("calendarPage.schedule.selectLabel")}
           data={scheduleOptions}
           value={String(
             Math.min(selectedScheduleIndex, generatedSchedules.length - 1),
@@ -295,7 +302,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
           disabled={!dateRangeOk}
           onClick={handleDownloadIcs}
         >
-          Download ICS
+          {tr("calendarPage.downloadIcs")}
         </Button>
 
         <Button
@@ -307,7 +314,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
           disabled={generatingOneMore}
           onClick={handleGenerateOneMore}
         >
-          Generate new schedule
+          {tr("calendarPage.generateNew")}
         </Button>
 
         {generationError && (
@@ -327,11 +334,21 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
 
         <Stack gap={0}>
           <Text size="sm" c="dimmed">
-            {generatedSchedules.length} total · click a block to swap
+            {tr(
+              "calendarPage.generatedTotal",
+              "{count} total - click a block to swap",
+              { count: generatedSchedules.length },
+            )}
           </Text>
           <Text size="xs" c="dimmed">
-            Showing {eventCount} course block{eventCount === 1 ? "" : "s"} this
-            week
+            {tr(
+              "calendarPage.showingBlocks",
+              "Showing {count} course block{suffix} this week",
+              {
+                count: eventCount,
+                suffix: eventCount === 1 ? "" : "s",
+              },
+            )}
           </Text>
         </Stack>
 
@@ -345,36 +362,37 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
           onClick={onBack}
           style={{ backgroundColor: "#141517", alignSelf: "stretch" }}
         >
-          Back to setup
+          {tr("calendarPage.backToSetup")}
         </Button>
 
         {/* Share modal */}
         <Modal
           opened={shareModalOpen}
           onClose={() => setShareModalOpen(false)}
-          title="Share timetable state"
+          title={tr("calendarPage.shareModal.title")}
           size="md"
         >
           <Stack gap="md">
             <Text size="sm" c="dimmed">
-              Share this URL to let others load your program, completed courses,
-              and selections. The code is the state embedded in the URL.
+              {tr("calendarPage.shareModal.description")}
             </Text>
             <TextInput
-              label="URL"
+              label={tr("calendarPage.shareModal.url")}
               value={getShareUrl() ?? ""}
               readOnly
               size="sm"
             />
             <Textarea
-              label="State code"
+              label={tr("calendarPage.shareModal.stateCode")}
               value={getEncodedStateBase64() ?? ""}
               readOnly
               minRows={3}
               size="sm"
             />
             <Button variant="filled" onClick={handleCopyShare}>
-              {shareCopied ? "Copied to clipboard" : "Copy shareable link"}
+              {shareCopied
+                ? tr("calendarPage.shareModal.copied")
+                : tr("calendarPage.shareModal.copy")}
             </Button>
           </Stack>
         </Modal>
@@ -432,7 +450,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
             leftSection={<IconMenu2 size={22} />}
             onClick={() => setSidebarOpen(true)}
           >
-            Menu
+            {tr("calendarPage.mobile.menu")}
           </Button>
           <Button
             variant="subtle"
@@ -445,7 +463,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
             disabled={generatingOneMore}
             onClick={handleGenerateOneMore}
           >
-            Try another
+            {tr("calendarPage.mobile.tryAnother")}
           </Button>
         </Box>
       )}

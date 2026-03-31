@@ -2,6 +2,7 @@
  * Single source of truth for wizard onboarding copy (Help modal + Driver.js tour).
  */
 import { WizardStep } from "./wizardSteps";
+import { tr } from "../i18n";
 
 export type WizardContentStep = {
   /** Short title for tour popover + modal */
@@ -12,65 +13,53 @@ export type WizardContentStep = {
   whatToDo: string;
 };
 
-export const WIZARD_STEP_CONTENT: Record<WizardStep, WizardContentStep> = {
-  [WizardStep.Term]: {
-    title: "Choose term",
-    purpose:
-      "Schedule data and section offerings are tied to a specific academic term. Choosing the right term ensures the planner uses courses that are actually offered when you plan to study.",
-    whatToDo:
-      "Select the term you are planning for from the list. You must have a term selected before you can generate schedules.",
-  },
-  [WizardStep.Mode]: {
-    title: "Choose mode",
-    purpose:
-      "UOPlan supports two modes. Basic mode lets you quickly select required courses and electives without full program planning. Advanced mode builds your entire degree structure.",
-    whatToDo:
-      "Select either Basic mode for quick scheduling, or Advanced mode for comprehensive degree planning.",
-  },
-  [WizardStep.Program]: {
-    title: "Select program",
-    purpose:
-      "Your program and starting year determine which degree requirements apply. Discipline lists help evaluate program-specific prerequisites.",
-    whatToDo:
-      "Set your first year of study, then search and select your program. Optionally upload an unofficial transcript PDF to auto-detect year, program, and completed courses — processing stays entirely on your device.",
-  },
-  [WizardStep.Completed]: {
-    title: "Add completed courses",
-    purpose:
-      "The planner subtracts what you have already done from your requirements and uses this list when assigning courses to requirement slots.",
-    whatToDo:
-      "Add every course you have completed or are currently taking, using course codes. You can refine this list after a transcript upload from the Program step.",
-  },
-  [WizardStep.Options]: {
-    title: "Choose path",
-    purpose:
-      "Some programs include branches, majors, or option groups. This step records which path you are following so the correct requirement subtree is used.",
-    whatToDo:
-      "Work through each choice in order. Pick one option where required; use the back control inside a drilldown if you need to change a branch.",
-  },
-  [WizardStep.Assign]: {
-    title: "Fill requirements",
-    purpose:
-      "Each completed course must sit under a requirement it satisfies. Unassigned courses block schedule generation until they are placed.",
-    whatToDo:
-      "Assign every completed course to the requirement node it fulfills. Continue until the planner reports that all courses are assigned.",
-  },
-  [WizardStep.Generate]: {
-    title: "Generate schedules",
-    purpose:
-      "The solver builds conflict-free timetables from your selections using your preferences for load, times, and days.",
-    whatToDo:
-      "Set how many courses you want this term, earliest start and latest end times, allowed days, and optional minimum professor rating. Adjust first-year credit cap or compressed schedule if shown, then click Generate Schedules.",
-  },
-};
+export function getWizardStepContent(): Record<WizardStep, WizardContentStep> {
+  return {
+    [WizardStep.Term]: {
+      title: tr("wizardContent.term.title"),
+      purpose: tr("wizardContent.term.purpose"),
+      whatToDo: tr("wizardContent.term.whatToDo"),
+    },
+    [WizardStep.Mode]: {
+      title: tr("wizardContent.mode.title"),
+      purpose: tr("wizardContent.mode.purpose"),
+      whatToDo: tr("wizardContent.mode.whatToDo"),
+    },
+    [WizardStep.Program]: {
+      title: tr("wizardContent.program.title"),
+      purpose: tr("wizardContent.program.purpose"),
+      whatToDo: tr("wizardContent.program.whatToDo"),
+    },
+    [WizardStep.Completed]: {
+      title: tr("wizardContent.completed.title"),
+      purpose: tr("wizardContent.completed.purpose"),
+      whatToDo: tr("wizardContent.completed.whatToDo"),
+    },
+    [WizardStep.Options]: {
+      title: tr("wizardContent.options.title"),
+      purpose: tr("wizardContent.options.purpose"),
+      whatToDo: tr("wizardContent.options.whatToDo"),
+    },
+    [WizardStep.Assign]: {
+      title: tr("wizardContent.assign.title"),
+      purpose: tr("wizardContent.assign.purpose"),
+      whatToDo: tr("wizardContent.assign.whatToDo"),
+    },
+    [WizardStep.Generate]: {
+      title: tr("wizardContent.generate.title"),
+      purpose: tr("wizardContent.generate.purpose"),
+      whatToDo: tr("wizardContent.generate.whatToDo"),
+    },
+  };
+}
 
-export const SHARE_STEP_CONTENT: WizardContentStep = {
-  title: "Share",
-  purpose:
-    "A shareable link encodes your term, program, completed courses, and planner selections so you can revisit or send your plan to someone else.",
-  whatToDo:
-    "Click Share in the header to copy the URL to your clipboard. After you generate timetables, you can also share from the calendar view.",
-};
+export function getShareStepContent(): WizardContentStep {
+  return {
+    title: tr("wizardContent.share.title"),
+    purpose: tr("wizardContent.share.purpose"),
+    whatToDo: tr("wizardContent.share.whatToDo"),
+  };
+}
 
 /** CSS classes for structured tour description blocks (see driver-dark.css). */
 export const TOUR_DESC_PURPOSE_CLASS = "driver-tour-desc__purpose";
@@ -83,9 +72,9 @@ export const TOUR_DESC_LABEL_SECOND_CLASS = "driver-tour-desc__label--second";
  */
 export function formatTourDescriptionHtml(purpose: string, whatToDo: string): string {
   return (
-    `<p class="${TOUR_DESC_LABEL_CLASS}">What this step is for</p>` +
+    `<p class="${TOUR_DESC_LABEL_CLASS}">${tr("wizardContent.tour.whatFor")}</p>` +
     `<p class="${TOUR_DESC_PURPOSE_CLASS}">${escapeHtml(purpose)}</p>` +
-    `<p class="${TOUR_DESC_LABEL_CLASS} ${TOUR_DESC_LABEL_SECOND_CLASS}">What you should do</p>` +
+    `<p class="${TOUR_DESC_LABEL_CLASS} ${TOUR_DESC_LABEL_SECOND_CLASS}">${tr("wizardContent.tour.whatToDo")}</p>` +
     `<p class="${TOUR_DESC_ACTION_CLASS}">${escapeHtml(whatToDo)}</p>`
   );
 }

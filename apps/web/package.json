@@ -8,13 +8,18 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "i18n:extract": "lingui extract",
+    "i18n:compile": "lingui compile"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.20",
     "@fullcalendar/interaction": "^6.1.20",
     "@fullcalendar/react": "^6.1.20",
     "@fullcalendar/timegrid": "^6.1.20",
+    "@lingui/core": "^5.9.4",
+    "@lingui/detect-locale": "^5.9.4",
+    "@lingui/react": "^5.9.4",
     "@mantine/core": "^8.3.17",
     "@mantine/hooks": "^8.3.17",
     "@tabler/icons-react": "^3.40.0",
@@ -30,6 +35,9 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@lingui/cli": "^5.9.4",
+    "@lingui/format-po": "^5.9.4",
+    "@lingui/vite-plugin": "^5.9.4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.14",

@@ -3,16 +3,7 @@ import { Stack, NumberInput, Button, Alert, Group, MultiSelect, TextInput, Selec
 import type { DayOfWeek } from 'schemas';
 import type { GenerationErrorDetails } from '../../store/types';
 import { GenerationErrorDetailBlocks } from '../GenerationErrorDetailBlocks';
-
-const DAY_OPTIONS: { value: DayOfWeek; label: string }[] = [
-  { value: 'Mo', label: 'Monday' },
-  { value: 'Tu', label: 'Tuesday' },
-  { value: 'We', label: 'Wednesday' },
-  { value: 'Th', label: 'Thursday' },
-  { value: 'Fr', label: 'Friday' },
-  { value: 'Sa', label: 'Saturday' },
-  { value: 'Su', label: 'Sunday' },
-];
+import { tr } from "../../i18n";
 
 /** Format minutes since midnight as HH:mm for input type="time". */
 function minutesToTimeString(minutes: number): string {
@@ -96,11 +87,20 @@ export function ScheduleCountStep({
     { value: '4', label: '4.0+' },
     { value: '4.5', label: '4.5+' },
   ];
+  const dayOptions: { value: DayOfWeek; label: string }[] = [
+    { value: 'Mo', label: tr("scheduleCount.day.monday") },
+    { value: 'Tu', label: tr("scheduleCount.day.tuesday") },
+    { value: 'We', label: tr("scheduleCount.day.wednesday") },
+    { value: 'Th', label: tr("scheduleCount.day.thursday") },
+    { value: 'Fr', label: tr("scheduleCount.day.friday") },
+    { value: 'Sa', label: tr("scheduleCount.day.saturday") },
+    { value: 'Su', label: tr("scheduleCount.day.sunday") },
+  ];
 
   return (
     <Stack gap="md" data-tour="generate-step">
       <NumberInput
-        label="How many courses do you want this semester?"
+        label={tr("scheduleCount.courses.label")}
         value={coursesThisSemester}
         onChange={(v) => onCoursesChange(Number(v) || 5)}
         min={1}
@@ -108,31 +108,31 @@ export function ScheduleCountStep({
       />
       <Group align="flex-end" gap="md">
         <TextInput
-          label="Earliest class start"
+          label={tr("scheduleCount.time.earliest")}
           type="time"
           value={minutesToTimeString(minStartMinutes)}
           onChange={(e) => onMinStartMinutesChange(timeStringToMinutes(e.currentTarget.value))}
         />
         <TextInput
-          label="Latest class end"
+          label={tr("scheduleCount.time.latest")}
           type="time"
           value={minutesToTimeString(maxEndMinutes)}
           onChange={(e) => onMaxEndMinutesChange(timeStringToMinutes(e.currentTarget.value))}
         />
       </Group>
       <MultiSelect
-        label="Days of the week allowed"
-        description="If you clear this, weekdays (Mon–Fri) are used for generation."
-        placeholder="Select days"
-        data={DAY_OPTIONS}
+        label={tr("scheduleCount.days.label")}
+        description={tr("scheduleCount.days.description")}
+        placeholder={tr("scheduleCount.days.placeholder")}
+        data={dayOptions}
         value={allowedDays}
         onChange={(values) => onAllowedDaysChange(values as DayOfWeek[])}
         clearable
       />
       <Select
-        label="Minimum RateMyProfessors rating"
-        description="Professors without a rating are always allowed."
-        placeholder="No minimum"
+        label={tr("scheduleCount.rating.label")}
+        description={tr("scheduleCount.rating.description")}
+        placeholder={tr("scheduleCount.rating.placeholder")}
         data={ratingOptions}
         value={minProfessorRating == null ? null : String(minProfessorRating)}
         onChange={(v) => onMinProfessorRatingChange(v == null ? null : Number(v))}
@@ -140,21 +140,31 @@ export function ScheduleCountStep({
       />
       {warnFirstYearLimit && (
         <Alert color="yellow" variant="light" radius={0}>
-          Your selected courses may push your total 1000-level credits to {totalFirstYearCredits}/48,
-          exceeding the undergraduate limit. Enable the option below to cap them at 48.
+          {tr(
+            "scheduleCount.firstYear.warning",
+            "Your selected courses may push your total 1000-level credits to {credits}/48, exceeding the undergraduate limit. Enable the option below to cap them at 48.",
+            { credits: totalFirstYearCredits },
+          )}
         </Alert>
       )}
       {totalFirstYearCredits > 0 && (
         <Checkbox
-          label="Limit 1000-level courses to 48 credits"
-          description={`You currently have ${totalFirstYearCredits} credit${totalFirstYearCredits === 1 ? '' : 's'} of 1000-level courses (completed + selected). The undergraduate limit is 48.`}
+          label={tr("scheduleCount.firstYear.limitLabel")}
+          description={tr(
+            "scheduleCount.firstYear.limitDescription",
+            "You currently have {credits} credit{suffix} of 1000-level courses (completed + selected). The undergraduate limit is 48.",
+            {
+              credits: totalFirstYearCredits,
+              suffix: totalFirstYearCredits === 1 ? "" : "s",
+            },
+          )}
           checked={limitFirstYearCredits}
           onChange={(e) => onLimitFirstYearCreditsChange(e.currentTarget.checked)}
         />
       )}
       <Checkbox
-        label="Compressed schedule"
-        description="At most one break per day, up to 90 minutes."
+        label={tr("scheduleCount.compressed.label")}
+        description={tr("scheduleCount.compressed.description")}
         checked={compressedSchedule}
         onChange={(e) => onCompressedScheduleChange(e.currentTarget.checked)}
       />
@@ -168,8 +178,11 @@ export function ScheduleCountStep({
       )}
       {needMore && (
         <Alert color="blue" variant="light" radius={0}>
-          You selected {selectedCount} course(s). We will suggest additional
-          courses from your remaining requirements to fill your schedule.
+          {tr(
+            "scheduleCount.needMore",
+            "You selected {count} course(s). We will suggest additional courses from your remaining requirements to fill your schedule.",
+            { count: selectedCount },
+          )}
         </Alert>
       )}
       {disableGenerate && disableGenerateReason && (
@@ -188,7 +201,7 @@ export function ScheduleCountStep({
         radius={0}
         style={{ border: '2px solid black' }}
       >
-        Generate Schedules
+        {tr("scheduleCount.generate")}
       </Button>
     </Stack>
   );

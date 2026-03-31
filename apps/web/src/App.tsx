@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLingui } from "@lingui/react";
 import {
   Alert,
   Badge,
@@ -54,9 +55,14 @@ import { usePersistState } from "./hooks/usePersistState";
 import { useNavHistory } from "./hooks/useNavHistory";
 import { useTour } from "./hooks/useTour";
 import { useShareUrl } from "./hooks/useShareUrl";
-import { WIZARD_STEP_CONTENT } from "./lib/wizardStepContent";
+import { getWizardStepContent } from "./lib/wizardStepContent";
+import { LanguageSwitcher } from "./components/shared/LanguageSwitcher";
+import { tr } from "./i18n";
 
 function App() {
+  // Subscribe App to locale changes so all text helpers re-render.
+  useLingui();
+
   const {
     catalogue,
     indices,
@@ -159,6 +165,7 @@ function App() {
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [constrainOpen, setConstrainOpen] = useState(false);
+  const wizardStepContent = getWizardStepContent();
 
   const isMobile = useMediaQuery("(max-width: 768px)");
   const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
@@ -316,7 +323,7 @@ function App() {
         <Stack align="center" justify="center" gap="md">
           <Loader size="lg" color="constructBlack" />
           <Text size="sm" c="dimmed">
-            Loading course data...
+            {tr("app.loadingData")}
           </Text>
         </Stack>
       </Box>
@@ -345,7 +352,7 @@ function App() {
             backgroundColor: "#1E1E20",
           }}
         >
-          <Alert color="red" title="Error">
+          <Alert color="red" title={tr("app.errorTitle")}>
             {error}
           </Alert>
         </Paper>
@@ -424,7 +431,10 @@ function App() {
       <Modal
         opened={helpModalOpen}
         onClose={() => setHelpModalOpen(false)}
-        title={WIZARD_STEP_CONTENT[effectiveActive as WizardStep]?.title ?? "Help"}
+        title={
+          wizardStepContent[effectiveActive as WizardStep]?.title ??
+          tr("app.helpFallback")
+        }
         centered
         radius={0}
         styles={{
@@ -445,10 +455,10 @@ function App() {
               style={{ letterSpacing: "0.08em", color: "#868E96" }}
               mb={6}
             >
-              What this step is for
+              {tr("app.help.whatFor")}
             </Text>
             <Text size="sm" style={{ color: "#ADB5BD", lineHeight: 1.5 }}>
-              {WIZARD_STEP_CONTENT[effectiveActive as WizardStep]?.purpose}
+              {wizardStepContent[effectiveActive as WizardStep]?.purpose}
             </Text>
           </Box>
           <Box>
@@ -459,10 +469,10 @@ function App() {
               style={{ letterSpacing: "0.08em", color: "#868E96" }}
               mb={6}
             >
-              What you should do
+              {tr("app.help.whatToDo")}
             </Text>
             <Text size="sm" style={{ color: "#ADB5BD", lineHeight: 1.5 }}>
-              {WIZARD_STEP_CONTENT[effectiveActive as WizardStep]?.whatToDo}
+              {wizardStepContent[effectiveActive as WizardStep]?.whatToDo}
             </Text>
           </Box>
         </Stack>
@@ -480,7 +490,7 @@ function App() {
       >
         uoplan.party
         <Badge color="blue" variant="light" size="sm">
-          Beta
+          {tr("app.beta")}
         </Badge>
       </Title>
 
@@ -548,9 +558,10 @@ function App() {
                     }}
                   >
                     STEP {stepDisplayIndex + 1} OF {visibleStepCount} –{" "}
-                    {STEPS[effectiveActive].description.toUpperCase()}
+                    {STEPS[effectiveActive].description().toUpperCase()}
                   </Text>
                   <Group gap="xs">
+                    <LanguageSwitcher />
                     {indices && (
                       <Button
                         data-tour="share"
@@ -560,7 +571,9 @@ function App() {
                         leftSection={<IconShare size={14} />}
                         onClick={handleCopyShare}
                       >
-                        {shareCopied ? "Link copied" : "Share"}
+                        {shareCopied
+                          ? tr("app.share.copied")
+                          : tr("app.share.action")}
                       </Button>
                     )}
                     <Button
@@ -570,7 +583,7 @@ function App() {
                       leftSection={<IconHelp size={14} />}
                       onClick={() => setHelpModalOpen(true)}
                     >
-                      Help
+                      {tr("app.help.action")}
                     </Button>
                     <Button
                       variant="subtle"
@@ -581,7 +594,7 @@ function App() {
                         runTour(setActive, navVisibleStepIndices)
                       }
                     >
-                      Tour
+                      {tr("app.tour.action")}
                     </Button>
                     <Button
                       variant="subtle"
@@ -590,7 +603,7 @@ function App() {
                       leftSection={<IconRefresh size={14} />}
                       onClick={() => setResetModalOpen(true)}
                     >
-                      Reset
+                      {tr("app.reset.action")}
                     </Button>
                   </Group>
                 </Group>
@@ -697,7 +710,14 @@ function App() {
                       error={generationError?.message ?? null}
                       errorDetails={generationError?.details ?? null}
                       disableGenerate={unassignedCompletedCourses.length > 0}
-                      disableGenerateReason={`You still need to assign ${unassignedCompletedCourses.length} completed course${unassignedCompletedCourses.length === 1 ? "" : "s"} in Requirements before you can generate schedules.`}
+                      disableGenerateReason={tr(
+                        "app.generate.disableReason",
+                        {
+                          count: unassignedCompletedCourses.length,
+                          suffix:
+                            unassignedCompletedCourses.length === 1 ? "" : "s",
+                        },
+                      )}
                       beforeGenerate={
                         <Paper
                           withBorder
@@ -725,16 +745,18 @@ function App() {
                                   transition: "transform 150ms ease",
                                 }}
                               />
-                              <Text fw={600} size="sm">Pick specific courses</Text>
+                              <Text fw={600} size="sm">
+                                {tr("app.constraints.heading")}
+                              </Text>
                             </Group>
                             <Badge size="sm" variant="light" color="violet">
-                              Optional
+                              {tr("app.constraints.optional")}
                             </Badge>
                           </Group>
                           <Collapse in={!constrainOpen}>
                             <Alert color="blue" variant="light" radius={0} mx="sm" mb="sm" style={{ border: "none" }}>
                               <Text size="sm">
-                                Pin courses to specific requirements — the generator uses your picks first, filling any remaining slots from other eligible courses.
+                                {tr("app.constraints.description")}
                               </Text>
                             </Alert>
                           </Collapse>
@@ -804,7 +826,7 @@ function App() {
                   disabled={effectiveActive === WizardStep.Term}
                   style={{ border: "none" }}
                 >
-                  Back
+                  {tr("app.nav.back")}
                 </Button>
                 <motion.div
                   style={{ display: "inline-block" }}
@@ -829,7 +851,7 @@ function App() {
                     }
                     disabled={effectiveActive === WizardStep.Generate || !canProceedFromStep}
                   >
-                    Next
+                    {tr("app.nav.next")}
                   </Button>
                 </motion.div>
               </Group>

@@ -1,8 +1,9 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import { lingui } from '@lingui/vite-plugin';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), lingui()],
   define: {
     __COMMIT_HASH__: JSON.stringify(
       (process.env.CF_PAGES_COMMIT_SHA || 'dev').slice(0, 7)

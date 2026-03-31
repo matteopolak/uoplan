@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo } from 'react';
 import { Select, MultiSelect, Stack, Text, Button, Alert, Loader } from '@mantine/core';
+import { tr } from "../../i18n";
 import type { Program } from 'schemas';
 import { useAppStore } from '../../store/appStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -146,7 +147,9 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
       });
     } catch (err) {
       setTranscriptError(
-        err instanceof Error ? err.message : 'Failed to parse transcript PDF'
+        err instanceof Error
+          ? err.message
+          : tr("programStep.transcript.parseFailed")
       );
     } finally {
       setTranscriptLoading(false);
@@ -157,9 +160,9 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
   return (
     <Stack gap="md" data-tour="program-step">
       <Select
-        label="First year of study"
-        description="Determines which program requirements apply to you."
-        placeholder="Select your starting year..."
+        label={tr("programStep.firstYear.label")}
+        description={tr("programStep.firstYear.description")}
+        placeholder={tr("programStep.firstYear.placeholder")}
         data={yearSelectData}
         value={firstYear !== null ? String(firstYear) : null}
         onChange={(v) => setFirstYear(v !== null ? Number(v) : null)}
@@ -169,8 +172,8 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
         size="md"
       />
       <Select
-        label="Select your program"
-        placeholder="Search for your program..."
+        label={tr("programStep.program.label")}
+        placeholder={tr("programStep.program.placeholder")}
         data={data}
         value={selectValue}
         onChange={(v) => {
@@ -184,13 +187,13 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
         }}
         searchable
         clearable
-        nothingFoundMessage="No program found"
+        nothingFoundMessage={tr("programStep.program.notFound")}
         size="md"
       />
       {value && (
         <MultiSelect
-          label="Your program disciplines"
-          description="Used to evaluate program-specific prerequisites. Auto-filled from your program's courses."
+          label={tr("programStep.disciplines.label")}
+          description={tr("programStep.disciplines.description")}
           data={allDisciplineCodes}
           value={studentPrograms}
           onChange={setStudentPrograms}
@@ -200,9 +203,8 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
       )}
       <Alert color="blue" variant="light" radius={0}>
         <Text size="sm">
-          <strong>Optional.</strong> Uploading your transcript saves you from manually selecting
-          your start year, program, and completed courses — everything is auto-detected. Your PDF
-          is processed entirely on your device and is never sent to any server.
+          <strong>{tr("programStep.optional")}</strong>{" "}
+          {tr("programStep.transcript.description")}
         </Text>
       </Alert>
       <input
@@ -212,7 +214,7 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
         onChange={handleTranscriptFile}
         disabled={transcriptLoading}
         style={{ display: 'none' }}
-        aria-label="Upload transcript PDF"
+        aria-label={tr("programStep.transcript.uploadAria")}
       />
       <Button
         size="sm"
@@ -224,7 +226,9 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
         leftSection={transcriptLoading ? <Loader size="sm" /> : undefined}
         style={{ border: '2px solid black' }}
       >
-        {transcriptLoading ? 'Parsing…' : 'Choose transcript'}
+        {transcriptLoading
+          ? tr("programStep.transcript.parsing")
+          : tr("programStep.transcript.choose")}
       </Button>
       <Button
         component="a"
@@ -236,29 +240,52 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
         variant="light"
         radius={0}
       >
-        Request transcript on uoZone
+        {tr("programStep.transcript.request")}
       </Button>
       {transcriptError && (
-        <Alert color="red" variant="light" title="Upload failed">
+        <Alert
+          color="red"
+          variant="light"
+          title={tr("programStep.transcript.uploadFailed")}
+        >
           {transcriptError}
         </Alert>
       )}
       {transcriptFeedback && !transcriptError && (
         <Stack gap="xs">
           <Alert color="green" variant="light">
-            Added {transcriptFeedback.added} course{transcriptFeedback.added !== 1 ? 's' : ''} from
-            transcript.
+            {tr(
+              "programStep.transcript.added",
+              {
+                count: transcriptFeedback.added,
+                suffix: transcriptFeedback.added !== 1 ? "s" : "",
+              },
+            )}
             {transcriptFeedback.programMatched && (
-              <> Program set to: {transcriptFeedback.programMatched.title}.</>
+              <>
+                {" "}
+                {tr("programStep.transcript.programSet", {
+                  program: transcriptFeedback.programMatched.title,
+                })}
+              </>
             )}
           </Alert>
           {transcriptFeedback.skippedCodes.length > 0 && (
-            <Alert color="yellow" variant="light" title="Not found in catalogue">
+            <Alert
+              color="yellow"
+              variant="light"
+              title={tr("programStep.transcript.notInCatalogue")}
+            >
               <Stack gap="xs">
                 <Text size="sm">
-                  {transcriptFeedback.skippedCodes.length} code
-                  {transcriptFeedback.skippedCodes.length !== 1 ? 's' : ''} from the PDF were not found
-                  in the catalogue: {transcriptFeedback.skippedCodes.sort().join(', ')}
+                  {tr(
+                    "programStep.transcript.codesNotFound",
+                    {
+                      count: transcriptFeedback.skippedCodes.length,
+                      suffix: transcriptFeedback.skippedCodes.length !== 1 ? "s" : "",
+                      codes: transcriptFeedback.skippedCodes.sort().join(", "),
+                    },
+                  )}
                 </Text>
                 <Button
                   size="xs"
@@ -270,7 +297,7 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
                     setTranscriptFeedback({ ...transcriptFeedback, skippedCodes: [] });
                   }}
                 >
-                  Add anyway
+                  {tr("programStep.transcript.addAnyway")}
                 </Button>
               </Stack>
             </Alert>

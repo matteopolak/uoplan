@@ -9,6 +9,7 @@ import {
   VisuallyHidden,
   Badge,
 } from "@mantine/core";
+import { tr } from "../../i18n";
 
 export interface ModeStepProps {
   value: "basic" | "advanced" | null;
@@ -69,19 +70,23 @@ export function ModeStep({ value, onChange }: ModeStepProps) {
           >
             <Group wrap="nowrap" align="flex-start">
               <VisuallyHidden>
-                <Radio value="basic" mt={2} aria-label="Basic mode" />
+                <Radio
+                  value="basic"
+                  mt={2}
+                  aria-label={tr("modeStep.basic.aria")}
+                />
               </VisuallyHidden>
               <Box>
                 <Group gap="xs" align="center">
                   <Text fw={600} size="md">
-                    Basic Mode
+                    {tr("modeStep.basic.title")}
                   </Text>
                   <Badge size="xs" variant="light" color="violet" radius={0}>
-                    less setup
+                    {tr("modeStep.basic.badge")}
                   </Badge>
                 </Group>
                 <Text size="sm" c="dimmed" mt={4}>
-                  Quickly select required courses and electives to generate a schedule. Best for simple scheduling without needing to track full degree progress.
+                  {tr("modeStep.basic.description")}
                 </Text>
               </Box>
             </Group>
@@ -107,19 +112,23 @@ export function ModeStep({ value, onChange }: ModeStepProps) {
           >
             <Group wrap="nowrap" align="flex-start">
               <VisuallyHidden>
-                <Radio value="advanced" mt={2} aria-label="Advanced mode" />
+                <Radio
+                  value="advanced"
+                  mt={2}
+                  aria-label={tr("modeStep.advanced.aria")}
+                />
               </VisuallyHidden>
               <Box>
                 <Group gap="xs" align="center">
                   <Text fw={600} size="md">
-                    Advanced Mode
+                    {tr("modeStep.advanced.title")}
                   </Text>
                   <Badge size="xs" variant="light" color="violet" radius={0}>
-                    more accurate
+                    {tr("modeStep.advanced.badge")}
                   </Badge>
                 </Group>
                 <Text size="sm" c="dimmed" mt={4}>
-                  Select your program and build a comprehensive degree plan. Tracks completed courses and maps them against your specific degree requirements.
+                  {tr("modeStep.advanced.description")}
                 </Text>
               </Box>
             </Group>

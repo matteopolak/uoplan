@@ -4,11 +4,12 @@ import 'driver.js/dist/driver.css';
 import './styles/driver-dark.css';
 import {
   formatTourDescriptionHtml,
-  SHARE_STEP_CONTENT,
-  WIZARD_STEP_CONTENT,
+  getShareStepContent,
+  getWizardStepContent,
   WIZARD_TOUR_SELECTOR,
 } from './lib/wizardStepContent';
 import { WizardStep } from './lib/wizardSteps';
+import { tr } from './i18n';
 
 const TOUR_DONE_KEY = 'uoplan-tour-done';
 
@@ -25,12 +26,13 @@ export function runTour(
   setWizardStep: (index: number) => void,
   visibleStepIndices: readonly number[],
 ): void {
+  const wizardStepContent = getWizardStepContent();
   const descriptionHtmlList: string[] = [];
   const steps: DriveStep[] = [];
 
   for (const wizardIdx of visibleStepIndices) {
     const selector = WIZARD_TOUR_SELECTOR[wizardIdx as WizardStep];
-    const content = WIZARD_STEP_CONTENT[wizardIdx as WizardStep];
+    const content = wizardStepContent[wizardIdx as WizardStep];
     if (!selector || !content) continue;
 
     descriptionHtmlList.push(
@@ -45,7 +47,7 @@ export function runTour(
     });
   }
 
-  const share = SHARE_STEP_CONTENT;
+  const share = getShareStepContent();
   descriptionHtmlList.push(
     formatTourDescriptionHtml(share.purpose, share.whatToDo),
   );
@@ -66,10 +68,10 @@ export function runTour(
 
   const driverObj = driver({
     showProgress: true,
-    progressText: '{{current}} of {{total}}',
-    nextBtnText: 'Next',
-    prevBtnText: 'Back',
-    doneBtnText: 'Done',
+    progressText: tr("tour.progress"),
+    nextBtnText: tr("tour.next"),
+    prevBtnText: tr("tour.back"),
+    doneBtnText: tr("tour.done"),
     overlayColor: '#141517',
     overlayOpacity: 0.85,
     steps,
