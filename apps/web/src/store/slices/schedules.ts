@@ -57,7 +57,23 @@ export const createSchedulesSlice: StateCreator<
     }
   },
 
-  clearGeneratedSchedules: () => set({ generatedSchedules: [], scheduleColorMaps: [], schedulePoolMaps: [], selectedScheduleIndex: 0, generationError: null }),
+  clearGeneratedSchedules: () =>
+    set((state) => {
+      const alreadyCleared =
+        state.generatedSchedules.length === 0 &&
+        state.scheduleColorMaps.length === 0 &&
+        state.schedulePoolMaps.length === 0 &&
+        state.selectedScheduleIndex === 0 &&
+        state.generationError === null;
+      if (alreadyCleared) return state;
+      return {
+        generatedSchedules: [],
+        scheduleColorMaps: [],
+        schedulePoolMaps: [],
+        selectedScheduleIndex: 0,
+        generationError: null,
+      };
+    }),
 
   setSelectedScheduleIndex: (idx) => set({ selectedScheduleIndex: idx }),
 
