@@ -1,4 +1,4 @@
-import { StateCreator } from "zustand";
+import type { StateCreator } from "zustand";
 import type { AppStore } from "../types";
 import {
   encodeState,
@@ -67,7 +67,7 @@ export const createUrlSlice: StateCreator<
     }
 
     const inCatalogue = new Set(
-      (catalogue.courses as Array<{ code: string }>).map((c) => c.code),
+      catalogue.courses.map((c) => c.code),
     );
     const selectedPerRequirement: Record<string, string[]> = {};
     for (const { reqIndex, courseCodes } of decoded.courseSelections) {
@@ -152,7 +152,7 @@ export const createUrlSlice: StateCreator<
     };
     return encodeStateToBase64(
       input,
-      s.catalogue as any,
+      s.catalogue,
       s.indices,
     );
   },
@@ -181,7 +181,7 @@ export const createUrlSlice: StateCreator<
     };
     const bytes = encodeState(
       input,
-      s.catalogue as any,
+      s.catalogue,
       s.indices,
     );
     if (!bytes) return null;

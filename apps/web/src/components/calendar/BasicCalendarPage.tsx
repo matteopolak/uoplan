@@ -57,6 +57,18 @@ const requiredCoursesFilter: OptionsFilter = ({ options, search }) => {
   return [...exactMatches, ...partialMatches];
 };
 
+const completedCoursesFilter: OptionsFilter = ({ options, search }) => {
+  const query = search.toLowerCase().trim();
+  if (!query) return options;
+
+  return options.filter((option) => {
+    if (!("value" in option)) return false;
+    const value = option.value.toLowerCase();
+    const label = typeof option.label === "string" ? option.label.toLowerCase() : "";
+    return value.includes(query) || label.includes(query);
+  });
+};
+
 export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
   useEffect(() => {
     document.documentElement.classList.add("calendar-no-scrollbar-gutter");
@@ -188,12 +200,15 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
 
   const handleGenerate = () => {
     setGenerating(true);
-    generateBasicSchedules({ appendFirstOnly: true }).then(() => {
-      setGenerating(false);
-      const newIndex = useAppStore.getState().generatedSchedules.length - 1;
-      setSelectedScheduleIndex(Math.max(0, newIndex));
-      morphRef.current?.animate(Math.max(0, newIndex));
-    });
+    void generateBasicSchedules({ appendFirstOnly: true })
+      .then(() => {
+        const newIndex = useAppStore.getState().generatedSchedules.length - 1;
+        setSelectedScheduleIndex(Math.max(0, newIndex));
+        morphRef.current?.animate(Math.max(0, newIndex));
+      })
+      .finally(() => {
+        setGenerating(false);
+      });
   };
 
   const handleDownloadIcs = () => {
@@ -469,15 +484,7 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
               searchable
               clearable
               renderOption={renderCourseOption(cache)}
-              filter={({ options, search }) => {
-                const q = search.toLowerCase().trim();
-                if (!q) return options;
-                return (options as any[]).filter(
-                  (o) =>
-                    o.value.toLowerCase().includes(q) ||
-                    o.label.toLowerCase().includes(q),
-                );
-              }}
+              filter={completedCoursesFilter}
               nothingFoundMessage={tr("basicCalendar.completed.notFound")}
               radius={0}
             />
@@ -486,7 +493,9 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
               ref={fileInputRef}
               type="file"
               accept=".pdf"
-              onChange={handleTranscriptFile}
+              onChange={(e) => {
+                void handleTranscriptFile(e);
+              }}
               disabled={transcriptLoading}
               style={{ display: "none" }}
             />

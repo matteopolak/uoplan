@@ -33,7 +33,7 @@ export function simplifySingleChildChain(node: RequirementWithStatus): {
     (current.options[0].options?.length ?? 0) > 0 &&
     (() => {
       const parentT = normalizeTitleForCompare(current.title);
-      const childT = normalizeTitleForCompare(current.options![0].title);
+      const childT = normalizeTitleForCompare(current.options[0].title);
       const parentGeneric = parentT === "" || parentT === "or";
       const childGeneric = childT === "" || childT === "or";
       return parentGeneric || childGeneric || parentT === childT;
@@ -204,7 +204,7 @@ function expandSelectedOptionBranch(
   let nodes = mapOptionSelectionList([branch], selectedOptions);
   for (;;) {
     if (nodes.length !== 1) return nodes;
-    const only = nodes[0]!;
+    const only = nodes[0];
     if (!canHoistStructuralWrapper(only)) return nodes;
     nodes = mapOptionSelectionList(only.options ?? [], selectedOptions);
   }

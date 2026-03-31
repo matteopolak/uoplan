@@ -11,13 +11,24 @@ const ROW_Y_TOLERANCE = 3;
 
 let workerInitialized = false;
 
+function readWorkerUrl(moduleValue: unknown): string {
+  if (
+    moduleValue &&
+    typeof moduleValue === "object" &&
+    "default" in moduleValue &&
+    typeof (moduleValue as { default: unknown }).default === "string"
+  ) {
+    return (moduleValue as { default: string }).default;
+  }
+  throw new Error("Unable to resolve pdf.js worker URL");
+}
+
 async function ensureWorker(): Promise<void> {
   if (workerInitialized) return;
-  const [pdfjsLib, workerUrl] = await Promise.all([
-    import("pdfjs-dist"),
-    // @ts-ignore - pdf.worker.mjs is not typed in some environments
-    import("pdfjs-dist/build/pdf.worker.mjs?url").then((m) => m.default),
-  ]);
+  const pdfjsLib = await import("pdfjs-dist");
+  // @ts-expect-error - Vite-style ?url import is provided by the consuming app build.
+  const workerModule: unknown = await import("pdfjs-dist/build/pdf.worker.mjs?url");
+  const workerUrl = readWorkerUrl(workerModule);
   if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
     pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
   }
@@ -221,8 +232,8 @@ export async function parseTranscriptPdf(
 function levenshtein(a: string, b: string): number {
   const m = a.length;
   const n = b.length;
-  const d: number[][] = Array.from({ length: m + 1 }, () =>
-    Array(n + 1).fill(0),
+  const d = Array.from({ length: m + 1 }, (): number[] =>
+    Array<number>(n + 1).fill(0),
   );
   for (let i = 0; i <= m; i++) d[i][0] = i;
   for (let j = 0; j <= n; j++) d[0][j] = j;

@@ -1,5 +1,5 @@
 import { Box, Button, Stack, Text } from "@mantine/core";
-import type { DataCache, GeneratedSchedule, ProfessorRatingsMap, CourseEnrollment } from "schedule";
+import type { DataCache, GeneratedSchedule, ProfessorRatingsMap } from "schedule";
 import type { SwapCandidateOption, SwapModalState, SwapResult } from "../../hooks/useSwapModal";
 import { EventStyleCard } from "./EventStyleCard";
 import { SwapCourseDropdown } from "./SwapCourseDropdown";
@@ -31,7 +31,7 @@ export function SwapModalContent({
   professorRatings: ProfessorRatingsMap | null;
   onSwap: (scheduleIndex: number, enrollmentIndex: number, newCourseCode: string) => void;
 }) {
-  const enrollment = schedule?.enrollments[modalState.enrollmentIndex] as CourseEnrollment | undefined;
+  const enrollment = schedule?.enrollments[modalState.enrollmentIndex];
 
   return (
     <Stack gap="md" mt="md">

@@ -28,11 +28,11 @@ describe("clearGeneratedSchedules", () => {
     const store = useAppStore;
     store.setState({
       ...store.getState(),
-      generatedSchedules: [{ enrollments: [{ courseCode: "CSI 3105" }] }] as any,
-      scheduleColorMaps: [{ "CSI 3105": "#fff" }] as any,
-      schedulePoolMaps: [{ "CSI 3105": "pool-1" }] as any,
+      generatedSchedules: [{ enrollments: [] }],
+      scheduleColorMaps: [{ "CSI 3105": 0 }],
+      schedulePoolMaps: [{ "CSI 3105": "pool-1" }],
       selectedScheduleIndex: 2,
-      generationError: { message: "x", details: [] } as any,
+      generationError: { message: "x", details: null },
     });
 
     store.getState().clearGeneratedSchedules();

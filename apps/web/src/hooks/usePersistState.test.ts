@@ -7,7 +7,7 @@ describe("hasPersistedStateChange", () => {
     const prev = useAppStore.getState();
     const next = {
       ...prev,
-      generatedSchedules: [{ enrollments: [] }] as any,
+      generatedSchedules: [{ enrollments: [] }],
       basicElectivesCount: prev.basicElectivesCount + 1,
     };
 

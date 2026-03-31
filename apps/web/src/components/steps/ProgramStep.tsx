@@ -52,8 +52,6 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const effectivePrograms = yearCataloguePrograms ?? [];
-
   const yearSelectData = useMemo(() =>
     availableYears.map(y => ({ value: String(y), label: `${y}–${y + 1}` })),
     [availableYears],
@@ -62,7 +60,7 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
   const { uniquePrograms, valueToIndex, data } = useMemo(() => {
     const seen = new Set<string>();
     const unique: Program[] = [];
-    for (const p of effectivePrograms) {
+    for (const p of (yearCataloguePrograms ?? [])) {
       if (seen.has(p.url)) continue;
       seen.add(p.url);
       unique.push(p);
@@ -80,7 +78,7 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
     });
 
     return { uniquePrograms: unique, valueToIndex, data };
-  }, [effectivePrograms]);
+  }, [yearCataloguePrograms]);
 
   const indexedCodes = useMemo(() => {
     if (!indices) return null;

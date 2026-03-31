@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { WizardStep } from "../lib/wizardSteps";
 
 type NavHistoryState = {
-  step: number;
+  step: WizardStep;
   showCalendar: boolean;
 };
 
@@ -37,7 +38,7 @@ export function useNavHistory() {
       "",
     );
     // Intentionally run only once on mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   // Sync React state when the browser navigates back or forward.

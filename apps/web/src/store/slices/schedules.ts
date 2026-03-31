@@ -1,4 +1,4 @@
-import { StateCreator } from "zustand";
+import type { StateCreator } from "zustand";
 import type { AppStore } from "../types";
 import { getEffectiveSchedule } from "schedule";
 import {
@@ -133,7 +133,7 @@ export const createSchedulesSlice: StateCreator<
         constraints
       );
       
-      const validSchedules = batch.filter((s: any) => s.enrollments.length >= allCodes.length);
+      const validSchedules = batch.filter((s) => s.enrollments.length >= allCodes.length);
       if (validSchedules.length > 0) {
         const newSchedules = [...generatedSchedules];
         newSchedules[scheduleIndex] = validSchedules[0];
@@ -283,7 +283,7 @@ export const createSchedulesSlice: StateCreator<
       }
 
       // Find valid electives
-      let optionalPool: string[] = [];
+      const optionalPool: string[] = [];
       const excludedPrefixes = basicExcludedCategories.map(c => c.toLowerCase());
       const prereqCtx = buildPrereqContext(completedCourses, cacheVal, studentPrograms);
       const basicFilters = { levels: levelBuckets, languageBuckets };

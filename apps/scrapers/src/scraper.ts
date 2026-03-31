@@ -7,6 +7,10 @@ import path from 'path';
 const ROOT_URL = 'https://catalogue.uottawa.ca';
 const OLDEST_YEAR = 2017;
 
+function getErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
 function getCurrentAcademicYear(): number {
   const now = new Date();
   // Academic year starts in September (month index 8)
@@ -657,10 +661,10 @@ async function fetchHtml(url: string, retries = 3): Promise<string> {
       const text = await res.text();
       if (WRITE_CACHE) await fs.writeFile(filePath, text, 'utf-8');
       return text;
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Don't retry 404s
       if (err instanceof NotFoundError) throw err;
-      if (i === retries - 1) throw new Error(`Failed to fetch ${url}: ${err.message}`);
+      if (i === retries - 1) throw new Error(`Failed to fetch ${url}: ${getErrorMessage(err)}`);
       await new Promise(r => setTimeout(r, 1000 * (i + 1)));
     }
   }
@@ -881,7 +885,7 @@ async function scrapeProgram(url: string): Promise<Program> {
 }
 
 function processRequirements(reqs: ProgramRequirement[]): ProgramRequirement[] {
-  let cleaned = reqs.map(r => {
+  const cleaned = reqs.map(r => {
     const newR: ProgramRequirement = { ...r };
     if (newR.type === 'group' && (!newR.options || newR.options.length === 0)) {
       newR.type = 'elective';
@@ -890,12 +894,10 @@ function processRequirements(reqs: ProgramRequirement[]): ProgramRequirement[] {
     if (newR.options && newR.options.length === 0) {
       delete newR.options;
     }
-    Object.keys(newR).forEach(key => {
-      if ((newR as any)[key] === undefined) {
-        delete (newR as any)[key];
-      }
-    });
-    return newR;
+    const withoutUndefined = Object.fromEntries(
+      Object.entries(newR).filter(([, value]) => value !== undefined),
+    );
+    return withoutUndefined as ProgramRequirement;
   });
 
   const foldedOptions: ProgramRequirement[] = [];
@@ -1006,12 +1008,12 @@ async function scrapeYearCatalogue(baseUrl: string): Promise<{ catalogue: Catalo
     try {
       const courses = await scrapeCourses(url);
       allCourses.push(...courses);
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (e instanceof NotFoundError) {
         console.warn(`Skipping missing course page: ${url}`);
         missingUrls.push(url);
       } else {
-        console.error(`Error scraping courses at ${url}: ${e.message}`);
+        console.error(`Error scraping courses at ${url}: ${getErrorMessage(e)}`);
         throw e;
       }
     }
@@ -1023,12 +1025,12 @@ async function scrapeYearCatalogue(baseUrl: string): Promise<{ catalogue: Catalo
     try {
       const prog = await scrapeProgram(url);
       allPrograms.push(prog);
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (e instanceof NotFoundError) {
         console.warn(`Skipping missing program: ${url}`);
         missingUrls.push(url);
       } else {
-        console.error(`Error scraping program at ${url}: ${e.message}`);
+        console.error(`Error scraping program at ${url}: ${getErrorMessage(e)}`);
         throw e;
       }
     }
@@ -1082,6 +1084,15 @@ function parseIndicesStringArray(value: unknown): string[] {
   return value.filter((x): x is string => typeof x === 'string');
 }
 
+function parseMissingByYear(value: unknown): Record<string, string[]> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const out: Record<string, string[]> = {};
+  for (const [year, urls] of Object.entries(value)) {
+    out[year] = parseIndicesStringArray(urls);
+  }
+  return out;
+}
+
 const CATALOGUE_JSON_RE = /^catalogue\.(\d{4})\.json$/;
 
 async function generateIndices(dataDir: string): Promise<void> {
@@ -1116,15 +1127,15 @@ async function generateIndices(dataDir: string): Promise<void> {
 
   for (const y of catalogueYears) {
     const raw = await fs.readFile(path.join(dataDir, `catalogue.${y}.json`), 'utf-8');
-    const catalogue = JSON.parse(raw);
-    for (const c of catalogue.courses as Array<{ code: string }>) {
+    const catalogue = CatalogueSchema.parse(JSON.parse(raw) as unknown);
+    for (const c of catalogue.courses) {
       const code = c.code;
       if (!seenCourses.has(code)) {
         seenCourses.add(code);
         coursesOut.push(code);
       }
     }
-    for (const p of catalogue.programs as Array<{ slug?: string; url: string }>) {
+    for (const p of catalogue.programs) {
       const slug = p.slug ?? urlToSlug(p.url);
       if (!seenPrograms.has(slug)) {
         seenPrograms.add(slug);
@@ -1155,7 +1166,7 @@ async function main() {
   let missingByYear: Record<string, string[]> = {};
   try {
     const raw = await fs.readFile(missingPath, 'utf-8');
-    missingByYear = JSON.parse(raw);
+    missingByYear = parseMissingByYear(JSON.parse(raw) as unknown);
   } catch {
     // No existing file — start fresh
   }

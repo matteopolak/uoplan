@@ -174,7 +174,7 @@ function App() {
   const { shareCopied, handleCopyShare } = useShareUrl(getShareUrl);
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, [loadData]);
 
   usePersistState(!!indices);
@@ -242,7 +242,7 @@ function App() {
 
   const [nextUnlockCue, setNextUnlockCue] = useState(false);
   const prevStepProgressRef = useRef<{
-    step: number;
+    step: WizardStep;
     canProceed: boolean;
   } | null>(null);
 
@@ -280,10 +280,13 @@ function App() {
 
   const handleGenerate = () => {
     setGenerating(true);
-    generateSchedules().then(() => {
-      setGenerating(false);
-      setShowCalendar(true);
-    });
+    void generateSchedules()
+      .then(() => {
+        setShowCalendar(true);
+      })
+      .finally(() => {
+        setGenerating(false);
+      });
   };
 
   const uniqueSelected = new Set(Object.values(selectedPerRequirement).flat())
@@ -432,7 +435,7 @@ function App() {
         opened={helpModalOpen}
         onClose={() => setHelpModalOpen(false)}
         title={
-          wizardStepContent[effectiveActive as WizardStep]?.title ??
+          wizardStepContent[effectiveActive]?.title ??
           tr("app.helpFallback")
         }
         centered
@@ -458,7 +461,7 @@ function App() {
               {tr("app.help.whatFor")}
             </Text>
             <Text size="sm" style={{ color: "#ADB5BD", lineHeight: 1.5 }}>
-              {wizardStepContent[effectiveActive as WizardStep]?.purpose}
+              {wizardStepContent[effectiveActive]?.purpose}
             </Text>
           </Box>
           <Box>
@@ -472,7 +475,7 @@ function App() {
               {tr("app.help.whatToDo")}
             </Text>
             <Text size="sm" style={{ color: "#ADB5BD", lineHeight: 1.5 }}>
-              {wizardStepContent[effectiveActive as WizardStep]?.whatToDo}
+              {wizardStepContent[effectiveActive]?.whatToDo}
             </Text>
           </Box>
         </Stack>
@@ -620,7 +623,9 @@ function App() {
                     <TermStep
                       terms={terms}
                       value={selectedTermId}
-                      onChange={setSelectedTermId}
+                      onChange={(termId) => {
+                        void setSelectedTermId(termId);
+                      }}
                     />
                   </Stack>
                 )}

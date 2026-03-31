@@ -1,7 +1,8 @@
-import { StateCreator } from "zustand";
+import type { StateCreator } from "zustand";
 import type { AppStore } from "../types";
 import { recomputeStateForProgram, getDisciplineCodesForProgram } from "../requirementCompute";
 import { buildDataCache, normalizeCourseCode, withExtraCourses, isOptCourse } from "schedule";
+import type { Catalogue, Course } from "schemas";
 import { pruneOptionSelectionsForClear } from "../../components/requirements/requirementUtils";
 import {
   DEFAULT_BASIC_ELECTIVE_LEVEL_BUCKETS,
@@ -10,19 +11,19 @@ import {
 } from "../../lib/electiveEligibility";
 
 function getMergedCatalogue(
-  catalogue: any,
-  yearCatalogueCourses: any,
+  catalogue: Catalogue | null,
+  yearCatalogueCourses: Course[] | null,
   completedCourses: string[],
-): any {
+): Catalogue | null {
   if (!catalogue) return null;
   if (!yearCatalogueCourses) return catalogue;
 
   const completedSet = new Set(completedCourses.map(normalizeCourseCode));
   const yearMap = new Map(
-    yearCatalogueCourses.map((c: any) => [normalizeCourseCode(c.code), c]),
+    yearCatalogueCourses.map((c) => [normalizeCourseCode(c.code), c]),
   );
 
-  const merged = new Map<string, any>();
+  const merged = new Map<string, Course>();
   for (const course of yearCatalogueCourses) {
     merged.set(normalizeCourseCode(course.code), course);
   }
@@ -163,7 +164,7 @@ export const createSelectionSlice: StateCreator<
     if (yearCatalogueCourses && catalogue && schedulesData) {
       const effectiveCatalogue = getMergedCatalogue(catalogue, yearCatalogueCourses, courses);
       if (effectiveCatalogue) {
-        const newCache = buildDataCache(effectiveCatalogue as any, schedulesData as any);
+        const newCache = buildDataCache(effectiveCatalogue, schedulesData);
         set({ cache: newCache });
       }
     }

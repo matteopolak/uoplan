@@ -13,6 +13,10 @@ const MAX_CONCURRENCY = 20;
 const USE_CACHE_ONLY = process.argv.includes('use-cache');
 const WRITE_CACHE = process.argv.includes('write-cache');
 
+function getErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
 type Term = { termId: string; name: string };
 
 interface CatalogueCourse {
@@ -171,14 +175,14 @@ async function createClient(): Promise<ClientInfo> {
   // Initial GET to establish session and retrieve ICSID (with a few retries for transient pages)
   let lastHtml = '';
   for (let attempt = 1; attempt <= 10; attempt++) {
-    // eslint-disable-next-line no-await-in-loop
+     
     const res = await client.get(BASE_URL);
     const html = res.body;
     lastHtml = html;
     const $ = cheerio.load(html);
     const icsid = $('#ICSID').attr('value');
     if (icsid) {
-      const icStateNum = ($('#ICStateNum').attr('value') as string | undefined) || '1';
+      const icStateNum = ($('#ICStateNum').attr('value')) || '1';
       const dataLang = ($('#\\#ICDataLang').val() as string | undefined) || 'ENG';
       return { client, icsid, dataLang, icStateNum };
     }
@@ -465,10 +469,10 @@ async function fetchScheduleForCourse(
       }
 
       return null;
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(
         `Cache miss for ${course.subject} ${course.catalogNbr} with use-cache enabled (expected ${cachePath}):`,
-        (err as any)?.message ?? err,
+        getErrorMessage(err),
       );
       return null;
     }
@@ -523,10 +527,10 @@ async function fetchScheduleForCourse(
     try {
       await fs.mkdir(HTML_CACHE_DIR, { recursive: true });
       if (WRITE_CACHE) await fs.writeFile(cachePath, res.body, 'utf-8');
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(
         `Warning: failed to write HTML cache for ${course.subject} ${course.catalogNbr}:`,
-        (err as any)?.message ?? err,
+        getErrorMessage(err),
       );
     }
 
@@ -651,10 +655,10 @@ async function main(): Promise<void> {
           if (schedule) {
             results.push(schedule);
           }
-        } catch (err: any) {
+        } catch (err: unknown) {
           console.error(
             `Error fetching schedule for ${course.subject} ${course.catalogNbr} (${term.termId}):`,
-            err?.message || err,
+            getErrorMessage(err),
           );
         } finally {
           processed += 1;
