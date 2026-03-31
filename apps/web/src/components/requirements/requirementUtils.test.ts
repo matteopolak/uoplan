@@ -281,6 +281,40 @@ describe("getConstrainMultiSelectOptions", () => {
     const { options } = getConstrainMultiSelectOptions(node, {}, defaultConstrainCtx);
     expect(options).toHaveLength(0);
   });
+
+  it("excludes 5000+ courses from elective dropdown options", () => {
+    const cacheWithSchedules: DataCache = {
+      getCourse: (code) =>
+        ({ code, title: "Test", credits: 3 }) as NonNullable<
+          ReturnType<DataCache["getCourse"]>
+        >,
+      getSchedule: (code) =>
+        ({
+          courseCode: code,
+          components: {},
+        }) as NonNullable<ReturnType<DataCache["getSchedule"]>>,
+      getCoursesByDiscipline: () => [],
+      getAllCourses: () => [],
+      getAllSchedules: () => [],
+    };
+    const node: RequirementWithStatus = {
+      type: "free_elective",
+      title: "Free",
+      complete: false,
+      satisfiedBy: [],
+      requirementId: "req-free",
+      candidateCourses: ["SEG 4100", "SEG 5100"],
+      creditsNeeded: 3,
+    };
+    const ctx = {
+      ...defaultConstrainCtx,
+      cache: cacheWithSchedules,
+      prereqEligible: new Set(["SEG 4100", "SEG 5100"]),
+    };
+
+    const { options } = getConstrainMultiSelectOptions(node, {}, ctx);
+    expect(options.map((o) => o.value)).toEqual(["SEG 4100"]);
+  });
 });
 
 describe("partitionIncompleteConstrainRoots", () => {

@@ -33,6 +33,10 @@ import {
 import { collectImplicitHonoursForSchedule } from "./implicitHonours";
 import { diagnoseTimetableFailure, type TimetableFailureDiagnostics } from "schedule";
 import { buildColorMap, buildColorMaps } from "./colorMap";
+import {
+  isElectiveRequirementType,
+  isWithinElectiveLevelCap,
+} from "./electiveEligibility";
 
 const UNKNOWN_COURSE_LEVEL = 999_000;
 
@@ -461,6 +465,9 @@ export async function generateSchedulesAction(
       return false;
     }
     if (poolType !== "course" && isHonoursProject(code, cacheVal)) return false;
+    if (isElectiveRequirementType(poolType) && !isWithinElectiveLevelCap(code)) {
+      return false;
+    }
     if (getValidSectionCombos(sched, constraints).length === 0) return false;
     return true;
   }
@@ -543,11 +550,10 @@ export async function generateSchedulesAction(
         ) {
           continue;
         }
-        const isElectiveType =
-          pool.type === "elective" ||
-          pool.type === "free_elective" ||
-          pool.type === "non_discipline_elective" ||
-          pool.type === "faculty_elective";
+        const isElectiveType = isElectiveRequirementType(pool.type);
+        if (isElectiveType && !isWithinElectiveLevelCap(code)) {
+          continue;
+        }
         if (electiveLevelBuckets.length > 0 && isElectiveType) {
           const match = code.match(/\d{4}/);
           if (match) {

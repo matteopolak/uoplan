@@ -268,5 +268,83 @@ describe('schedule generation respects per-category limits', () => {
       expect(codes).toContain('CSI 4101');
     }
   });
+
+  it("treats 5000+ courses as ineligible for elective requirements", async () => {
+    const gradOnlyCatalogue: Catalogue = {
+      courses: [
+        {
+          code: "SEG 5100",
+          title: "SEG 5100",
+          credits: 3,
+          description: "",
+          component: "LEC",
+        },
+      ],
+      programs: [],
+    };
+
+    const gradOnlySchedules: SchedulesData = {
+      termId: "2261",
+      schedules: [
+        {
+          subject: "SEG",
+          catalogNumber: "5100",
+          courseCode: "SEG 5100",
+          title: "SEG 5100",
+          timeZone: "America/Toronto",
+          components: {},
+        },
+      ],
+    };
+
+    const freeElectiveOnly: Program = {
+      title: "Free elective only",
+      url: "",
+      requirements: [
+        {
+          type: "free_elective",
+          title: "3 free elective credits",
+          credits: 3,
+        },
+      ],
+    };
+
+    const cache = buildDataCache(gradOnlyCatalogue, gradOnlySchedules);
+    const completedCourses: string[] = [];
+    const { remaining } = computeRequirementsState(
+      freeElectiveOnly,
+      completedCourses,
+      cache,
+    );
+    const store = useAppStore;
+    store.setState({
+      ...store.getState(),
+      catalogue: { courses: gradOnlyCatalogue.courses, programs: [freeElectiveOnly] },
+      schedulesData: gradOnlySchedules,
+      cache,
+      program: freeElectiveOnly,
+      completedCourses,
+      remainingRequirements: remaining,
+      requirementTreeWithStatus: [],
+      completedRequirementsList: [],
+      selectedPerRequirement: {},
+      requirementSlotsUserTouched: {},
+      selectedOptionsPerRequirement: {},
+      prereqEligibleCourses: ["SEG 5100"],
+      filteredPrereqEligibleCourses: ["SEG 5100"],
+      levelBuckets: ["undergrad", "grad"],
+      languageBuckets: ["en", "other"],
+      electiveLevelBuckets: [1000, 2000, 3000, 4000],
+      coursesThisSemester: 1,
+      generatedSchedules: [],
+      generationError: null,
+    });
+
+    await store.getState().generateSchedules();
+
+    const { generatedSchedules, generationError } = store.getState();
+    expect(generatedSchedules).toHaveLength(0);
+    expect(generationError).not.toBeNull();
+  });
 });
 

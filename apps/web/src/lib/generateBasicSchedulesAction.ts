@@ -11,6 +11,7 @@ import { cacheWithClosedFilter, getEffectiveSchedule } from "schedule";
 import { shuffleInPlace } from "../store/scheduleHelpers";
 import { diagnoseTimetableFailure, canTakeCourse, buildPrereqContext } from "schedule";
 import { buildColorMap, buildColorMaps } from "./colorMap";
+import { isWithinElectiveLevelCap } from "./electiveEligibility";
 
 export interface GenerateBasicSchedulesResult {
   generatedSchedules: GeneratedSchedule[];
@@ -72,6 +73,7 @@ export async function generateBasicSchedulesAction(
 
   for (const course of cache.getAllCourses()) {
     const code = course.code;
+    if (!isWithinElectiveLevelCap(code)) continue;
     
     // Check exclusions
     const prefixMatch = code.match(/^([A-Z]{3,4})/i);

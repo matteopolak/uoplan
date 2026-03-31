@@ -5,6 +5,10 @@ import {
   getEffectiveSchedule,
   isHonoursProject,
 } from "schedule";
+import {
+  isElectiveRequirementType,
+  isWithinElectiveLevelCap,
+} from "../../lib/electiveEligibility";
 
 function normalizeTitleForCompare(title: string | undefined): string {
   return (title ?? "").trim().replace(/\s+/g, " ").toLowerCase();
@@ -379,13 +383,9 @@ export function getConstrainMultiSelectOptions(
     ? (selectedPerRequirement[node.requirementId] ?? [])
     : [];
 
+  const isElectiveType = isElectiveRequirementType(node.type);
   const isElectiveWithExclusions =
-    (node.type === "discipline_elective" ||
-      node.type === "elective" ||
-      node.type === "faculty_elective" ||
-      node.type === "free_elective" ||
-      node.type === "non_discipline_elective") &&
-    (node.excluded_disciplines?.length ?? 0) > 0;
+    isElectiveType && (node.excluded_disciplines?.length ?? 0) > 0;
 
   const isCompletedCourse = (code: string): boolean => {
     const norm = normalizeCourseCode(code);
@@ -418,6 +418,9 @@ export function getConstrainMultiSelectOptions(
             node.type === "course" || node.type === "or_course";
           if (isSpecificCourseReq && isHonoursProject(c, ctx.cache))
             return true;
+          return false;
+        }
+        if (isElectiveType && !isWithinElectiveLevelCap(c)) {
           return false;
         }
         if (isElectiveWithExclusions && ctx.electiveLevelBuckets.length > 0) {

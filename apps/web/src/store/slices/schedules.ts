@@ -14,6 +14,10 @@ import {
 import { normalizeCourseCode } from "schedule";
 import { courseMatchesFilters } from "schedule";
 import { isHonoursProject, canTakeCourse, buildPrereqContext } from "schedule";
+import {
+  isElectiveRequirementType,
+  isWithinElectiveLevelCap,
+} from "../../lib/electiveEligibility";
 
 const validEnrollmentsByCourseCode = new Map<string, CourseEnrollment[]>();
 
@@ -269,6 +273,7 @@ export const createSchedulesSlice: StateCreator<
       for (const course of cacheVal.getAllCourses()) {
         const code = course.code;
         if (code === oldCode) continue;
+        if (!isWithinElectiveLevelCap(code)) continue;
 
         // Check exclusions
         const prefixMatch = code.match(/^([A-Z]{3,4})/i);
@@ -390,11 +395,13 @@ export const createSchedulesSlice: StateCreator<
       if (isHonoursProject(code, cacheVal)) continue;
       if (!courseMatchesFilters(code, filters)) continue;
       
+      const isElectiveType = isElectiveRequirementType(poolRequirementType);
       const isGenericElective =
         poolRequirementType === "free_elective" ||
         poolRequirementType === "non_discipline_elective" ||
         poolRequirementType === "faculty_elective" ||
         poolRequirementType === "elective";
+      if (isElectiveType && !isWithinElectiveLevelCap(code)) continue;
       if (isGenericElective && electiveLevelBuckets.length > 0) {
         const match = code.match(/\d{4}/);
         if (match) {
