@@ -6,22 +6,50 @@ export interface CapturedEvent {
   rect: DOMRect;
   heading: string;
   section: string;
+  time: string;
   professor: string;
+  ratingColor: string;
 }
 
-export interface Phantom {
+interface PhantomText {
+  heading: string;
+  section: string;
+  time: string;
+  professor: string;
+  ratingColor: string;
+}
+
+interface PhantomBase {
   layoutId: string;
   courseCode: string;
   colorHex: string;
-  fromRect: DOMRect | null;
-  toRect: DOMRect | null;
-  kind: "flip" | "fadeOut";
-  heading: string;
-  section: string;
-  professor: string;
-  toHeading: string;
-  toSection: string;
-  toProfessor: string;
+  fromRect: DOMRect;
+  /** "flip"    – slides to new position (first half) then fades out (second half)
+   *  "fadeOut" – fades out in place over the full duration */
+  fromText: PhantomText;
+}
+
+interface FlipPhantom extends PhantomBase {
+  kind: "flip";
+  toRect: DOMRect;
+  toText: PhantomText;
+}
+
+interface FadeOutPhantom extends PhantomBase {
+  kind: "fadeOut";
+  toRect: null;
+}
+
+export type Phantom = FlipPhantom | FadeOutPhantom;
+
+function toPhantomText(event: CapturedEvent): PhantomText {
+  return {
+    heading: event.heading,
+    section: event.section,
+    time: event.time,
+    professor: event.professor,
+    ratingColor: event.ratingColor,
+  };
 }
 
 type Phase =
@@ -29,12 +57,16 @@ type Phase =
   /** Events hidden, parked phantoms at old positions, FullCalendar rendering new schedule. */
   | "pre-animating"
   /** Final phantoms animating — first half slides, second half fades out. */
-  | "animating";
+  | "animating"
+  /** Phantoms are fully gone; real events fade in briefly. */
+  | "fading-in";
 
 /** Duration of the full phantom animation (ms). */
 export const PHANTOM_MS = 350;
 /** The midpoint at which the phantom stops moving and starts fading (ms). */
 export const HALF_PHANTOM_MS = PHANTOM_MS / 2;
+/** Duration of the real-event reveal after phantoms complete (ms). */
+export const FADE_IN_MS = 100;
 
 const RENDER_SETTLE_MS = 50;
 
@@ -51,9 +83,15 @@ function captureEventPositions(container: HTMLElement | null): CapturedEvent[] {
         el.querySelector(".fc-uoplan-event-code")?.textContent ?? "";
       const section =
         el.querySelector(".fc-uoplan-event-type")?.textContent ?? "";
+      const time =
+        el.dataset.eventTime ??
+        el.querySelector(".fc-uoplan-event-time")?.textContent ??
+        "";
       const professor =
-        el.querySelector(".fc-uoplan-event-professor > span")?.textContent ?? "";
-      captures.push({ courseCode, colorHex, rect, heading, section, professor });
+        el.querySelector(".fc-uoplan-event-professor-name")?.textContent?.trim() ??
+        "";
+      const ratingColor = el.dataset.ratingColor ?? "";
+      captures.push({ courseCode, colorHex, rect, heading, section, time, professor, ratingColor });
     }
   }
   return captures;
@@ -68,12 +106,8 @@ function buildParkedPhantoms(oldEvents: CapturedEvent[]): Phantom[] {
     fromRect: c.rect,
     toRect: c.rect,
     kind: "flip" as const,
-    heading: c.heading,
-    section: c.section,
-    professor: c.professor,
-    toHeading: c.heading,
-    toSection: c.section,
-    toProfessor: c.professor,
+    fromText: toPhantomText(c),
+    toText: toPhantomText(c),
   }));
 }
 
@@ -100,12 +134,8 @@ function buildPhantoms(
           fromRect: old.rect,
           toRect: newEvents[ni].rect,
           kind: "flip",
-          heading: old.heading,
-          section: old.section,
-          professor: old.professor,
-          toHeading: newEvents[ni].heading,
-          toSection: newEvents[ni].section,
-          toProfessor: newEvents[ni].professor,
+          fromText: toPhantomText(old),
+          toText: toPhantomText(newEvents[ni]),
         });
         matchedOld.add(oi);
         matchedNew.add(ni);
@@ -154,12 +184,8 @@ function buildPhantoms(
         fromRect: olds[i].rect,
         toRect: news[i].rect,
         kind: "flip",
-        heading: olds[i].heading,
-        section: olds[i].section,
-        professor: olds[i].professor,
-        toHeading: news[i].heading,
-        toSection: news[i].section,
-        toProfessor: news[i].professor,
+        fromText: toPhantomText(olds[i]),
+        toText: toPhantomText(news[i]),
       });
     }
     for (let i = flips; i < olds.length; i++) {
@@ -170,12 +196,7 @@ function buildPhantoms(
         fromRect: olds[i].rect,
         toRect: null,
         kind: "fadeOut",
-        heading: olds[i].heading,
-        section: olds[i].section,
-        professor: olds[i].professor,
-        toHeading: olds[i].heading,
-        toSection: olds[i].section,
-        toProfessor: olds[i].professor,
+        fromText: toPhantomText(olds[i]),
       });
     }
   }
@@ -188,6 +209,8 @@ export interface CalendarMorphState {
   phantoms: Phantom[];
   /** Real events must be invisible — the overlay owns the visual. */
   isHidingEvents: boolean;
+  /** Real events are fading in (phantoms already gone). */
+  isFadingIn: boolean;
   onAnimationComplete: () => void;
   triggerTransition: (newIndex: number) => void;
 }
@@ -197,8 +220,13 @@ export interface CalendarMorphState {
  *
  *  idle
  *   → pre-animating  parked phantoms cover old positions; FC renders new schedule
- *   → animating      final phantoms: slide+crossfade (first half) → fade to 0 (second half)
- *   → idle           phantoms removed; real events revealed instantly
+ *   → animating      final phantoms: slide (first half) → fade to 0 (second half)
+ *   → fading-in      phantoms gone; real events fade in briefly (FADE_IN_MS)
+ *   → idle
+ *
+ * Phantoms fade fully to zero before real events are revealed, so there is
+ * never a moment where both a phantom and its matching real event are
+ * simultaneously visible — which would cause alpha-compositing doubling.
  */
 export function useCalendarMorph(
   initialIndex: number,
@@ -251,7 +279,7 @@ export function useCalendarMorph(
       const built = buildPhantoms(oldCapturesRef.current, newCaptures);
       if (built.length === 0) {
         setPhantoms([]);
-        setPhaseAndRef("idle");
+        setPhaseAndRef("fading-in");
         return;
       }
       setPhantoms(built);
@@ -260,10 +288,20 @@ export function useCalendarMorph(
     return () => window.clearTimeout(t);
   }, [phase, containerRef, setPhaseAndRef]);
 
+  // fading-in → clean up after the CSS reveal animation
+  useEffect(() => {
+    if (phase !== "fading-in") return;
+    const t = window.setTimeout(() => {
+      setPhaseAndRef("idle");
+      pendingIndexRef.current = null;
+    }, FADE_IN_MS + 20); // small buffer so the CSS animation always completes
+    return () => window.clearTimeout(t);
+  }, [phase, setPhaseAndRef]);
+
   const onAnimationComplete = useCallback(() => {
-    // Phantoms are at opacity 0. Remove them instantly — real events reveal in the same frame.
+    // Phantoms are now at opacity 0. Remove them and start the brief reveal.
     setPhantoms([]);
-    setPhaseAndRef("idle");
+    setPhaseAndRef("fading-in");
     pendingIndexRef.current = null;
   }, [setPhaseAndRef]);
 
@@ -271,6 +309,7 @@ export function useCalendarMorph(
     displayedIndex,
     phantoms,
     isHidingEvents: phase === "pre-animating" || phase === "animating",
+    isFadingIn: phase === "fading-in",
     onAnimationComplete,
     triggerTransition,
   };
