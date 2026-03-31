@@ -2,7 +2,6 @@ import { Box, Stack, Text, Tooltip } from "@mantine/core";
 import type { DataCache } from "schedule";
 import type { CourseEnrollment } from "schedule";
 import {
-  formatRatingsDisplay,
   getRatingsForInstructors,
   getRatingDetailsForInstructors,
   type ProfessorRatingsMap,
@@ -25,7 +24,7 @@ interface EventStyleCardProps {
 function RatingTooltipLabel({
   details,
 }: {
-  details?: Array<{ name: string; rating: number; numRatings: number }>;
+  details?: Array<{ id?: string; legacyId?: number; name: string; rating: number; numRatings: number }>;
 }) {
   if (!details?.length) return null;
   return (
@@ -33,7 +32,7 @@ function RatingTooltipLabel({
       <Text size="xs" fw={600} c="dimmed">RateMyProfessors</Text>
       {details.map((d) => (
         <Text key={d.name} size="xs">
-          {d.name} · {d.rating.toFixed(1).replace(/\.0$/, '')}/5
+          {d.name} · {d.numRatings > 0 ? `${d.rating.toFixed(1).replace(/\.0$/, '')}/5` : 'N/A'}
           {d.numRatings > 0 ? ` (${d.numRatings} ratings)` : ''}
         </Text>
       ))}
@@ -72,7 +71,6 @@ export function EventStyleCard({
         professorRatings
       )
     : [];
-  const ratingDisplay = formatRatingsDisplay(ratings);
   const ratingValue =
     ratings.length > 0
       ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) /
@@ -139,37 +137,45 @@ export function EventStyleCard({
           >
             {professor}
           </span>
-          {ratingDisplay && ratingValue != null && (
-            <Tooltip
-              label={<RatingTooltipLabel details={ratingDetails} />}
-              withArrow
-              position="top"
-              withinPortal
-              color="dark"
-            >
-              <Box
-                style={{
-                  padding: 4,
-                  flexShrink: 0,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
+          {ratingDetails && ratingDetails.length > 0 && (() => {
+            const legacyId = ratingDetails?.find((d) => d.legacyId)?.legacyId;
+            return (
+              <Tooltip
+                label={<RatingTooltipLabel details={ratingDetails} />}
+                withArrow
+                position="top"
+                withinPortal
+                color="dark"
               >
                 <Box
+                  component="a"
+                  href={legacyId ? `https://www.ratemyprofessors.com/professor/${legacyId}` : undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
                   style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: 0,
-                    backgroundColor: ratingColorToCssVar(ratingToColor(ratingValue)),
-                    border: "1px solid rgba(0,0,0,0.45)",
-                    boxShadow: "0 0 0 1px rgba(255,255,255,0.08) inset",
+                    padding: 4,
+                    flexShrink: 0,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
-                />
-              </Box>
-            </Tooltip>
-          )}
+                >
+                  <Box
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: 0,
+                      backgroundColor: ratingColorToCssVar(ratingToColor(ratingValue ?? null)),
+                      border: "1px solid rgba(0,0,0,0.45)",
+                      boxShadow: "0 0 0 1px rgba(255,255,255,0.08) inset",
+                    }}
+                  />
+                </Box>
+              </Tooltip>
+            );
+          })()}
         </span>
       </div>
     </div>

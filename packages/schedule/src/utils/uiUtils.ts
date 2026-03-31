@@ -66,12 +66,13 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } {
 /**
  * Rating color categories.
  */
-export type RatingColor = "red" | "orange" | "yellow" | "green";
+export type RatingColor = "red" | "orange" | "yellow" | "green" | "gray";
 
 /**
  * Convert a professor rating (1-5 scale) to a color category.
  */
-export function ratingToColor(rating: number): RatingColor {
+export function ratingToColor(rating: number | null | undefined): RatingColor {
+  if (rating == null || rating <= 0) return "gray";
   if (rating < 2.5) return "red";
   if (rating < 3.3) return "orange";
   if (rating < 4.0) return "yellow";
@@ -91,6 +92,8 @@ export function ratingColorToCssVar(color: RatingColor): string {
       return "var(--mantine-color-yellow-6)";
     case "green":
       return "var(--mantine-color-green-6)";
+    case "gray":
+      return "var(--mantine-color-gray-6)";
   }
 }
 

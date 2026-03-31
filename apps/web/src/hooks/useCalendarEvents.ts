@@ -3,7 +3,6 @@ import { startOfWeek } from "date-fns";
 import type { GeneratedSchedule } from "schedule";
 import type { ProfessorRatingsMap } from "schedule";
 import {
-  formatRatingsDisplay,
   getRatingsForInstructors,
   getRatingDetailsForInstructors,
 } from "schedule";
@@ -23,9 +22,8 @@ export interface CalendarEvent {
   endMinutes: number;
   componentSection: string;
   professor: string;
-  professorRatingDisplay?: string | null;
   professorRatingValue?: number | null;
-  professorRatingDetails?: Array<{ name: string; rating: number; numRatings: number }>;
+  professorRatingDetails?: Array<{ id?: string; legacyId?: number; name: string; rating: number; numRatings: number }>;
 }
 
 /**
@@ -61,7 +59,6 @@ export function useCalendarEvents(
           section.instructors ?? [],
           professorRatings
         );
-        const professorRatingDisplay = formatRatingsDisplay(ratings);
         const professorRatingValue =
           ratings.length > 0
             ? Math.round(
@@ -93,7 +90,6 @@ export function useCalendarEvents(
             endMinutes: t.endMinutes,
             componentSection,
             professor,
-            professorRatingDisplay,
             professorRatingValue,
             professorRatingDetails,
           });

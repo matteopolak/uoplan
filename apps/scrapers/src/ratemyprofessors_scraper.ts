@@ -55,6 +55,8 @@ interface TeacherNode {
 }
 
 interface FormattedTeacherNode {
+  id: string;
+  legacyId: number;
   name: string;
   rating: number | null;
   numRatings: number;
@@ -131,6 +133,8 @@ async function main(): Promise<void> {
     }
 
     const nodes = teachers.edges.map((e) => ({
+      id: e.node.id,
+      legacyId: e.node.legacyId,
       name: `${e.node.firstName} ${e.node.lastName}`.trim().replace(/\s+/g, ' '),
       rating: e.node.avgRating,
       numRatings: e.node.numRatings,

@@ -1,4 +1,4 @@
-export type ProfessorRatingsEntry = { rating: number; numRatings: number };
+export type ProfessorRatingsEntry = { id?: string; legacyId?: number; rating: number; numRatings: number };
 export type ProfessorRatingsMap = Record<string, ProfessorRatingsEntry>;
 
 export function normalizeProfessorName(name: string): string {
@@ -6,7 +6,7 @@ export function normalizeProfessorName(name: string): string {
 }
 
 export function buildProfessorRatingsMap(input: {
-  professors: Array<{ name: string; rating: number | null; numRatings?: number }>;
+  professors: Array<{ id?: string; legacyId?: number; name: string; rating: number | null; numRatings?: number }>;
 }): ProfessorRatingsMap {
   const map: ProfessorRatingsMap = {};
   for (const p of input.professors ?? []) {
@@ -14,7 +14,7 @@ export function buildProfessorRatingsMap(input: {
     if (!key) continue;
     const rating = typeof p.rating === 'number' ? p.rating : Number(p.rating);
     if (!Number.isFinite(rating)) continue;
-    map[key] = { rating, numRatings: p.numRatings ?? 0 };
+    map[key] = { id: p.id, legacyId: p.legacyId, rating, numRatings: p.numRatings ?? 0 };
   }
   return map;
 }
@@ -31,7 +31,7 @@ export function getRatingsForInstructors(
     if (!key || seen.has(key)) continue;
     seen.add(key);
     const entry = map[key];
-    if (entry && Number.isFinite(entry.rating)) out.push(entry.rating);
+    if (entry && Number.isFinite(entry.rating) && entry.numRatings > 0) out.push(entry.rating);
   }
   return out;
 }
@@ -39,9 +39,9 @@ export function getRatingsForInstructors(
 export function getRatingDetailsForInstructors(
   instructors: string[] | null | undefined,
   map: ProfessorRatingsMap | null | undefined
-): Array<{ name: string; rating: number; numRatings: number }> {
+): Array<{ id?: string; legacyId?: number; name: string; rating: number; numRatings: number }> {
   if (!map || !instructors?.length) return [];
-  const out: Array<{ name: string; rating: number; numRatings: number }> = [];
+  const out: Array<{ id?: string; legacyId?: number; name: string; rating: number; numRatings: number }> = [];
   const seen = new Set<string>();
   for (const raw of instructors) {
     const key = normalizeProfessorName(raw);
@@ -49,7 +49,7 @@ export function getRatingDetailsForInstructors(
     seen.add(key);
     const entry = map[key];
     if (entry && Number.isFinite(entry.rating)) {
-      out.push({ name: raw.trim(), rating: entry.rating, numRatings: entry.numRatings });
+      out.push({ id: entry.id, legacyId: entry.legacyId, name: raw.trim(), rating: entry.rating, numRatings: entry.numRatings });
     }
   }
   return out;
@@ -65,9 +65,4 @@ export function isSectionAllowedByMinRating(args: {
   const ratings = getRatingsForInstructors(instructors, professorRatings);
   if (ratings.length === 0) return true; // no rating => always allowed
   return ratings.every((r) => r >= minRating);
-}
-
-export function formatRatingsDisplay(ratings: number[]): string | null {
-  if (!ratings.length) return null;
-  return ratings.map((r) => r.toFixed(1).replace(/\.0$/, '')).join(' · ');
 }

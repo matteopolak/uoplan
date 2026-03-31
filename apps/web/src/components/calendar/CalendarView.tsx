@@ -24,7 +24,7 @@ import { ScheduleMorphOverlay } from './ScheduleMorphOverlay';
 function RatingTooltipLabel({
   details,
 }: {
-  details?: Array<{ name: string; rating: number; numRatings: number }>;
+  details?: Array<{ id?: string; legacyId?: number; name: string; rating: number; numRatings: number }>;
 }) {
   if (!details?.length) return null;
   return (
@@ -32,7 +32,7 @@ function RatingTooltipLabel({
       <Text size="xs" fw={600} c="dimmed">RateMyProfessors</Text>
       {details.map((d) => (
         <Text key={d.name} size="xs">
-          {d.name} · {d.rating.toFixed(1).replace(/\.0$/, '')}/5
+          {d.name} · {d.numRatings > 0 ? `${d.rating.toFixed(1).replace(/\.0$/, '')}/5` : 'N/A'}
           {d.numRatings > 0 ? ` (${d.numRatings} ratings)` : ''}
         </Text>
       ))}
@@ -89,7 +89,7 @@ export const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
     // When selectedIndex changes from the parent but we haven't triggered a
     // transition yet (e.g. initial render, URL state restore), snap instantly.
     useEffect(() => {
-      if (selectedIndex !== morph.displayedIndex && !morph.isHidingEvents && !morph.isFadingIn) {
+      if (selectedIndex !== morph.displayedIndex && !morph.isHidingEvents) {
         morph.triggerTransition(selectedIndex);
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -297,39 +297,47 @@ export const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
                         >
                           {ext.professor}
                         </span>
-                        {ext.professorRatingDisplay && ext.professorRatingValue != null && (
-                          <Tooltip
-                            label={<RatingTooltipLabel details={ext.professorRatingDetails} />}
-                            withArrow
-                            position="top"
-                            withinPortal
-                            color="dark"
-                          >
-                            <Box
-                              style={{
-                                padding: 4,
-                                flexShrink: 0,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
+                        {ext.professorRatingDetails && ext.professorRatingDetails.length > 0 && (() => {
+                          const legacyId = ext.professorRatingDetails?.find((d) => d.legacyId)?.legacyId;
+                          return (
+                            <Tooltip
+                              label={<RatingTooltipLabel details={ext.professorRatingDetails} />}
+                              withArrow
+                              position="top"
+                              withinPortal
+                              color="dark"
                             >
                               <Box
+                                component="a"
+                                href={legacyId ? `https://www.ratemyprofessors.com/professor/${legacyId}` : undefined}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
                                 style={{
-                                  width: 10,
-                                  height: 10,
-                                  borderRadius: 0,
-                                  backgroundColor: ratingColorToCssVar(
-                                    ratingToColor(ext.professorRatingValue),
-                                  ),
-                                  border: '1px solid rgba(0,0,0,0.45)',
-                                  boxShadow: '0 0 0 1px rgba(255,255,255,0.08) inset',
+                                  padding: 4,
+                                  flexShrink: 0,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
                                 }}
-                              />
-                            </Box>
-                          </Tooltip>
-                        )}
+                              >
+                                <Box
+                                  style={{
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: 0,
+                                    backgroundColor: ratingColorToCssVar(
+                                      ratingToColor(ext.professorRatingValue ?? null),
+                                    ),
+                                    border: '1px solid rgba(0,0,0,0.45)',
+                                    boxShadow: '0 0 0 1px rgba(255,255,255,0.08) inset',
+                                  }}
+                                />
+                              </Box>
+                            </Tooltip>
+                          );
+                        })()}
                       </span>
                     </div>
                   </div>
