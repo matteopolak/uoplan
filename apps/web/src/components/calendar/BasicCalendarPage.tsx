@@ -26,6 +26,7 @@ import { createCourseOptions, renderCourseOption } from '../shared/CourseSelect'
 import { useTimetableDateRangeFromSchedule } from "../../hooks/useTimetableDateRange";
 import { tr } from "../../i18n";
 import { LanguageSwitcher } from "../shared/LanguageSwitcher";
+import { CourseFiltersCard } from "../requirements/CourseFiltersCard";
 
 interface BasicCalendarPageProps {
   onBack: () => void;
@@ -74,6 +75,10 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
     basicPinnedCourses,
     basicElectivesCount,
     basicExcludedCategories,
+    levelBuckets,
+    languageBuckets,
+    electiveLevelBuckets,
+    includeClosedComponents,
     completedCourses,
     indices,
   } = useAppStore(
@@ -87,6 +92,10 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
       basicPinnedCourses: s.basicPinnedCourses,
       basicElectivesCount: s.basicElectivesCount,
       basicExcludedCategories: s.basicExcludedCategories,
+      levelBuckets: s.levelBuckets,
+      languageBuckets: s.languageBuckets,
+      electiveLevelBuckets: s.electiveLevelBuckets,
+      includeClosedComponents: s.includeClosedComponents,
       completedCourses: s.completedCourses,
       indices: s.indices,
     })),
@@ -102,6 +111,10 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
   const setWizardMode = useAppStore((s) => s.setWizardMode);
   const clearGeneratedSchedules = useAppStore((s) => s.clearGeneratedSchedules);
   const setCompletedCourses = useAppStore((s) => s.setCompletedCourses);
+  const setLevelBuckets = useAppStore((s) => s.setLevelBuckets);
+  const setLanguageBuckets = useAppStore((s) => s.setLanguageBuckets);
+  const setElectiveLevelBuckets = useAppStore((s) => s.setElectiveLevelBuckets);
+  const setIncludeClosedComponents = useAppStore((s) => s.setIncludeClosedComponents);
 
   const morphRef = useRef<CalendarViewHandle>(null);
 
@@ -356,7 +369,29 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
             radius={0}
           />
 
-
+          <CourseFiltersCard
+            levelBuckets={levelBuckets}
+            languageBuckets={languageBuckets}
+            electiveLevelBuckets={electiveLevelBuckets}
+            includeClosedComponents={includeClosedComponents}
+            showGraduateElectiveLevels
+            onChangeLevelBuckets={(buckets) => {
+              setLevelBuckets(buckets);
+              clearGeneratedSchedules();
+            }}
+            onChangeLanguageBuckets={(buckets) => {
+              setLanguageBuckets(buckets);
+              clearGeneratedSchedules();
+            }}
+            onChangeElectiveLevelBuckets={(buckets) => {
+              setElectiveLevelBuckets(buckets);
+              clearGeneratedSchedules();
+            }}
+            onIncludeClosedComponentsChange={(value) => {
+              setIncludeClosedComponents(value);
+              clearGeneratedSchedules();
+            }}
+          />
 
           <Button
             variant="filled"

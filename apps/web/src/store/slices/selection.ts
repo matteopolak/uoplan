@@ -3,6 +3,11 @@ import type { AppStore } from "../types";
 import { recomputeStateForProgram, getDisciplineCodesForProgram } from "../requirementCompute";
 import { buildDataCache, normalizeCourseCode, withExtraCourses, isOptCourse } from "schedule";
 import { pruneOptionSelectionsForClear } from "../../components/requirements/requirementUtils";
+import {
+  DEFAULT_BASIC_ELECTIVE_LEVEL_BUCKETS,
+  DEFAULT_BASIC_LANGUAGE_BUCKETS,
+  DEFAULT_BASIC_LEVEL_BUCKETS,
+} from "../../lib/electiveEligibility";
 
 function getMergedCatalogue(
   catalogue: any,
@@ -59,7 +64,33 @@ export const createSelectionSlice: StateCreator<
   [],
   SelectionSlice
 > = (set, get) => ({
-  setWizardMode: (mode) => set({ wizardMode: mode }),
+  setWizardMode: (mode) =>
+    set((state) => {
+      if (mode !== "basic") {
+        return { wizardMode: mode };
+      }
+
+      const hasUntouchedDefaults =
+        state.levelBuckets.length === 1 &&
+        state.levelBuckets[0] === "undergrad" &&
+        state.languageBuckets.length === 2 &&
+        state.languageBuckets.includes("en") &&
+        state.languageBuckets.includes("other") &&
+        state.electiveLevelBuckets.length === 2 &&
+        state.electiveLevelBuckets.includes(1000) &&
+        state.electiveLevelBuckets.includes(2000);
+
+      if (!hasUntouchedDefaults) {
+        return { wizardMode: mode };
+      }
+
+      return {
+        wizardMode: mode,
+        levelBuckets: [...DEFAULT_BASIC_LEVEL_BUCKETS],
+        languageBuckets: [...DEFAULT_BASIC_LANGUAGE_BUCKETS],
+        electiveLevelBuckets: [...DEFAULT_BASIC_ELECTIVE_LEVEL_BUCKETS],
+      };
+    }),
   setBasicPinnedCourses: (courses) => set({ basicPinnedCourses: courses }),
   setBasicElectivesCount: (count) => set({ basicElectivesCount: count }),
   setBasicExcludedCategories: (categories) => set({ basicExcludedCategories: categories }),

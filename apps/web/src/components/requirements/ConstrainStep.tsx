@@ -1,15 +1,13 @@
 import { useState, useRef, useMemo, type MouseEvent } from "react";
 import {
   Stack,
-  MultiSelect,
   Text,
-  Paper,
   Badge,
   Group,
   Box,
   Collapse,
   Alert,
-  Switch,
+  Paper,
   Button,
 } from "@mantine/core";
 import { IconChevronDown } from "@tabler/icons-react";
@@ -32,7 +30,7 @@ import {
   countSatisfiedTopLevelRoots,
   partitionIncompleteConstrainRoots,
 } from "./requirementUtils";
-import { tr } from "../../i18n";
+import { CourseFiltersCard } from "./CourseFiltersCard";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -329,83 +327,16 @@ export function ConstrainStep({
 
   return (
     <Stack gap="lg" data-tour="constrain-schedule">
-      <Paper p="sm" withBorder radius={0}>
-        <Stack gap="xs">
-          <Group justify="space-between" align="center">
-            <Text size="sm" fw={500}>
-              {tr("constrainStep.courseFilters")}
-            </Text>
-            <Text size="xs" c="dimmed">
-              {tr("constrainStep.filtersHint")}
-            </Text>
-          </Group>
-          <Group gap="md" align="flex-start" style={{ alignItems: "center" }}>
-            <MultiSelect
-              label={tr("constrainStep.levels.label")}
-              data={[
-                { value: "undergrad", label: tr("constrainStep.levels.undergrad") },
-                { value: "grad", label: tr("constrainStep.levels.grad") },
-              ]}
-              value={levelBuckets}
-              onChange={(vals) =>
-                onChangeLevelBuckets(
-                  vals.filter(
-                    (v): v is "undergrad" | "grad" =>
-                      v === "undergrad" || v === "grad",
-                  ),
-                )
-              }
-              clearable={false}
-            />
-            <MultiSelect
-              label={tr("constrainStep.languages.label")}
-              data={[
-                { value: "en", label: tr("constrainStep.languages.english") },
-                { value: "fr", label: tr("constrainStep.languages.french") },
-                { value: "other", label: tr("constrainStep.languages.other") },
-              ]}
-              value={languageBuckets}
-              onChange={(vals) =>
-                onChangeLanguageBuckets(
-                  vals.filter(
-                    (v): v is "en" | "fr" | "other" =>
-                      v === "en" || v === "fr" || v === "other",
-                  ),
-                )
-              }
-              clearable={false}
-            />
-            <MultiSelect
-              label={tr("constrainStep.electiveLevels.label")}
-              data={[
-                { value: "1000", label: "1XXX" },
-                { value: "2000", label: "2XXX" },
-                { value: "3000", label: "3XXX" },
-                { value: "4000", label: "4XXX" },
-              ]}
-              value={electiveLevelBuckets.map((v) => String(v))}
-              onChange={(vals) =>
-                onChangeElectiveLevelBuckets(
-                  vals
-                    .map((v) => parseInt(v, 10))
-                    .filter(
-                      (n) =>
-                        n === 1000 || n === 2000 || n === 3000 || n === 4000,
-                    ),
-                )
-              }
-              clearable={false}
-            />
-            <Switch
-              label={tr("constrainStep.includeClosedSections")}
-              checked={includeClosedComponents}
-              onChange={(e) =>
-                onIncludeClosedComponentsChange(e.currentTarget.checked)
-              }
-            />
-          </Group>
-        </Stack>
-      </Paper>
+      <CourseFiltersCard
+        levelBuckets={levelBuckets}
+        languageBuckets={languageBuckets}
+        electiveLevelBuckets={electiveLevelBuckets}
+        includeClosedComponents={includeClosedComponents}
+        onChangeLevelBuckets={onChangeLevelBuckets}
+        onChangeLanguageBuckets={onChangeLanguageBuckets}
+        onChangeElectiveLevelBuckets={onChangeElectiveLevelBuckets}
+        onIncludeClosedComponentsChange={onIncludeClosedComponentsChange}
+      />
 
       {missingSelections.length > 0 && (
         <Alert

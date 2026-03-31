@@ -17,6 +17,7 @@ import { isHonoursProject, canTakeCourse, buildPrereqContext } from "schedule";
 import {
   isElectiveRequirementType,
   isWithinElectiveLevelCap,
+  isWithinElectiveLevelBuckets,
 } from "../../lib/electiveEligibility";
 
 const validEnrollmentsByCourseCode = new Map<string, CourseEnrollment[]>();
@@ -285,11 +286,13 @@ export const createSchedulesSlice: StateCreator<
       let optionalPool: string[] = [];
       const excludedPrefixes = basicExcludedCategories.map(c => c.toLowerCase());
       const prereqCtx = buildPrereqContext(completedCourses, cacheVal, studentPrograms);
+      const basicFilters = { levels: levelBuckets, languageBuckets };
       
       for (const course of cacheVal.getAllCourses()) {
         const code = course.code;
         if (code === oldCode) continue;
-        if (!isWithinElectiveLevelCap(code)) continue;
+        if (!courseMatchesFilters(code, basicFilters)) continue;
+        if (!isWithinElectiveLevelBuckets(code, electiveLevelBuckets)) continue;
 
         // Check exclusions
         const prefixMatch = code.match(/^([A-Z]{3,4})/i);
