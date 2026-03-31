@@ -18,13 +18,64 @@ function rectToStyle(rect: DOMRect) {
   };
 }
 
-function TextContent({ heading, section, professor }: { heading: string; section: string; professor: string }) {
+function TextContent({
+  heading,
+  section,
+  time,
+  professor,
+  ratingColor,
+}: {
+  heading: string;
+  section: string;
+  time: string;
+  professor: string;
+  ratingColor: string;
+}) {
   if (!heading) return null;
   return (
     <div className="fc-uoplan-event-body">
       <span className="fc-uoplan-event-code">{heading}</span>
       {section && <span className="fc-uoplan-event-type">{section}</span>}
-      {professor && <span className="fc-uoplan-event-professor">{professor}</span>}
+      {time && <span className="fc-uoplan-event-time">{time}</span>}
+      {professor && (
+        <span
+          className="fc-uoplan-event-professor"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            flexWrap: "nowrap",
+            minWidth: 0,
+            maxWidth: "100%",
+          }}
+        >
+          <span
+            className="fc-uoplan-event-professor-name"
+            style={{
+              minWidth: 0,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {professor}
+          </span>
+          {ratingColor && (
+            <span
+              aria-hidden
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: 0,
+                backgroundColor: ratingColor,
+                border: "1px solid rgba(0,0,0,0.45)",
+                boxShadow: "0 0 0 1px rgba(255,255,255,0.08) inset",
+                flexShrink: 0,
+              }}
+            />
+          )}
+        </span>
+      )}
     </div>
   );
 }
@@ -36,11 +87,13 @@ function PhantomBlock({
   phantom: Phantom;
   onComplete: () => void;
 }) {
-  const { colorHex, kind, fromRect, toRect, heading, section, professor, toHeading, toSection, toProfessor } = phantom;
+  const { colorHex, kind, fromRect } = phantom;
   const { r, g, b } = hexToRgb(colorHex);
   const bg = `rgba(${r}, ${g}, ${b}, 0.38)`;
 
   const isFlip = kind === "flip";
+  const fromText = phantom.fromText;
+  const toText = isFlip ? phantom.toText : fromText;
 
   // Flip phantoms fire `onComplete` via a timer rather than onAnimationComplete:
   // parked phantoms (fromRect === toRect) would otherwise complete instantly.
@@ -77,8 +130,8 @@ function PhantomBlock({
      */
     return (
       <motion.div
-        initial={rectToStyle(fromRect!)}
-        animate={rectToStyle(toRect!)}
+        initial={rectToStyle(fromRect)}
+        animate={rectToStyle(phantom.toRect)}
         transition={{ duration: HALF_S, ease: EASING }}
         style={blockStyle}
       >
@@ -88,7 +141,13 @@ function PhantomBlock({
           animate={{ opacity: 0 }}
           transition={{ duration: HALF_S, ease: "easeIn" }}
         >
-          <TextContent heading={heading} section={section} professor={professor} />
+          <TextContent
+            heading={fromText.heading}
+            section={fromText.section}
+            time={fromText.time}
+            professor={fromText.professor}
+            ratingColor={fromText.ratingColor}
+          />
         </motion.div>
 
         {/* New text fades in during the slide */}
@@ -98,7 +157,13 @@ function PhantomBlock({
           animate={{ opacity: 1 }}
           transition={{ duration: HALF_S, ease: "easeIn" }}
         >
-          <TextContent heading={toHeading} section={toSection} professor={toProfessor} />
+          <TextContent
+            heading={toText.heading}
+            section={toText.section}
+            time={toText.time}
+            professor={toText.professor}
+            ratingColor={toText.ratingColor}
+          />
         </motion.div>
       </motion.div>
     );
@@ -110,13 +175,19 @@ function PhantomBlock({
    */
   return (
     <motion.div
-      initial={{ ...rectToStyle(fromRect!), opacity: 1 }}
-      animate={{ ...rectToStyle(fromRect!), opacity: 0 }}
+      initial={{ ...rectToStyle(fromRect), opacity: 1 }}
+      animate={{ ...rectToStyle(fromRect), opacity: 0 }}
       transition={{ duration: FULL_S, ease: EASING }}
       onAnimationComplete={onComplete}
       style={blockStyle}
     >
-      <TextContent heading={heading} section={section} professor={professor} />
+      <TextContent
+        heading={fromText.heading}
+        section={fromText.section}
+        time={fromText.time}
+        professor={fromText.professor}
+        ratingColor={fromText.ratingColor}
+      />
     </motion.div>
   );
 }

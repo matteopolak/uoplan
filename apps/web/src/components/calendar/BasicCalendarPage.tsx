@@ -126,7 +126,7 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
 
   const scheduleOptions = generatedSchedules.map((_, i) => ({
     value: String(i),
-    label: tr("basicCalendar.schedule.label", "Schedule #{index}", {
+    label: tr("basicCalendar.schedule.label", {
       index: i + 1,
     }),
   }));

@@ -98,7 +98,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
 
   const scheduleOptions = generatedSchedules.map((_, i) => ({
     value: String(i),
-    label: tr("calendarPage.schedule.label", "Schedule #{index}", {
+    label: tr("calendarPage.schedule.label", {
       index: i + 1,
     }),
   }));
@@ -235,7 +235,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
           >
             {swapHistory.length === 1
               ? tr("calendarPage.undoSwap")
-              : tr("calendarPage.undoSwapCount", "Undo swap ({count})", {
+              : tr("calendarPage.undoSwapCount", {
                   count: swapHistory.length,
                 })}
           </Button>
@@ -336,14 +336,12 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
           <Text size="sm" c="dimmed">
             {tr(
               "calendarPage.generatedTotal",
-              "{count} total - click a block to swap",
               { count: generatedSchedules.length },
             )}
           </Text>
           <Text size="xs" c="dimmed">
             {tr(
               "calendarPage.showingBlocks",
-              "Showing {count} course block{suffix} this week",
               {
                 count: eventCount,
                 suffix: eventCount === 1 ? "" : "s",
