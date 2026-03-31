@@ -16,8 +16,23 @@ export default defineConfig([
   {
     files: ["src/**/*.{ts,tsx}"],
     rules: {
-      "lingui/no-unlocalized-strings": "error",
       "lingui/no-expression-in-message": "off",
+      "@typescript-eslint/no-misused-promises": [
+        "error",
+        {
+          checksVoidReturn: {
+            attributes: false,
+          },
+        },
+      ],
+      "@typescript-eslint/no-floating-promises": "off",
+      "@typescript-eslint/require-await": "off",
+    },
+  },
+  {
+    files: ["src/**/*.test.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/consistent-type-imports": "off",
     },
   },
 ]);

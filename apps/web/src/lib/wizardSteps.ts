@@ -63,7 +63,7 @@ export function normalizeActiveStep(
   active: number,
   needsOptions: boolean,
   needsAssign: boolean,
-): number {
+): WizardStep {
   const visible = buildVisibleStepIndices(needsOptions, needsAssign);
   if (visible.includes(active)) return active;
   const forward = visible.find((s) => s >= active);
@@ -90,7 +90,7 @@ export function furthestReachedDisplayIndex(
 
 /** True when this step is not part of the interactive flow (sidebar still shows it as skipped). */
 export function isWizardStepSkipped(
-  actualIdx: number,
+  actualIdx: WizardStep,
   needsOptions: boolean,
   needsAssign: boolean,
 ): boolean {
@@ -101,23 +101,23 @@ export function isWizardStepSkipped(
 
 /** First interactive step index strictly after `actualIdx` (next row in the real flow). */
 export function firstInteractiveStepAfter(
-  actualIdx: number,
+  actualIdx: WizardStep,
   needsOptions: boolean,
   needsAssign: boolean,
 ): number | undefined {
   const nav = buildVisibleStepIndices(needsOptions, needsAssign);
-  return nav.find((s) => s > actualIdx);
+  return nav.find((s) => s > Number(actualIdx));
 }
 
 /** Skipped optional row may show a grey check once the user has moved past that slot. */
 export function skippedWizardStepIsPassed(
-  actualIdx: number,
-  furthestActual: number,
+  actualIdx: WizardStep,
+  furthestActual: WizardStep,
   needsOptions: boolean,
   needsAssign: boolean,
 ): boolean {
   if (!isWizardStepSkipped(actualIdx, needsOptions, needsAssign)) return false;
   const next = firstInteractiveStepAfter(actualIdx, needsOptions, needsAssign);
   if (next === undefined) return false;
-  return furthestActual >= next;
+  return Number(furthestActual) >= next;
 }

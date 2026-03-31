@@ -316,14 +316,6 @@ export const RequirementNode = memo(function RequirementNode({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (isSection) {
-    return (
-      <Text fw={600} size="sm" c="dimmed" mt={depth > 0 ? "md" : 0} mb="xs">
-        {title}
-      </Text>
-    );
-  }
-
   const selected = node.requirementId
     ? (selectedPerRequirement[node.requirementId] ?? [])
     : [];
@@ -364,6 +356,14 @@ export const RequirementNode = memo(function RequirementNode({
     completedOnly,
     selectedPerRequirement,
   ]);
+
+  if (isSection) {
+    return (
+      <Text fw={600} size="sm" c="dimmed" mt={depth > 0 ? "md" : 0} mb="xs">
+        {title}
+      </Text>
+    );
+  }
 
   const selectedCredits = getSelectedCredits(cache, selectedForDisplay);
   const satisfiedByDisplay = [

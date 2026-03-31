@@ -167,7 +167,7 @@ export function getValidSectionCombos(
   const valid: SectionCombo[] = [];
 
   for (const combo of allCombos) {
-    const sections = combo as ComponentSection[];
+    const sections = combo;
     const times = collectTimes(sections);
     if (
       constraints &&

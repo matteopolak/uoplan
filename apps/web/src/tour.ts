@@ -17,6 +17,18 @@ function querySelectorOrBody(selector: string): Element {
   return document.querySelector(selector) ?? document.body;
 }
 
+function getActiveIndex(state: unknown): number {
+  if (
+    typeof state === "object" &&
+    state !== null &&
+    "activeIndex" in state &&
+    typeof state.activeIndex === "number"
+  ) {
+    return state.activeIndex;
+  }
+  return 0;
+}
+
 /**
  * Runs the onboarding tour. Syncs the wizard step with tour progress so each
  * highlighted element is visible. Pass the same visible indices as the sidebar
@@ -83,8 +95,7 @@ export function runTour(
       }
     },
     onNextClick: (_element, _step, { driver: d }) => {
-      const state = d.getState();
-      const currentIndex = state.activeIndex ?? 0;
+      const currentIndex = getActiveIndex(d.getState());
       const nextTourIndex = currentIndex + 1;
       if (nextTourIndex >= steps.length) {
         d.moveNext();
@@ -92,7 +103,7 @@ export function runTour(
       }
       const targetWizard =
         nextTourIndex < visibleStepIndices.length
-          ? visibleStepIndices[nextTourIndex]!
+          ? visibleStepIndices[nextTourIndex]
           : WizardStep.Generate;
       setWizardStep(targetWizard);
       setTimeout(() => {
@@ -101,13 +112,12 @@ export function runTour(
       }, 250);
     },
     onPrevClick: (_element, _step, { driver: d }) => {
-      const state = d.getState();
-      const currentIndex = state.activeIndex ?? 0;
+      const currentIndex = getActiveIndex(d.getState());
       const prevTourIndex = currentIndex - 1;
       if (prevTourIndex < 0) return;
       const targetWizard =
         prevTourIndex < visibleStepIndices.length
-          ? visibleStepIndices[prevTourIndex]!
+          ? visibleStepIndices[prevTourIndex]
           : WizardStep.Generate;
       setWizardStep(targetWizard);
       setTimeout(() => {

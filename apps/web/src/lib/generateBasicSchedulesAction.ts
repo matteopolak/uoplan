@@ -70,7 +70,7 @@ export async function generateBasicSchedulesAction(
   const targetCount = pinned.length + basicElectivesCount;
   
   // Find valid electives
-  let optionalPool: string[] = [];
+  const optionalPool: string[] = [];
   const excludedPrefixes = basicExcludedCategories.map(c => c.toLowerCase());
   const filters = { levels: levelBuckets, languageBuckets };
   

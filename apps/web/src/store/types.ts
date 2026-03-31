@@ -1,4 +1,4 @@
-import type { Course, Program } from 'schemas'
+import type { Catalogue, Course, Program, SchedulesData } from 'schemas'
 import type { RemainingRequirement, RequirementWithStatus, CompletedRequirementItem } from "schedule";
 import type { GeneratedSchedule } from "schedule";
 import type { DayOfWeek } from 'schemas'
@@ -29,9 +29,9 @@ export interface AppState {
   basicElectivesCount: number;
   basicExcludedCategories: string[];
 
-  catalogue: { courses: unknown[]; programs: Program[] } | null;
+  catalogue: Catalogue | null;
   indices: Indices | null;
-  schedulesData: { termId: string; schedules: unknown[] } | null;
+  schedulesData: SchedulesData | null;
   cache: DataCache | null;
   loading: boolean;
   error: string | null;

@@ -170,7 +170,7 @@ describe("applyOptionSelections", () => {
     ];
     const out = applyOptionSelections(tree, {});
     expect(out).toHaveLength(1);
-    expect(out[0]!.requirementId).toBe("leaf");
+    expect(out[0].requirementId).toBe("leaf");
   });
 
   it("flattens nested option groups when each branch is selected", () => {
@@ -200,7 +200,7 @@ describe("applyOptionSelections", () => {
     };
     const out = applyOptionSelections([outer], { outer: 0, inner: 0 });
     expect(out).toHaveLength(1);
-    expect(out[0]!.requirementId).toBe("leaf");
+    expect(out[0].requirementId).toBe("leaf");
   });
 
   it("hoists structural and children so they sit beside siblings in the parent", () => {
@@ -257,9 +257,9 @@ describe("applyOptionSelections", () => {
     ];
     const out = applyOptionSelections(tree, { pick: 0 });
     expect(out).toHaveLength(1);
-    expect(out[0]!.type).toBe("and");
-    expect(out[0]!.options ?? []).toHaveLength(3);
-    expect(out[0]!.options!.map((x) => x.requirementId)).toEqual([
+    expect(out[0].type).toBe("and");
+    expect(out[0].options ?? []).toHaveLength(3);
+    expect(out[0].options!.map((x) => x.requirementId)).toEqual([
       "free",
       "req-a",
       "req-b",
@@ -390,7 +390,7 @@ describe("partitionIncompleteConstrainRoots", () => {
     );
     expect(primary).toHaveLength(0);
     expect(collapsed).toHaveLength(1);
-    expect(collapsed[0]!.rootIndex).toBe(0);
+    expect(collapsed[0].rootIndex).toBe(0);
   });
 
   it("collapses pick when every child has an empty pool (no parent requirementId)", () => {

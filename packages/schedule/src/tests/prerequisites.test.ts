@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { Course, CoursePrereqNode } from 'schemas';
+import type { Course, CoursePrereqNode, CourseSchedule } from 'schemas';
 import type { DataCache } from '../dataCache';
 import {
   buildPrereqContext,
@@ -7,8 +7,9 @@ import {
   meetsCoursePrereq,
   prerequisitesContainNonCourse,
 } from '../prerequisites';
+import type {
+  CourseFilters} from '../courseFilters';
 import {
-  CourseFilters,
   courseMatchesFilters,
   getCourseLanguageBucket,
   getCourseLevelBucket,
@@ -23,17 +24,23 @@ function makeMockCache(
     prerequisites?: CoursePrereqNode;
   }>,
 ): DataCache {
-  const map = new Map<string, { code: string; credits: number; component?: string; prerequisites?: CoursePrereqNode }>();
+  const map = new Map<string, Course>();
   for (const c of courses) {
-    map.set(c.code, { code: c.code, credits: c.credits, prerequisites: c.prerequisites });
+    map.set(c.code, {
+      code: c.code,
+      title: c.code,
+      credits: c.credits,
+      description: '',
+      prerequisites: c.prerequisites,
+    });
   }
   return {
     getCourse(code: string) {
-      return map.get(code) as Course;
+      return map.get(code);
     },
-    getSchedule: () => undefined as any,
+    getSchedule: (_code: string): CourseSchedule | undefined => undefined,
     getCoursesByDiscipline: () => [],
-    getAllCourses: () => Array.from(map.values()) as any,
+    getAllCourses: () => Array.from(map.values()),
     getAllSchedules: () => [],
   };
 }
