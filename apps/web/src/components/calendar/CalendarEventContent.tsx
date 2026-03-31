@@ -5,6 +5,22 @@ import { COURSE_COLORS, COURSE_COLOR_HEX, hexToRgb, ratingColorToCssVar, ratingT
 import type { CalendarEvent } from "../../hooks/useCalendarEvents";
 import { ProfessorRatingTooltipLabel } from "./ProfessorRatingTooltipLabel";
 
+/**
+ * Formats time range from minutes since midnight to 24-hour format string.
+ * @param startMinutes - Start time in minutes since midnight
+ * @param endMinutes - End time in minutes since midnight
+ * @returns Formatted time range string (e.g., "08:30 - 10:00")
+ */
+function formatTimeRange(startMinutes: number, endMinutes: number): string {
+  const formatTime = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
+  };
+  
+  return `${formatTime(startMinutes)} - ${formatTime(endMinutes)}`;
+}
+
 export function CalendarEventContent({
   ext,
   cache,
@@ -36,6 +52,11 @@ export function CalendarEventContent({
     [ext.professorRatingValue],
   );
 
+  const timeRange = useMemo(
+    () => formatTimeRange(ext.startMinutes, ext.endMinutes),
+    [ext.startMinutes, ext.endMinutes],
+  );
+
   return (
     <div
       className="fc-uoplan-event"
@@ -52,6 +73,7 @@ export function CalendarEventContent({
           {heading}
         </span>
         <span className="fc-uoplan-event-type">{ext.componentSection}</span>
+        <span className="fc-uoplan-event-time">{timeRange}</span>
         <span
           className="fc-uoplan-event-professor"
           style={{
