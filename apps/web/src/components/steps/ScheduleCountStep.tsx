@@ -142,7 +142,6 @@ export function ScheduleCountStep({
         <Alert color="yellow" variant="light" radius={0}>
           {tr(
             "scheduleCount.firstYear.warning",
-            "Your selected courses may push your total 1000-level credits to {credits}/48, exceeding the undergraduate limit. Enable the option below to cap them at 48.",
             { credits: totalFirstYearCredits },
           )}
         </Alert>
@@ -152,7 +151,6 @@ export function ScheduleCountStep({
           label={tr("scheduleCount.firstYear.limitLabel")}
           description={tr(
             "scheduleCount.firstYear.limitDescription",
-            "You currently have {credits} credit{suffix} of 1000-level courses (completed + selected). The undergraduate limit is 48.",
             {
               credits: totalFirstYearCredits,
               suffix: totalFirstYearCredits === 1 ? "" : "s",
@@ -180,7 +178,6 @@ export function ScheduleCountStep({
         <Alert color="blue" variant="light" radius={0}>
           {tr(
             "scheduleCount.needMore",
-            "You selected {count} course(s). We will suggest additional courses from your remaining requirements to fill your schedule.",
             { count: selectedCount },
           )}
         </Alert>

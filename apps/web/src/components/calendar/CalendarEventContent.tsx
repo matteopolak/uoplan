@@ -47,10 +47,12 @@ export function CalendarEventContent({
     () => ext.professorRatingDetails?.find((d) => d.legacyId)?.legacyId,
     [ext.professorRatingDetails],
   );
-  const markerColor = useMemo(
-    () => ratingColorToCssVar(ratingToColor(ext.professorRatingValue ?? null)),
+  const ratingColor = useMemo(
+    () => ratingToColor(ext.professorRatingValue ?? null),
     [ext.professorRatingValue],
   );
+  const markerColor = useMemo(() => ratingColorToCssVar(ratingColor), [ratingColor]);
+  const hasProfessorRating = !!(ext.professorRatingDetails && ext.professorRatingDetails.length > 0);
 
   const timeRange = useMemo(
     () => formatTimeRange(ext.startMinutes, ext.endMinutes),
@@ -62,6 +64,8 @@ export function CalendarEventContent({
       className="fc-uoplan-event"
       data-course-code={ext.courseCode}
       data-color-hex={hex}
+      data-event-time={timeRange}
+      data-rating-color={hasProfessorRating ? markerColor : ""}
       style={{
         cursor: "pointer",
         borderLeft: `4px solid ${hex}`,
@@ -86,6 +90,7 @@ export function CalendarEventContent({
           }}
         >
           <span
+            className="fc-uoplan-event-professor-name"
             style={{
               minWidth: 0,
               overflow: "hidden",
@@ -97,7 +102,7 @@ export function CalendarEventContent({
             {ext.professor}
           </span>
 
-          {ext.professorRatingDetails && ext.professorRatingDetails.length > 0 && (
+          {hasProfessorRating && (
             <Tooltip
               label={<ProfessorRatingTooltipLabel details={ext.professorRatingDetails} />}
               withArrow
