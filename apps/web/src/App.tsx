@@ -557,8 +557,14 @@ function App() {
                       color: "#A6A7AB",
                     }}
                   >
-                    STEP {stepDisplayIndex + 1} OF {visibleStepCount} –{" "}
-                    {STEPS[effectiveActive].description().toUpperCase()}
+                    {tr("app.stepHeader", {
+                        current: stepDisplayIndex + 1,
+                        total: visibleStepCount,
+                        description: STEPS[effectiveActive]
+                          .description()
+                          .toUpperCase(),
+                      },
+                    ).toUpperCase()}
                   </Text>
                   <Group gap="xs">
                     <LanguageSwitcher />

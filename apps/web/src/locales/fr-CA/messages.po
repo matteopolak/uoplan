@@ -485,3 +485,114 @@ msgstr "À quoi sert cette étape"
 
 msgid "wizardContent.tour.whatToDo"
 msgstr "Ce que vous devez faire"
+
+msgid "completedCourses.selectProgramFirst"
+msgstr "Sélectionnez d'abord un programme à l'étape 1."
+
+msgid "completedCourses.label"
+msgstr "Cours que vous avez terminés ou que vous suivez actuellement"
+
+msgid "completedCourses.placeholder"
+msgstr "Rechercher par code de cours ou titre..."
+
+msgid "completedCourses.notFound"
+msgstr "Aucun cours trouvé"
+
+msgid "completedCourses.description"
+msgstr "Cours que vous avez terminés ou que vous suivez. Vous pouvez aussi téléverser votre relevé à l'étape 1."
+
+msgid "requirementNode.searchPlaceholder"
+msgstr "Rechercher par code de cours ou titre..."
+
+msgid "requirementNode.noCoursesFound"
+msgstr "Aucun cours trouvé"
+
+msgid "optionsDrilldown.orGroupLabel.default"
+msgstr "L'un des éléments suivants doit être complété"
+
+msgid "optionsDrilldown.chooseOne"
+msgstr "Choisir une option"
+
+msgid "optionsDrilldown.selectOneError"
+msgstr "Sélectionnez exactement une option dans ce groupe."
+
+msgid "optionsDrilldown.selectedBranch"
+msgstr "Branche sélectionnée"
+
+msgid "optionsDrilldown.changeRequirementSetAria"
+msgstr "Modifier cet ensemble d'exigences - revenez en arrière pour choisir une autre option. Parcours actuel : {path}"
+
+msgid "optionsDrilldown.changeRequirementSet"
+msgstr "Modifier cet ensemble d'exigences"
+
+msgid "optionsStep.none"
+msgstr "Aucune option à configurer pour ce programme. Cliquez sur Suivant pour continuer."
+
+msgid "optionsStep.note"
+msgstr "Parcourez chaque choix ci-dessous. Touchez une option pour continuer; utilisez la flèche retour pour changer de parcours et choisir une autre branche."
+
+msgid "constrainStep.courseFilters"
+msgstr "Filtres de cours"
+
+msgid "constrainStep.filtersHint"
+msgstr "Les filtres s'appliquent aux cours suggérés et recherchables pour cette étape."
+
+msgid "constrainStep.levels.label"
+msgstr "Niveaux"
+
+msgid "constrainStep.levels.undergrad"
+msgstr "Premier cycle (0–4XXX)"
+
+msgid "constrainStep.levels.grad"
+msgstr "Cycles supérieurs (5XXX+)"
+
+msgid "constrainStep.languages.label"
+msgstr "Langues"
+
+msgid "constrainStep.languages.english"
+msgstr "Anglais"
+
+msgid "constrainStep.languages.french"
+msgstr "Français"
+
+msgid "constrainStep.languages.other"
+msgstr "Autre"
+
+msgid "constrainStep.electiveLevels.label"
+msgstr "Niveaux des cours au choix"
+
+msgid "constrainStep.includeClosedSections"
+msgstr "Inclure les sections fermées"
+
+msgid "requirementNode.satisfiedBy"
+msgstr "Satisfait par : {courses}"
+
+msgid "requirementNode.overSelected"
+msgstr "Vous avez sélectionné {selectedCredits} crédits, ce qui dépasse les {creditsNeeded} crédit{suffix} requis. Les cours supplémentaires pourraient ne pas compter pour cette exigence."
+
+msgid "requirementNode.progress"
+msgstr "{selectedCredits} crédits sur {creditsNeeded} sélectionnés - {nextAction}"
+
+msgid "requirementNode.pickMore"
+msgstr "choisir {count} autre{suffix} cours"
+
+msgid "requirementNode.satisfied"
+msgstr "exigence satisfaite"
+
+msgid "requirementNode.selectToFulfill"
+msgstr "Sélectionnez des cours pour satisfaire cette exigence ({creditsRemaining} crédit{suffix} requis)."
+
+msgid "requirementNode.coursesLabel"
+msgstr "Cours pour cette exigence"
+
+msgid "termStep.label"
+msgstr "Sélectionnez votre session"
+
+msgid "termStep.placeholder"
+msgstr "Choisir une session..."
+
+msgid "termStep.note"
+msgstr "Le choix de la session détermine quelles sections de cours sont disponibles pour la génération d'horaires."
+
+msgid "app.stepHeader"
+msgstr "Étape {current} sur {total} - {description}"

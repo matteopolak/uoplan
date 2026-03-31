@@ -1,5 +1,6 @@
 import { Alert, Select, Stack, Text } from '@mantine/core';
 import type { Term } from 'schemas';
+import { tr } from '../../i18n';
 
 interface TermStepProps {
   terms: Term[];
@@ -13,8 +14,8 @@ export function TermStep({ terms, value, onChange }: TermStepProps) {
   return (
     <Stack gap="md" data-tour="term-select">
       <Select
-        label="Select your term"
-        placeholder="Choose a term..."
+        label={tr("termStep.label")}
+        placeholder={tr("termStep.placeholder")}
         data={data}
         value={value}
         onChange={(v) => {
@@ -26,7 +27,7 @@ export function TermStep({ terms, value, onChange }: TermStepProps) {
       />
       <Alert color="blue" variant="light" radius={0}>
         <Text size="sm">
-          Term selection changes which course sections are available for schedule generation.
+          {tr("termStep.note", )}
         </Text>
       </Alert>
     </Stack>

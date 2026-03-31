@@ -32,6 +32,7 @@ import {
   getOptionSecondarySummaryLine,
   simplifySingleChildChain,
 } from "./requirementUtils";
+import { tr } from "../../i18n";
 
 export const REQUIREMENT_INDENT_PX = 12;
 export const REQUIREMENT_BASE_PADDING_PX = 10;
@@ -377,21 +378,41 @@ export const RequirementNode = memo(function RequirementNode({
     <Stack gap="xs" mt="xs">
       {satisfiedByDisplayUnique.length > 0 && (
         <Text size="xs" c="dimmed">
-          Satisfied by: {satisfiedByDisplayUnique.sort().join(", ")}
+          {tr("requirementNode.satisfiedBy", {
+            courses: satisfiedByDisplayUnique.sort().join(", "),
+          })}
         </Text>
       )}
       {creditsNeeded > 0 && (
         <Text size="xs" c={isOverSelected ? "yellow" : "dimmed"}>
           {isOverSelected
-            ? `You have selected ${selectedCredits} credits, which is more than the ${creditsNeeded} credit${creditsNeeded !== 1 ? "s" : ""} required. Extra courses may not count toward this requirement.`
+            ? tr("requirementNode.overSelected", {
+                selectedCredits,
+                creditsNeeded,
+                suffix: creditsNeeded !== 1 ? "s" : "",
+              })
             : selectedCredits > 0
-              ? `${selectedCredits} of ${creditsNeeded} credits selected — ${creditsRemaining > 0 ? `pick ${Math.ceil(creditsRemaining / 3)} more course${Math.ceil(creditsRemaining / 3) !== 1 ? "s" : ""}` : "requirement satisfied"}`
-              : `Select course(s) to fulfill this requirement (${creditsRemaining} credit${creditsRemaining !== 1 ? "s" : ""} needed).`}
+              ? tr("requirementNode.progress", {
+                  selectedCredits,
+                  creditsNeeded,
+                  nextAction:
+                    creditsRemaining > 0
+                      ? tr("requirementNode.pickMore", {
+                          count: Math.ceil(creditsRemaining / 3),
+                          suffix:
+                            Math.ceil(creditsRemaining / 3) !== 1 ? "s" : "",
+                        })
+                      : tr("requirementNode.satisfied"),
+                })
+              : tr("requirementNode.selectToFulfill", {
+                  creditsRemaining,
+                  suffix: creditsRemaining !== 1 ? "s" : "",
+                })}
         </Text>
       )}
       <MultiSelect
-        label="Courses for this requirement"
-        placeholder="Search by course code or title..."
+        label={tr("requirementNode.coursesLabel")}
+        placeholder={tr("requirementNode.searchPlaceholder")}
         data={options}
         value={selectedForDisplay}
         onChange={(courses) => onSelect(node.requirementId!, courses)}
@@ -455,7 +476,7 @@ export const RequirementNode = memo(function RequirementNode({
               o.label.toLowerCase().includes(q),
           );
         }}
-        nothingFoundMessage="No courses found"
+        nothingFoundMessage={tr("requirementNode.noCoursesFound")}
       />
     </Stack>
   ) : null;

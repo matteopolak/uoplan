@@ -4,6 +4,7 @@ import type { RequirementWithStatus } from "schedule";
 import { ExpandRegistryContext, getStableNodeKey, type ExpandRegistry } from "./RequirementNode";
 import { OptionsDrilldown } from "./OptionsDrilldown";
 import { nodeHasOptionGroups } from "./requirementUtils";
+import { tr } from "../../i18n";
 
 export interface OptionsStepProps {
   requirementTreeWithStatus: RequirementWithStatus[];
@@ -39,7 +40,7 @@ export function OptionsStep({
     return (
       <Alert color="blue" variant="light" radius={0} data-tour="options">
         <Text size="sm">
-          No options to configure for this program. Click Next to continue.
+          {tr("optionsStep.none", )}
         </Text>
       </Alert>
     );
@@ -49,8 +50,7 @@ export function OptionsStep({
     <Stack gap="md" data-tour="options">
       <Alert color="blue" variant="light" radius={0}>
         <Text size="sm">
-          Step through each choice below. Tap an option to continue; use the back
-          arrow to change a path and pick a different branch.
+          {tr("optionsStep.note", )}
         </Text>
       </Alert>
 

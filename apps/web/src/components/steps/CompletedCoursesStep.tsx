@@ -3,6 +3,7 @@ import type { ComboboxItem } from '@mantine/core';
 import { createCourseOptions, renderCourseOption } from '../shared/CourseSelect';
 import type { DataCache } from 'schedule';
 import type { RemainingRequirement } from 'schedule';
+import { tr } from '../../i18n';
 
 interface CompletedCoursesStepProps {
   cache: DataCache | null;
@@ -29,7 +30,9 @@ export function CompletedCoursesStep({
   if (!hasProgram) {
     return (
       <Alert color="blue" variant="light" radius={0}>
-        <Text size="sm">Select a program in Step 1 first.</Text>
+        <Text size="sm">
+          {tr("completedCourses.selectProgramFirst")}
+        </Text>
       </Alert>
     );
   }
@@ -38,8 +41,8 @@ export function CompletedCoursesStep({
     <Stack gap="md">
       <MultiSelect
         data-tour="completed-courses"
-        label="Courses you have completed or are currently taking"
-        placeholder="Search by course code or title..."
+        label={tr("completedCourses.label", )}
+        placeholder={tr("completedCourses.placeholder", )}
         data={options}
         value={completedCourses}
         onChange={onChange}
@@ -55,8 +58,8 @@ export function CompletedCoursesStep({
               o.label.toLowerCase().includes(q)
           );
         }}
-        nothingFoundMessage="No courses found"
-        description="Courses you have completed or are taking. You can also upload your transcript in Step 1."
+        nothingFoundMessage={tr("completedCourses.notFound")}
+        description={tr("completedCourses.description", )}
       />
     </Stack>
   );

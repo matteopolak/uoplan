@@ -32,6 +32,7 @@ import {
   countSatisfiedTopLevelRoots,
   partitionIncompleteConstrainRoots,
 } from "./requirementUtils";
+import { tr } from "../../i18n";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -332,18 +333,18 @@ export function ConstrainStep({
         <Stack gap="xs">
           <Group justify="space-between" align="center">
             <Text size="sm" fw={500}>
-              Course filters
+              {tr("constrainStep.courseFilters")}
             </Text>
             <Text size="xs" c="dimmed">
-              Filters apply to suggested and searchable courses for this step.
+              {tr("constrainStep.filtersHint")}
             </Text>
           </Group>
           <Group gap="md" align="flex-start" style={{ alignItems: "center" }}>
             <MultiSelect
-              label="Levels"
+              label={tr("constrainStep.levels.label")}
               data={[
-                { value: "undergrad", label: "Undergraduate (0–4XXX)" },
-                { value: "grad", label: "Graduate (5XXX+)" },
+                { value: "undergrad", label: tr("constrainStep.levels.undergrad") },
+                { value: "grad", label: tr("constrainStep.levels.grad") },
               ]}
               value={levelBuckets}
               onChange={(vals) =>
@@ -357,11 +358,11 @@ export function ConstrainStep({
               clearable={false}
             />
             <MultiSelect
-              label="Languages"
+              label={tr("constrainStep.languages.label")}
               data={[
-                { value: "en", label: "English" },
-                { value: "fr", label: "French" },
-                { value: "other", label: "Other" },
+                { value: "en", label: tr("constrainStep.languages.english") },
+                { value: "fr", label: tr("constrainStep.languages.french") },
+                { value: "other", label: tr("constrainStep.languages.other") },
               ]}
               value={languageBuckets}
               onChange={(vals) =>
@@ -375,7 +376,7 @@ export function ConstrainStep({
               clearable={false}
             />
             <MultiSelect
-              label="Elective levels"
+              label={tr("constrainStep.electiveLevels.label")}
               data={[
                 { value: "1000", label: "1XXX" },
                 { value: "2000", label: "2XXX" },
@@ -396,7 +397,7 @@ export function ConstrainStep({
               clearable={false}
             />
             <Switch
-              label="Include closed sections"
+              label={tr("constrainStep.includeClosedSections")}
               checked={includeClosedComponents}
               onChange={(e) =>
                 onIncludeClosedComponentsChange(e.currentTarget.checked)

@@ -12,6 +12,7 @@ import {
   REQUIREMENT_BASE_PADDING_PX,
   REQUIREMENT_INDENT_PX,
 } from "./RequirementNode";
+import { tr } from "../../i18n";
 
 const EMPTY_SET = new Set<string>();
 const EMPTY_RECORD: Record<string, string[]> = {};
@@ -32,8 +33,8 @@ function orGroupLabel(node: RequirementWithStatus): string {
   const rawTitle = (node.title ?? "").trim();
   const useGeneric = rawTitle === "" || rawTitle.toLowerCase() === "or";
   return useGeneric
-    ? "One of the following must be completed"
-    : rawTitle || node.code || "Choose one option";
+    ? tr("optionsDrilldown.orGroupLabel.default", )
+    : rawTitle || node.code || tr("optionsDrilldown.chooseOne");
 }
 
 export function OptionsDrilldown({
@@ -122,7 +123,7 @@ export function OptionsDrilldown({
           )}
           {showError && (
             <Text size="xs" c="red" mb="xs">
-              Select exactly one option in this group.
+              {tr("optionsDrilldown.selectOneError", )}
             </Text>
           )}
           <Stack gap="xs">
@@ -160,10 +161,12 @@ export function OptionsDrilldown({
     }
 
     const chosenHint =
-      getOptionSecondarySummaryLine(selectedChild!) ?? "Selected branch";
+      getOptionSecondarySummaryLine(selectedChild!) ??
+      tr("optionsDrilldown.selectedBranch");
     const backDescription =
       getOptionSecondarySummaryLine(selectedChild!) ?? getNodeDisplayTitle(selectedChild!);
-    const backAriaLabel = `Change this requirement set — go back to pick a different option. Current path: ${backDescription}`;
+    const backAriaLabel = tr("optionsDrilldown.changeRequirementSetAria", { path: backDescription },
+    );
     return (
       <Paper
         withBorder
@@ -209,7 +212,7 @@ export function OptionsDrilldown({
             />
             <Stack gap={4} style={{ minWidth: 0, flex: 1 }}>
               <Text size="xs" c="dimmed" fw={600} tt="uppercase" lh={1.2}>
-                Change this requirement set
+                {tr("optionsDrilldown.changeRequirementSet", )}
               </Text>
               <Text size="sm" lh={1.35} style={{ minWidth: 0 }}>
                 {chosenHint}

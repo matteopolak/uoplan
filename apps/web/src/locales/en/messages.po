@@ -486,3 +486,114 @@ msgstr "What this step is for"
 msgid "wizardContent.tour.whatToDo"
 msgstr "What you should do"
 
+msgid "completedCourses.selectProgramFirst"
+msgstr "Select a program in Step 1 first."
+
+msgid "completedCourses.label"
+msgstr "Courses you have completed or are currently taking"
+
+msgid "completedCourses.placeholder"
+msgstr "Search by course code or title..."
+
+msgid "completedCourses.notFound"
+msgstr "No courses found"
+
+msgid "completedCourses.description"
+msgstr "Courses you have completed or are taking. You can also upload your transcript in Step 1."
+
+msgid "requirementNode.searchPlaceholder"
+msgstr "Search by course code or title..."
+
+msgid "requirementNode.noCoursesFound"
+msgstr "No courses found"
+
+msgid "optionsDrilldown.orGroupLabel.default"
+msgstr "One of the following must be completed"
+
+msgid "optionsDrilldown.chooseOne"
+msgstr "Choose one option"
+
+msgid "optionsDrilldown.selectOneError"
+msgstr "Select exactly one option in this group."
+
+msgid "optionsDrilldown.selectedBranch"
+msgstr "Selected branch"
+
+msgid "optionsDrilldown.changeRequirementSetAria"
+msgstr "Change this requirement set - go back to pick a different option. Current path: {path}"
+
+msgid "optionsDrilldown.changeRequirementSet"
+msgstr "Change this requirement set"
+
+msgid "optionsStep.none"
+msgstr "No options to configure for this program. Click Next to continue."
+
+msgid "optionsStep.note"
+msgstr "Step through each choice below. Tap an option to continue; use the back arrow to change a path and pick a different branch."
+
+msgid "constrainStep.courseFilters"
+msgstr "Course filters"
+
+msgid "constrainStep.filtersHint"
+msgstr "Filters apply to suggested and searchable courses for this step."
+
+msgid "constrainStep.levels.label"
+msgstr "Levels"
+
+msgid "constrainStep.levels.undergrad"
+msgstr "Undergraduate (0–4XXX)"
+
+msgid "constrainStep.levels.grad"
+msgstr "Graduate (5XXX+)"
+
+msgid "constrainStep.languages.label"
+msgstr "Languages"
+
+msgid "constrainStep.languages.english"
+msgstr "English"
+
+msgid "constrainStep.languages.french"
+msgstr "French"
+
+msgid "constrainStep.languages.other"
+msgstr "Other"
+
+msgid "constrainStep.electiveLevels.label"
+msgstr "Elective levels"
+
+msgid "constrainStep.includeClosedSections"
+msgstr "Include closed sections"
+
+msgid "requirementNode.satisfiedBy"
+msgstr "Satisfied by: {courses}"
+
+msgid "requirementNode.overSelected"
+msgstr "You have selected {selectedCredits} credits, which is more than the {creditsNeeded} credit{suffix} required. Extra courses may not count toward this requirement."
+
+msgid "requirementNode.progress"
+msgstr "{selectedCredits} of {creditsNeeded} credits selected - {nextAction}"
+
+msgid "requirementNode.pickMore"
+msgstr "pick {count} more course{suffix}"
+
+msgid "requirementNode.satisfied"
+msgstr "requirement satisfied"
+
+msgid "requirementNode.selectToFulfill"
+msgstr "Select course(s) to fulfill this requirement ({creditsRemaining} credit{suffix} needed)."
+
+msgid "requirementNode.coursesLabel"
+msgstr "Courses for this requirement"
+
+msgid "termStep.label"
+msgstr "Select your term"
+
+msgid "termStep.placeholder"
+msgstr "Choose a term..."
+
+msgid "termStep.note"
+msgstr "Term selection changes which course sections are available for schedule generation."
+
+msgid "app.stepHeader"
+msgstr "Step {current} of {total} - {description}"
+
