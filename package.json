@@ -9,6 +9,9 @@
     "lint:fix": "pnpm -r lint:fix",
     "test": "pnpm run -r test",
     "test:watch": "pnpm --filter web test:watch",
+    "prepare": "lefthook install",
+    "hooks:install": "lefthook install",
+    "hooks:run": "lefthook run pre-commit",
     "scrape:catalogue": "pnpm --filter scrapers scrape:catalogue",
     "scrape:schedules": "pnpm --filter scrapers scrape:schedules",
     "scrape:ratemyprofessors": "pnpm --filter scrapers scrape:ratemyprofessors"
@@ -20,6 +23,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "globals": "^16.5.0",
     "jiti": "^2.6.1",
+    "lefthook": "^2.1.4",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.58.0"
   }
