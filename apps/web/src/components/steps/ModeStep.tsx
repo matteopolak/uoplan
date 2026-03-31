@@ -1,4 +1,14 @@
-import { Stack, Group, Paper, Text, Radio, Box } from "@mantine/core";
+import { useState } from "react";
+import {
+  Stack,
+  Group,
+  Paper,
+  Text,
+  Radio,
+  Box,
+  VisuallyHidden,
+  Badge,
+} from "@mantine/core";
 
 export interface ModeStepProps {
   value: "basic" | "advanced" | null;
@@ -6,6 +16,31 @@ export interface ModeStepProps {
 }
 
 export function ModeStep({ value, onChange }: ModeStepProps) {
+  const [hoveredMode, setHoveredMode] = useState<"basic" | "advanced" | null>(null);
+
+  const getCardStyles = (mode: "basic" | "advanced") => {
+    const isSelected = value === mode;
+    const isHovered = hoveredMode === mode;
+
+    return {
+      cursor: "pointer",
+      borderColor: isSelected
+        ? "var(--mantine-color-dark-2)"
+        : isHovered
+          ? "var(--mantine-color-dark-3)"
+          : "var(--mantine-color-dark-4)",
+      backgroundColor: isSelected
+        ? "var(--mantine-color-dark-6)"
+        : isHovered
+          ? "var(--mantine-color-dark-7)"
+          : "transparent",
+      boxShadow: isHovered && !isSelected
+        ? "0 0 0 1px var(--mantine-color-dark-3)"
+        : undefined,
+      transition: "border-color 0.2s, background-color 0.2s, box-shadow 0.2s",
+    } as const;
+  };
+
   return (
     <Stack gap="md" data-tour="mode-select">
       <Radio.Group
@@ -18,20 +53,33 @@ export function ModeStep({ value, onChange }: ModeStepProps) {
             withBorder
             radius={0}
             p="md"
-            style={{
-              cursor: "pointer",
-              borderColor: value === "basic" ? "#B197FC" : "#2C2E33",
-              backgroundColor: value === "basic" ? "var(--mantine-color-dark-6)" : "transparent",
-              transition: "border-color 0.2s, background-color 0.2s",
-            }}
+            style={getCardStyles("basic")}
             onClick={() => onChange("basic")}
+            onMouseEnter={() => setHoveredMode("basic")}
+            onMouseLeave={() => setHoveredMode((m) => (m === "basic" ? null : m))}
+            role="radio"
+            aria-checked={value === "basic"}
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onChange("basic");
+              }
+            }}
           >
             <Group wrap="nowrap" align="flex-start">
-              <Radio value="basic" mt={2} aria-label="Basic mode" />
+              <VisuallyHidden>
+                <Radio value="basic" mt={2} aria-label="Basic mode" />
+              </VisuallyHidden>
               <Box>
-                <Text fw={600} size="md">
-                  Basic Mode
-                </Text>
+                <Group gap="xs" align="center">
+                  <Text fw={600} size="md">
+                    Basic Mode
+                  </Text>
+                  <Badge size="xs" variant="light" color="violet" radius={0}>
+                    less setup
+                  </Badge>
+                </Group>
                 <Text size="sm" c="dimmed" mt={4}>
                   Quickly select required courses and electives to generate a schedule. Best for simple scheduling without needing to track full degree progress.
                 </Text>
@@ -43,20 +91,33 @@ export function ModeStep({ value, onChange }: ModeStepProps) {
             withBorder
             radius={0}
             p="md"
-            style={{
-              cursor: "pointer",
-              borderColor: value === "advanced" ? "#B197FC" : "#2C2E33",
-              backgroundColor: value === "advanced" ? "var(--mantine-color-dark-6)" : "transparent",
-              transition: "border-color 0.2s, background-color 0.2s",
-            }}
+            style={getCardStyles("advanced")}
             onClick={() => onChange("advanced")}
+            onMouseEnter={() => setHoveredMode("advanced")}
+            onMouseLeave={() => setHoveredMode((m) => (m === "advanced" ? null : m))}
+            role="radio"
+            aria-checked={value === "advanced"}
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onChange("advanced");
+              }
+            }}
           >
             <Group wrap="nowrap" align="flex-start">
-              <Radio value="advanced" mt={2} aria-label="Advanced mode" />
+              <VisuallyHidden>
+                <Radio value="advanced" mt={2} aria-label="Advanced mode" />
+              </VisuallyHidden>
               <Box>
-                <Text fw={600} size="md">
-                  Advanced Mode
-                </Text>
+                <Group gap="xs" align="center">
+                  <Text fw={600} size="md">
+                    Advanced Mode
+                  </Text>
+                  <Badge size="xs" variant="light" color="violet" radius={0}>
+                    more accurate
+                  </Badge>
+                </Group>
                 <Text size="sm" c="dimmed" mt={4}>
                   Select your program and build a comprehensive degree plan. Tracks completed courses and maps them against your specific degree requirements.
                 </Text>
