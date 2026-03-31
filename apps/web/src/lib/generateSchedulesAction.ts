@@ -554,7 +554,10 @@ export async function generateSchedulesAction(
         if (isElectiveType && !isWithinElectiveLevelCap(code)) {
           continue;
         }
-        if (electiveLevelBuckets.length > 0 && isElectiveType) {
+        if (
+          electiveLevelBuckets.length > 0 &&
+          isBroadElectivePoolType(pool.type)
+        ) {
           const match = code.match(/\d{4}/);
           if (match) {
             const num = Number.parseInt(match[0], 10);
