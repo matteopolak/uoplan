@@ -1,4 +1,4 @@
-import { Box, Stack, Text, Tooltip } from "@mantine/core";
+import { Box, Tooltip } from "@mantine/core";
 import type { DataCache } from "schedule";
 import type { CourseEnrollment } from "schedule";
 import {
@@ -13,31 +13,13 @@ import {
   ratingToColor,
   ratingColorToCssVar,
 } from "schedule";
+import { ProfessorRatingTooltipLabel } from "./ProfessorRatingTooltipLabel";
 
 interface EventStyleCardProps {
   enrollment: CourseEnrollment;
   enrollmentIndex: number;
   cache: DataCache | null;
   professorRatings: ProfessorRatingsMap | null;
-}
-
-function RatingTooltipLabel({
-  details,
-}: {
-  details?: Array<{ id?: string; legacyId?: number; name: string; rating: number; numRatings: number }>;
-}) {
-  if (!details?.length) return null;
-  return (
-    <Stack gap={4}>
-      <Text size="xs" fw={600} c="dimmed">RateMyProfessors</Text>
-      {details.map((d) => (
-        <Text key={d.name} size="xs">
-          {d.name} · {d.numRatings > 0 ? `${d.rating.toFixed(1).replace(/\.0$/, '')}/5` : 'N/A'}
-          {d.numRatings > 0 ? ` (${d.numRatings} ratings)` : ''}
-        </Text>
-      ))}
-    </Stack>
-  );
 }
 
 /**
@@ -141,7 +123,7 @@ export function EventStyleCard({
             const legacyId = ratingDetails?.find((d) => d.legacyId)?.legacyId;
             return (
               <Tooltip
-                label={<RatingTooltipLabel details={ratingDetails} />}
+                label={<ProfessorRatingTooltipLabel details={ratingDetails} />}
                 withArrow
                 position="top"
                 withinPortal

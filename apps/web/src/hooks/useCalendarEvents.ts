@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { startOfWeek } from "date-fns";
 import type { GeneratedSchedule } from "schedule";
 import type { ProfessorRatingsMap } from "schedule";
 import {
@@ -35,13 +34,9 @@ export interface CalendarEvent {
  */
 export function useCalendarEvents(
   schedule: GeneratedSchedule | null,
-  professorRatings: ProfessorRatingsMap | null
+  professorRatings: ProfessorRatingsMap | null,
+  referenceWeekStart: Date
 ): CalendarEvent[] {
-  const referenceWeekStart = useMemo(
-    () => startOfWeek(new Date(), { weekStartsOn: 0 }),
-    []
-  );
-
   return useMemo<CalendarEvent[]>(() => {
     if (!schedule) return [];
 

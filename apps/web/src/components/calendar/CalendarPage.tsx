@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   Alert,
   Box,
@@ -27,6 +27,7 @@ import { ResetModal } from "../shared/ResetModal";
 import { GenerationErrorDetailBlocks } from "../GenerationErrorDetailBlocks";
 import { buildScheduleIcs, downloadTextFile } from "schedule";
 import { useShareUrl } from "../../hooks/useShareUrl";
+import { useTimetableDateRangeFromSchedule } from "../../hooks/useTimetableDateRange";
 
 interface CalendarPageProps {
   onBack: () => void;
@@ -77,31 +78,14 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
 
   const isMobile = useMediaQuery("(max-width: 768px)");
 
-  // Auto-detect date range from the selected schedule's meeting dates.
-  useEffect(() => {
-    if (generatedSchedules.length === 0) return;
-    const currentSchedule =
-      generatedSchedules[selectedScheduleIndex] ?? generatedSchedules[0];
-    let minStart: string | null = null;
-    let maxEnd: string | null = null;
-    for (const enrollment of currentSchedule.enrollments) {
-      for (const { section } of Object.values(enrollment.sectionCombo)) {
-        const md = section.meetingDates;
-        if (!md || md.length < 2) continue;
-        const start = md[0];
-        const end = md[1];
-        if (start && (!minStart || start < minStart)) minStart = start;
-        if (end && (!maxEnd || end > maxEnd)) maxEnd = end;
-      }
-    }
-    if (!timetableStartDate && minStart) setTimetableStartDate(minStart);
-    if (!timetableEndDate && maxEnd) setTimetableEndDate(maxEnd);
-  }, [
+  useTimetableDateRangeFromSchedule(
     generatedSchedules,
     selectedScheduleIndex,
     timetableStartDate,
     timetableEndDate,
-  ]);
+    setTimetableStartDate,
+    setTimetableEndDate,
+  );
 
   const scheduleOptions = generatedSchedules.map((_, i) => ({
     value: String(i),
@@ -297,6 +281,17 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
         />
 
         <Button
+          size="sm"
+          color="violet"
+          variant="filled"
+          radius={0}
+          disabled={!dateRangeOk}
+          onClick={handleDownloadIcs}
+        >
+          Download ICS
+        </Button>
+
+        <Button
           variant="light"
           color="violet"
           size="sm"
@@ -322,34 +317,6 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
             />
           </Alert>
         )}
-
-        <Stack gap={4}>
-          <TextInput
-            label="Start date"
-            placeholder="YYYY-MM-DD"
-            value={timetableStartDate}
-            onChange={(e) => setTimetableStartDate(e.currentTarget.value)}
-            size="sm"
-          />
-          <TextInput
-            label="End date"
-            placeholder="YYYY-MM-DD"
-            value={timetableEndDate}
-            onChange={(e) => setTimetableEndDate(e.currentTarget.value)}
-            size="sm"
-          />
-        </Stack>
-
-        <Button
-          size="sm"
-          color="violet"
-          variant="filled"
-          radius={0}
-          disabled={!dateRangeOk}
-          onClick={handleDownloadIcs}
-        >
-          Download ICS
-        </Button>
 
         <Stack gap={0}>
           <Text size="sm" c="dimmed">

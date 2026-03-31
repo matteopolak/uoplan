@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { hexToRgb } from "schedule";
@@ -42,6 +42,14 @@ function PhantomBlock({
 
   const isFlip = kind === "flip";
 
+  // Flip phantoms fire `onComplete` via a timer rather than onAnimationComplete:
+  // parked phantoms (fromRect === toRect) would otherwise complete instantly.
+  useEffect(() => {
+    if (!isFlip) return;
+    const t = window.setTimeout(onComplete, HALF_PHANTOM_MS);
+    return () => window.clearTimeout(t);
+  }, [isFlip, onComplete]);
+
   const blockStyle = {
     position: "fixed" as const,
     pointerEvents: "none" as const,
@@ -67,12 +75,6 @@ function PhantomBlock({
      *     which would drain the counter before real phantoms mount. The timer is
      *     cancelled on unmount, so only real phantoms (which live for HALF_S) fire it.
      */
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useEffect(() => {
-      const t = window.setTimeout(onComplete, HALF_PHANTOM_MS);
-      return () => window.clearTimeout(t);
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
     return (
       <motion.div
         initial={rectToStyle(fromRect!)}
@@ -131,19 +133,19 @@ export function ScheduleMorphOverlay({
   const phantomsRef = useRef<Phantom[]>([]);
   const remainingRef = useRef(0);
 
+  const handleOne = useCallback(() => {
+    remainingRef.current -= 1;
+    if (remainingRef.current <= 0) {
+      onComplete();
+    }
+  }, [onComplete]);
+
   if (phantoms.length === 0) return null;
 
   if (phantomsRef.current !== phantoms) {
     phantomsRef.current = phantoms;
     remainingRef.current = phantoms.length;
   }
-
-  const handleOne = () => {
-    remainingRef.current -= 1;
-    if (remainingRef.current <= 0) {
-      onComplete();
-    }
-  };
 
   return createPortal(
     <>
