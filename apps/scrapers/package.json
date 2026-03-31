@@ -6,7 +6,9 @@
   "scripts": {
     "scrape:catalogue": "node src/scraper.ts",
     "scrape:schedules": "node src/schedule_scraper.ts",
-    "scrape:ratemyprofessors": "node src/ratemyprofessors_scraper.ts"
+    "scrape:ratemyprofessors": "node src/ratemyprofessors_scraper.ts",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "cheerio": "^1.2.0",
