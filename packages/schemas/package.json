@@ -5,6 +5,8 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "vitest run"
   },
   "dependencies": {
