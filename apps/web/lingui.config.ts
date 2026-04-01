@@ -1,7 +1,7 @@
-import { defineConfig } from "@lingui/cli";
+import type { defineConfig } from "@lingui/cli";
 import { formatter } from "@lingui/format-po";
 
-export default defineConfig({
+const linguiConfig: Parameters<typeof defineConfig>[0] = {
   sourceLocale: "en",
   locales: ["en", "fr-CA"],
   format: formatter({
@@ -14,4 +14,6 @@ export default defineConfig({
       exclude: ["**/*.test.ts", "**/*.test.tsx"],
     },
   ],
-});
+};
+
+export default linguiConfig;

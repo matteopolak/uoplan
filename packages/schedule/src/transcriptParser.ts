@@ -26,8 +26,7 @@ function readWorkerUrl(moduleValue: unknown): string {
 async function ensureWorker(): Promise<void> {
   if (workerInitialized) return;
   const pdfjsLib = await import("pdfjs-dist");
-  // @ts-expect-error - Vite-style ?url import is provided by the consuming app build.
-  const workerModule: unknown = await import("pdfjs-dist/build/pdf.worker.mjs?url");
+  const workerModule = await import("pdfjs-dist/build/pdf.worker.mjs?url");
   const workerUrl = readWorkerUrl(workerModule);
   if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
     pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;

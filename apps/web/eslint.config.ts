@@ -1,17 +1,11 @@
 import { defineConfig } from "eslint/config";
 import pluginLingui from "eslint-plugin-lingui";
 import reactHooks from "eslint-plugin-react-hooks";
-import { baseConfig } from "../../eslint.config";
+import { baseConfig } from "../../eslint.config.ts";
 
 export default defineConfig([
   ...baseConfig,
-  {
-    files: ["**/*.{ts,tsx}"],
-    plugins: {
-      "react-hooks": reactHooks,
-    },
-    rules: reactHooks.configs.recommended.rules,
-  },
+  reactHooks.configs.flat.recommended,
   pluginLingui.configs["flat/recommended"],
   {
     files: ["src/**/*.{ts,tsx}"],

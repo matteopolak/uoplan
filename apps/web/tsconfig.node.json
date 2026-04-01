@@ -11,8 +11,6 @@
   },
   "include": [
     "vite.config.ts",
-    "lingui.config.ts",
-    "eslint.config.ts",
-    "../../eslint.config.ts"
+    "lingui.config.ts"
   ]
 }
