@@ -1,7 +1,7 @@
 import { defineConfig } from "eslint/config";
 import pluginLingui from "eslint-plugin-lingui";
 import reactHooks from "eslint-plugin-react-hooks";
-import { baseConfig } from "../../eslint.config.ts";
+import { baseConfig } from "../../eslint.config";
 
 export default defineConfig([
   ...baseConfig,
@@ -22,6 +22,7 @@ export default defineConfig([
         {
           checksVoidReturn: {
             attributes: false,
+            arguments: false,
           },
         },
       ],

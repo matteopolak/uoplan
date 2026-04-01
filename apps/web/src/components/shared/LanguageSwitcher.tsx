@@ -7,7 +7,11 @@ const OPTIONS = [
   { value: "fr-CA", label: "FR-CA" },
 ];
 
-export function LanguageSwitcher() {
+interface LanguageSwitcherProps {
+  onSwitch?: (locale: AppLocale) => void | Promise<void>;
+}
+
+export function LanguageSwitcher({ onSwitch }: LanguageSwitcherProps) {
   const { i18n } = useLingui();
   const locale = (i18n.locale || "en") as AppLocale;
 
@@ -17,7 +21,8 @@ export function LanguageSwitcher() {
       radius={0}
       value={locale}
       onChange={(next) => {
-        void dynamicActivate(next as AppLocale);
+        if (onSwitch) void onSwitch(next as AppLocale);
+        else void dynamicActivate(next as AppLocale);
       }}
       data={OPTIONS}
       aria-label={tr("languageSwitcher.ariaLabel")}

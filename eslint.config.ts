@@ -10,8 +10,6 @@ export const baseConfig = defineConfig([
       "**/.turbo/**",
       "**/coverage/**",
       "**/*.d.ts",
-      "**/eslint.config.ts",
-      "**/lingui.config.ts",
       "apps/web/public/data/**",
     ],
   },

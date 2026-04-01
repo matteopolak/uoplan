@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLingui } from "@lingui/react";
 import {
   Alert,
@@ -57,7 +57,7 @@ import { useTour } from "./hooks/useTour";
 import { useShareUrl } from "./hooks/useShareUrl";
 import { getWizardStepContent } from "./lib/wizardStepContent";
 import { LanguageSwitcher } from "./components/shared/LanguageSwitcher";
-import { tr } from "./i18n";
+import { dynamicActivate, tr, type AppLocale } from "./i18n";
 
 function App() {
   // Subscribe App to locale changes so all text helpers re-render.
@@ -169,6 +169,18 @@ function App() {
 
   const isMobile = useMediaQuery("(max-width: 768px)");
   const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+
+  const [isLangTransitioning, setIsLangTransitioning] = useState(false);
+  const handleLangSwitch = useCallback(async (locale: AppLocale) => {
+    if (prefersReducedMotion) {
+      await dynamicActivate(locale);
+      return;
+    }
+    setIsLangTransitioning(true);
+    await new Promise(r => setTimeout(r, 130));
+    await dynamicActivate(locale);
+    setIsLangTransitioning(false);
+  }, [prefersReducedMotion]);
 
   // Use extracted hooks
   const { shareCopied, handleCopyShare } = useShareUrl(getShareUrl);
@@ -497,10 +509,16 @@ function App() {
         </Badge>
       </Title>
 
+      <motion.div
+        animate={{ opacity: isLangTransitioning ? 0 : 1, y: isLangTransitioning ? 4 : 0 }}
+        transition={{ duration: isLangTransitioning ? 0.13 : 0.20, ease: "easeInOut" }}
+        style={{ width: "100%" }}
+      >
       <Box
         style={{
           width: "100%",
           maxWidth: 1200,
+          margin: "0 auto",
           display: isMobile ? "flex" : "grid",
           flexDirection: isMobile ? "column" : undefined,
           gridTemplateColumns: isMobile
@@ -570,7 +588,7 @@ function App() {
                     ).toUpperCase()}
                   </Text>
                   <Group gap="xs">
-                    <LanguageSwitcher />
+                    <LanguageSwitcher onSwitch={handleLangSwitch} />
                     {indices && (
                       <Button
                         data-tour="share"
@@ -891,6 +909,7 @@ function App() {
         {/* Right gutter (desktop only) */}
         {!isMobile && <Box />}
       </Box>
+      </motion.div>
     </Box>
         </motion.div>
       )}
