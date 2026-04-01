@@ -169,14 +169,17 @@ export function RequirementsStep({
 }: RequirementsStepProps) {
   const [completedOpen, setCompletedOpen] = useState(false);
   const openFnsRef = useRef(new Map<string, () => void>());
-  const registryRef = useRef<ExpandRegistry>({
-    register(key, open) {
-      openFnsRef.current.set(key, open);
-    },
-    unregister(key) {
-      openFnsRef.current.delete(key);
-    },
-  });
+  const registry = useMemo<ExpandRegistry>(
+    () => ({
+      register(key, open) {
+        openFnsRef.current.set(key, open);
+      },
+      unregister(key) {
+        openFnsRef.current.delete(key);
+      },
+    }),
+    [],
+  );
 
   const openByKeys = (keys: string[]) => {
     for (const key of keys) openFnsRef.current.get(key)?.();
@@ -392,7 +395,7 @@ export function RequirementsStep({
         </Alert>
       )}
 
-      <ExpandRegistryContext.Provider value={registryRef.current}>
+      <ExpandRegistryContext.Provider value={registry}>
         <Stack gap="md">
           {hasRemaining ? (
             incompleteNodes.map((node, idx) => {

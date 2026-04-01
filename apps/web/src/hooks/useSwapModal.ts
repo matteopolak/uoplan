@@ -67,18 +67,13 @@ export function useSwapModal(
 
   // Load candidates when modal opens
   useEffect(() => {
-    if (!swapModal) {
-      setSwapResult(EMPTY_SWAP_RESULT);
-      setLoading(false);
-      setQuery("");
-      return;
-    }
-    setLoading(true);
-    setSwapResult(EMPTY_SWAP_RESULT);
-    setQuery("");
+    if (!swapModal) return;
 
     // Defer to let modal paint before heavier work
     const t = window.setTimeout(() => {
+      setLoading(true);
+      setSwapResult(EMPTY_SWAP_RESULT);
+      setQuery("");
       const next = getSwapCandidates(selectedIndex, swapModal.enrollmentIndex);
       setSwapResult(next);
       setLoading(false);
@@ -119,12 +114,18 @@ export function useSwapModal(
   const openModal = useCallback(
     (enrollmentIndex: number, courseCode: string) => {
       setSwapModal({ enrollmentIndex, courseCode });
+      setSwapResult(EMPTY_SWAP_RESULT);
+      setLoading(true);
+      setQuery("");
     },
     []
   );
 
   const closeModal = useCallback(() => {
     setSwapModal(null);
+    setSwapResult(EMPTY_SWAP_RESULT);
+    setLoading(false);
+    setQuery("");
   }, []);
 
   return {

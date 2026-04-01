@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { Alert, Stack, Text } from "@mantine/core";
 import type { RequirementWithStatus } from "schedule";
 import { ExpandRegistryContext, getStableNodeKey, type ExpandRegistry } from "./RequirementNode";
@@ -22,14 +22,17 @@ export function OptionsStep({
   onClearOption,
 }: OptionsStepProps) {
   const openFnsRef = useRef(new Map<string, () => void>());
-  const registryRef = useRef<ExpandRegistry>({
-    register(key, open) {
-      openFnsRef.current.set(key, open);
-    },
-    unregister(key) {
-      openFnsRef.current.delete(key);
-    },
-  });
+  const registry = useMemo<ExpandRegistry>(
+    () => ({
+      register(key, open) {
+        openFnsRef.current.set(key, open);
+      },
+      unregister(key) {
+        openFnsRef.current.delete(key);
+      },
+    }),
+    [],
+  );
 
   const completedCoursesSet = new Set(completedCourses);
 
@@ -54,7 +57,7 @@ export function OptionsStep({
         </Text>
       </Alert>
 
-      <ExpandRegistryContext.Provider value={registryRef.current}>
+      <ExpandRegistryContext.Provider value={registry}>
         <Stack gap="md">
           {relevantNodes.map((node, idx) => {
             const nodeKey = getStableNodeKey(node, `options:${idx}`);
