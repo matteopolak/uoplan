@@ -6,3 +6,4 @@ dist
 *.pdf
 .DS_Store
 .eslintcache
+*.tsbuildinfo

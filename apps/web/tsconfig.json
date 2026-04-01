@@ -6,6 +6,6 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src", "vite.config.ts", "lingui.config.ts", "eslint.config.ts"],
+  "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }, { "path": "../../packages/schemas" }]
 }
