@@ -62,14 +62,17 @@ export function AssignStep({
 }: AssignStepProps) {
   const [completedOpen, setCompletedOpen] = useState(false);
   const openFnsRef = useRef(new Map<string, () => void>());
-  const registryRef = useRef<ExpandRegistry>({
-    register(key, open) {
-      openFnsRef.current.set(key, open);
-    },
-    unregister(key) {
-      openFnsRef.current.delete(key);
-    },
-  });
+  const registry = useMemo<ExpandRegistry>(
+    () => ({
+      register(key, open) {
+        openFnsRef.current.set(key, open);
+      },
+      unregister(key) {
+        openFnsRef.current.delete(key);
+      },
+    }),
+    [],
+  );
 
   const completedSet = new Set(completedCourses);
   const prereqEligible = new Set(prereqEligibleCourses);
@@ -169,7 +172,7 @@ export function AssignStep({
         </Text>
       </Alert>
 
-      <ExpandRegistryContext.Provider value={registryRef.current}>
+      <ExpandRegistryContext.Provider value={registry}>
         <Stack gap="md">
           {hasRemaining ? (
             incompleteNodes.map((node, idx) => {

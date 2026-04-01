@@ -201,7 +201,6 @@ export function ScheduleMorphOverlay({
   phantoms,
   onComplete,
 }: ScheduleMorphOverlayProps) {
-  const phantomsRef = useRef<Phantom[]>([]);
   const remainingRef = useRef(0);
 
   const handleOne = useCallback(() => {
@@ -211,12 +210,11 @@ export function ScheduleMorphOverlay({
     }
   }, [onComplete]);
 
-  if (phantoms.length === 0) return null;
-
-  if (phantomsRef.current !== phantoms) {
-    phantomsRef.current = phantoms;
+  useEffect(() => {
     remainingRef.current = phantoms.length;
-  }
+  }, [phantoms]);
+
+  if (phantoms.length === 0) return null;
 
   return createPortal(
     <>

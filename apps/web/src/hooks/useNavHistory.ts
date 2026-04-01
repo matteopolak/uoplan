@@ -1,17 +1,22 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { WizardStep } from "../lib/wizardSteps";
 
 type NavHistoryState = {
   step: WizardStep;
   showCalendar: boolean;
+  furthestStep: WizardStep;
 };
 
 function getInitialNavState(): NavHistoryState {
   const hs = window.history.state as NavHistoryState | null;
   if (hs != null && typeof hs.step === "number") {
-    return { step: hs.step, showCalendar: hs.showCalendar ?? false };
+    return {
+      step: hs.step,
+      showCalendar: hs.showCalendar ?? false,
+      furthestStep: hs.furthestStep ?? hs.step,
+    };
   }
-  return { step: 0, showCalendar: false };
+  return { step: 0, showCalendar: false, furthestStep: 0 };
 }
 
 /**
@@ -24,22 +29,19 @@ function getInitialNavState(): NavHistoryState {
 export function useNavHistory() {
   const [state, setStateInternal] =
     useState<NavHistoryState>(getInitialNavState);
-  const stateRef = useRef(state);
-  stateRef.current = state;
 
-  // Ensure the initial history entry always carries our state shape so that
-  // a popstate fired back to the very first entry can still be handled.
+  // Keep the current history entry synchronized with our state shape so a
+  // popstate fired back to any entry can still be handled.
   useEffect(() => {
     window.history.replaceState(
       {
-        step: stateRef.current.step,
-        showCalendar: stateRef.current.showCalendar,
+        step: state.step,
+        showCalendar: state.showCalendar,
+        furthestStep: state.furthestStep,
       },
       "",
     );
-    // Intentionally run only once on mount.
-     
-  }, []);
+  }, [state.furthestStep, state.showCalendar, state.step]);
 
   // Sync React state when the browser navigates back or forward.
   useEffect(() => {
@@ -49,6 +51,7 @@ export function useNavHistory() {
         setStateInternal({
           step: s.step,
           showCalendar: s.showCalendar ?? false,
+          furthestStep: s.furthestStep ?? s.step,
         });
       }
     };
@@ -63,13 +66,19 @@ export function useNavHistory() {
    */
   const setActive = useCallback(
     (stepOrUpdater: number | ((prev: number) => number)) => {
-      const step =
-        typeof stepOrUpdater === "function"
-          ? stepOrUpdater(stateRef.current.step)
-          : stepOrUpdater;
-      const newState: NavHistoryState = { step, showCalendar: false };
-      window.history.pushState(newState, "");
-      setStateInternal(newState);
+      setStateInternal((prev) => {
+        const step =
+          typeof stepOrUpdater === "function"
+            ? stepOrUpdater(prev.step)
+            : stepOrUpdater;
+        const newState: NavHistoryState = {
+          step,
+          showCalendar: false,
+          furthestStep: Math.max(prev.furthestStep, step) as WizardStep,
+        };
+        window.history.pushState(newState, "");
+        return newState;
+      });
     },
     [],
   );
@@ -79,9 +88,11 @@ export function useNavHistory() {
    * that hiding the calendar returns to the same step.
    */
   const setShowCalendar = useCallback((showCalendar: boolean) => {
-    const newState: NavHistoryState = { ...stateRef.current, showCalendar };
-    window.history.pushState(newState, "");
-    setStateInternal(newState);
+    setStateInternal((prev) => {
+      const newState: NavHistoryState = { ...prev, showCalendar };
+      window.history.pushState(newState, "");
+      return newState;
+    });
   }, []);
 
   /**
@@ -89,7 +100,7 @@ export function useNavHistory() {
    * the reset itself doesn't become a navigable history entry.
    */
   const resetNav = useCallback(() => {
-    const newState: NavHistoryState = { step: 0, showCalendar: false };
+    const newState: NavHistoryState = { step: 0, showCalendar: false, furthestStep: 0 };
     window.history.replaceState(newState, "");
     setStateInternal(newState);
   }, []);
@@ -99,14 +110,21 @@ export function useNavHistory() {
    * Use when correcting an invalid step index (e.g. skipped steps).
    */
   const replaceActive = useCallback((step: number) => {
-    const newState: NavHistoryState = { step, showCalendar: false };
-    window.history.replaceState(newState, "");
-    setStateInternal(newState);
+    setStateInternal((prev) => {
+      const newState: NavHistoryState = {
+        step,
+        showCalendar: false,
+        furthestStep: Math.max(prev.furthestStep, step) as WizardStep,
+      };
+      window.history.replaceState(newState, "");
+      return newState;
+    });
   }, []);
 
   return {
     active: state.step,
     showCalendar: state.showCalendar,
+    furthestStep: state.furthestStep,
     setActive,
     replaceActive,
     setShowCalendar,

@@ -159,7 +159,15 @@ function App() {
   const setGenerationCompressedSchedule = useAppStore((s) => s.setGenerationCompressedSchedule);
   const resetToDefault = useAppStore((s) => s.resetToDefault);
 
-  const { active, setActive, replaceActive, showCalendar, setShowCalendar, resetNav } =
+  const {
+    active,
+    setActive,
+    replaceActive,
+    showCalendar,
+    setShowCalendar,
+    resetNav,
+    furthestStep,
+  } =
     useNavHistory();
   const [generating, setGenerating] = useState(false);
   const [resetModalOpen, setResetModalOpen] = useState(false);
@@ -229,14 +237,9 @@ function App() {
   );
   const visibleStepCount = navVisibleStepIndices.length;
 
-  const [furthestActualStep, setFurthestActualStep] = useState(0);
-  useEffect(() => {
-    setFurthestActualStep((m) => Math.max(m, effectiveActive));
-  }, [effectiveActive]);
-
   const sidebarFurthestDisplayIndex = useMemo(
-    () => furthestReachedDisplayIndex(ALL_WIZARD_STEP_INDICES, furthestActualStep),
-    [furthestActualStep],
+    () => furthestReachedDisplayIndex(ALL_WIZARD_STEP_INDICES, furthestStep),
+    [furthestStep],
   );
 
   useEffect(() => {
@@ -259,6 +262,7 @@ function App() {
   } | null>(null);
 
   useEffect(() => {
+    let unlockCueTimer: number | null = null;
     if (prevStepProgressRef.current === null) {
       prevStepProgressRef.current = {
         step: effectiveActive,
@@ -275,11 +279,14 @@ function App() {
       return;
     }
     if (!was.canProceed && canProceedFromStep && effectiveActive !== WizardStep.Generate) {
-      setNextUnlockCue(true);
+      unlockCueTimer = window.setTimeout(() => setNextUnlockCue(true), 0);
     }
     prevStepProgressRef.current = {
       step: effectiveActive,
       canProceed: canProceedFromStep,
+    };
+    return () => {
+      if (unlockCueTimer !== null) window.clearTimeout(unlockCueTimer);
     };
   }, [effectiveActive, canProceedFromStep]);
 
@@ -438,7 +445,6 @@ function App() {
         onConfirm={() => {
           resetToDefault();
           resetNav();
-          setFurthestActualStep(0);
           setResetModalOpen(false);
         }}
       />
@@ -541,7 +547,7 @@ function App() {
             visibleStepIndices={ALL_WIZARD_STEP_INDICES}
             active={effectiveActive}
             furthestDisplayIndex={sidebarFurthestDisplayIndex}
-            furthestActualStep={furthestActualStep}
+            furthestActualStep={furthestStep}
             needsOptionsStep={needsOptionsStep}
             needsAssignStep={needsAssignStep}
             onStepClick={setActive}
