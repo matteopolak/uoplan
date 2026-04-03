@@ -11,7 +11,14 @@ import {
   SchedulesDataSchema,
   TermsDataSchema,
 } from "schemas";
-import { buildDataCache, normalizeCourseCode, withExtraCourses, isOptCourse } from "schedule";
+import {
+  applyLatestAliasesToMergedCourses,
+  buildDataCache,
+  normalizeCourseCode,
+  removeMergedCoursesSupersededByAliases,
+  withExtraCourses,
+  isOptCourse,
+} from "schedule";
 import { buildProfessorRatingsMap } from "schedule";
 import { parseStateFromUrl, peekTermAndYear, peekTermAndYearFromBase64, decodeState, decodeStateFromBase64, urlToSlug } from "schedule";
 import { recomputeStateForProgram } from "../requirementCompute";
@@ -55,7 +62,10 @@ function getMergedCatalogue(
     merged.set(key, course);
   }
 
-  return { ...catalogue, courses: Array.from(merged.values()) };
+  const mergedList = Array.from(merged.values());
+  const withAliases = applyLatestAliasesToMergedCourses(catalogue.courses, mergedList);
+  const courses = removeMergedCoursesSupersededByAliases(catalogue.courses, withAliases);
+  return { ...catalogue, courses };
 }
 
 function getManifestYears(input: unknown): number[] {

@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { buildDataCache, normalizeCourseCode } from '../dataCache';
+import {
+  applyLatestAliasesToMergedCourses,
+  buildDataCache,
+  normalizeCourseCode,
+  removeMergedCoursesSupersededByAliases,
+} from '../dataCache';
 import type { Catalogue } from 'schemas';
 import type { SchedulesData } from 'schemas';
 
@@ -80,5 +85,67 @@ describe('buildDataCache', () => {
   it('getCoursesByDiscipline returns empty for unknown discipline', () => {
     const xyz = cache.getCoursesByDiscipline('XYZ');
     expect(xyz).toEqual([]);
+  });
+});
+
+describe('applyLatestAliasesToMergedCourses', () => {
+  const latestSta = {
+    code: 'STA 2100',
+    title: 'Introduction to Statistics',
+    credits: 3,
+    description: '',
+    aliases: ['MAT 2375'],
+  };
+  const yearSta = {
+    code: 'STA 2100',
+    title: 'Introduction to Statistics',
+    credits: 3,
+    description: '',
+  };
+
+  it('copies aliases from the latest catalogue row onto merged course objects', () => {
+    const merged = applyLatestAliasesToMergedCourses([latestSta], [yearSta]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].aliases).toEqual(['MAT 2375']);
+  });
+
+  it('leaves merged courses unchanged when latest has no aliases field', () => {
+    const latestNoAlias = { ...latestSta };
+    delete (latestNoAlias as { aliases?: string[] }).aliases;
+    const merged = applyLatestAliasesToMergedCourses([latestNoAlias], [yearSta]);
+    expect(merged[0].aliases).toBeUndefined();
+  });
+});
+
+describe('removeMergedCoursesSupersededByAliases', () => {
+  const latestSta = {
+    code: 'STA 2100',
+    title: 'Introduction to Statistics',
+    credits: 3,
+    description: '',
+    aliases: ['MAT 2375'],
+  };
+  const legacyMat = {
+    code: 'MAT 2375',
+    title: 'Old title',
+    credits: 3,
+    description: '',
+  };
+
+  it('drops merged rows whose code is only an alias on the latest catalogue', () => {
+    const merged = [legacyMat, latestSta];
+    const out = removeMergedCoursesSupersededByAliases([latestSta], merged);
+    expect(out.map((c) => c.code)).toEqual(['STA 2100']);
+  });
+
+  it('keeps courses that are not listed as aliases on latest', () => {
+    const other = {
+      code: 'MAT 1341',
+      title: 'Calculus',
+      credits: 3,
+      description: '',
+    };
+    const out = removeMergedCoursesSupersededByAliases([latestSta], [other, latestSta]);
+    expect(out.map((c) => c.code).sort()).toEqual(['MAT 1341', 'STA 2100']);
   });
 });

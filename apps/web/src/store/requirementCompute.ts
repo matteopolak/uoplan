@@ -1,4 +1,4 @@
-import type { Program, ProgramRequirement } from 'schemas'
+import type { Program, ProgramRequirement } from "schemas";
 import type {
   RemainingRequirement,
   RequirementWithStatus,

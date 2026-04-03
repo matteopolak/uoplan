@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "scrape:catalogue": "node src/scraper.ts",
+    "backfill:aliases": "node src/backfillAliases.ts",
     "scrape:schedules": "node src/schedule_scraper.ts",
     "scrape:schedules:terms": "TERMS_ONLY=1 node src/schedule_scraper.ts",
     "scrape:ratemyprofessors": "node src/ratemyprofessors_scraper.ts",

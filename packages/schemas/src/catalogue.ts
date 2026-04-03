@@ -47,6 +47,8 @@ export const CourseSchema = z.object({
   credits: z.number(),
   description: z.string(),
   component: z.string().optional(),
+  /** Legacy course codes (e.g. from "Previously …"); not separate catalogue rows. */
+  aliases: z.array(z.string()).optional(),
   // Normalized prerequisite sentence from the catalogue page, if any.
   prereqText: z.string().optional(),
   // Parsed prerequisite tree, mirroring the scraper's CoursePrereqNode.
