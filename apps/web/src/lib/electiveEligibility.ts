@@ -1,9 +1,9 @@
 import { getCourseLevel } from "schedule";
 
 export const MAX_ELECTIVE_LEVEL = 4000;
-export const DEFAULT_BASIC_ELECTIVE_LEVEL_BUCKETS = [1000, 2000, 3000, 4000];
-export const DEFAULT_BASIC_LEVEL_BUCKETS = ["undergrad", "grad"] as const;
-export const DEFAULT_BASIC_LANGUAGE_BUCKETS = ["en", "fr", "other"] as const;
+export const DEFAULT_BASIC_ELECTIVE_LEVEL_BUCKETS = [1000];
+export const DEFAULT_BASIC_LEVEL_BUCKETS = ["undergrad"] as const;
+export const DEFAULT_BASIC_LANGUAGE_BUCKETS = ["en"] as const;
 
 const ELECTIVE_REQUIREMENT_TYPES = new Set([
   "discipline_elective",
