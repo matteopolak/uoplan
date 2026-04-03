@@ -70,7 +70,7 @@ msgid "basicCalendar.downloadIcs"
 msgstr "Download ICS"
 
 msgid "basicCalendar.electives.label"
-msgstr "Number of Electives"
+msgstr "Add Electives"
 
 msgid "basicCalendar.exclude.label"
 msgstr "Exclude Elective Subjects"
