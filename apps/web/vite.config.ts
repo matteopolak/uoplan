@@ -8,6 +8,7 @@ export default defineConfig({
     __COMMIT_HASH__: JSON.stringify(
       (process.env.CF_PAGES_COMMIT_SHA || 'dev').slice(0, 7)
     ),
+    __BRANCH_NAME__: JSON.stringify(process.env.CF_PAGES_BRANCH || ''),
   },
   test: {
     globals: true,

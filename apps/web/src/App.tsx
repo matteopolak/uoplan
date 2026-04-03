@@ -904,6 +904,9 @@ function App() {
           {/* Footer */}
           <Box style={{ marginTop: 16, textAlign: "center" }}>
             <Text size="xs" c="dimmed">
+              {typeof __BRANCH_NAME__ !== "undefined" && __BRANCH_NAME__
+                ? `${__BRANCH_NAME__} `
+                : ""}
               {typeof __COMMIT_HASH__ !== "undefined" ? __COMMIT_HASH__ : "dev"}
               {" • "}
               <Text
