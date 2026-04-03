@@ -69,6 +69,8 @@ export function SwapModalContent({
             enrollmentIndex={modalState.enrollmentIndex}
             cache={cache}
             professorRatings={professorRatings}
+            componentSection={modalState.componentSection}
+            virtual={modalState.virtual}
           />
         ) : (
           <Text size="sm" c="dimmed">

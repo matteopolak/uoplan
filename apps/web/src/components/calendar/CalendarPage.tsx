@@ -30,6 +30,7 @@ import { useShareUrl } from "../../hooks/useShareUrl";
 import { useTimetableDateRangeFromSchedule } from "../../hooks/useTimetableDateRange";
 import { tr } from "../../i18n";
 import { LanguageSwitcher } from "../shared/LanguageSwitcher";
+import { CALENDAR_SIDEBAR_WIDTH_PX } from "./calendarLayout";
 
 interface CalendarPageProps {
   onBack: () => void;
@@ -125,7 +126,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
 
   const handleGenerateOneMore = () => {
     setGeneratingOneMore(true);
-    generateSchedules({ appendFirstOnly: true }).then(() => {
+    void generateSchedules({ appendFirstOnly: true }).then(() => {
       setGeneratingOneMore(false);
       // Trigger animation to the newly appended schedule
       const newIdx = useAppStore.getState().selectedScheduleIndex;
@@ -173,7 +174,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
       {/* Sidebar */}
       <Box
         style={{
-          width: 360,
+          width: CALENDAR_SIDEBAR_WIDTH_PX,
           flexShrink: 0,
           padding: "24px 20px",
           borderRight: "2px solid #2C2E33",

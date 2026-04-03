@@ -20,6 +20,8 @@ export interface CalendarEvent {
   startMinutes: number;
   endMinutes: number;
   componentSection: string;
+  /** True when this specific meeting time is virtual (online). */
+  virtual: boolean;
   professor: string;
   professorRatingValue?: number | null;
   professorRatingDetails?: Array<{ id?: string; legacyId?: number; name: string; rating: number; numRatings: number }>;
@@ -84,6 +86,7 @@ export function useCalendarEvents(
             startMinutes: t.startMinutes,
             endMinutes: t.endMinutes,
             componentSection,
+            virtual: Boolean(t.virtual),
             professor,
             professorRatingValue,
             professorRatingDetails,

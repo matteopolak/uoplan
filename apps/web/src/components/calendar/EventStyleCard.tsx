@@ -1,6 +1,7 @@
 import { Box, Tooltip } from "@mantine/core";
 import type { DataCache } from "schedule";
 import type { CourseEnrollment } from "schedule";
+import type { ComponentSection } from "schemas";
 import {
   getRatingsForInstructors,
   getRatingDetailsForInstructors,
@@ -14,42 +15,64 @@ import {
   ratingColorToCssVar,
 } from "schedule";
 import { ProfessorRatingTooltipLabel } from "./ProfessorRatingTooltipLabel";
+import { tr } from "../../i18n";
 
 interface EventStyleCardProps {
   enrollment: CourseEnrollment;
   enrollmentIndex: number;
   cache: DataCache | null;
   professorRatings: ProfessorRatingsMap | null;
+  /** When set (e.g. from clicked calendar block), matches component/section and virtual label. */
+  componentSection?: string;
+  virtual?: boolean;
 }
 
 /**
  * Renders a single enrollment in the same style as calendar events.
  * Used in the swap modal to show the current course.
  */
+function pickSectionEntry(
+  enrollment: CourseEnrollment,
+  componentSectionFromClick: string | undefined,
+): [string, { section: ComponentSection }] | undefined {
+  const entries = Object.entries(enrollment.sectionCombo);
+  if (entries.length === 0) return undefined;
+  if (!componentSectionFromClick) return entries[0];
+  const sep = " - ";
+  const i = componentSectionFromClick.indexOf(sep);
+  const comp = i >= 0 ? componentSectionFromClick.slice(0, i) : null;
+  if (comp && enrollment.sectionCombo[comp]) {
+    return [comp, enrollment.sectionCombo[comp]];
+  }
+  return entries[0];
+}
+
 export function EventStyleCard({
   enrollment,
   enrollmentIndex,
   cache,
   professorRatings,
+  componentSection: componentSectionProp,
+  virtual,
 }: EventStyleCardProps) {
   const courseTitle = cache?.getCourse(enrollment.courseCode)?.title ?? "";
   const heading = courseTitle
     ? `${enrollment.courseCode} — ${courseTitle}`
     : enrollment.courseCode;
 
-  const firstEntry = Object.entries(enrollment.sectionCombo)[0];
-  const componentSection = firstEntry
-    ? `${firstEntry[0]} - ${firstEntry[1].section.sectionCode ?? firstEntry[1].section.section ?? ""}`
+  const picked = pickSectionEntry(enrollment, componentSectionProp);
+  const componentSection = picked
+    ? `${picked[0]} - ${picked[1].section.sectionCode ?? picked[1].section.section ?? ""}`
     : "—";
-  const professor = firstEntry
-    ? [...new Set(firstEntry[1].section.instructors ?? [])]
+  const professor = picked
+    ? [...new Set(picked[1].section.instructors ?? [])]
         .filter(Boolean)
         .join(", ") || "—"
     : "—";
 
-  const ratings = firstEntry
+  const ratings = picked
     ? getRatingsForInstructors(
-        firstEntry[1].section.instructors ?? [],
+        picked[1].section.instructors ?? [],
         professorRatings
       )
     : [];
@@ -58,9 +81,9 @@ export function EventStyleCard({
       ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) /
         10
       : null;
-  const ratingDetails = firstEntry
+  const ratingDetails = picked
     ? getRatingDetailsForInstructors(
-        firstEntry[1].section.instructors ?? [],
+        picked[1].section.instructors ?? [],
         professorRatings
       )
     : [];
@@ -89,12 +112,22 @@ export function EventStyleCard({
         >
           {heading}
         </span>
-        <span
-          className="fc-uoplan-event-type"
-          style={{ fontSize: "0.85em", opacity: 0.9 }}
-        >
-          {componentSection}
-        </span>
+        <div className="fc-uoplan-event-type-row">
+          <span
+            className="fc-uoplan-event-type"
+            style={{ fontSize: "0.85em", opacity: 0.9 }}
+          >
+            {componentSection}
+          </span>
+          {virtual && (
+            <span
+              className="fc-uoplan-event-virtual"
+              style={{ fontSize: "0.85em", opacity: 0.9 }}
+            >
+              {tr("calendar.event.virtual")}
+            </span>
+          )}
+        </div>
         <span
           className="fc-uoplan-event-professor"
           style={{
