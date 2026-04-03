@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import * as cheerio from 'cheerio';
 import pLimit from 'p-limit';
-import got, { type Got } from 'got';
+import { type Got, got } from 'got';
 import { CookieJar } from 'tough-cookie';
 
 const BASE_URL =

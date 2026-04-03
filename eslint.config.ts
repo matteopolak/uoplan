@@ -21,9 +21,9 @@ export const baseConfig = defineConfig([
       parserOptions: {
         projectService: {
           allowDefaultProject: [
-            "eslint.config.ts",
-            "apps/*/eslint.config.ts",
-            "packages/*/eslint.config.ts",
+            "*.config.ts",
+            "apps/*/*.config.ts",
+            "packages/*/*.config.ts",
           ],
         },
       },

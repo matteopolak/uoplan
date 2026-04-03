@@ -39,7 +39,6 @@ export function buildPrereqContext(
   studentPrograms: string[] = [],
 ): PrereqContext {
   const aliasToCanonical = buildAliasToCanonicalMap(cache);
-  console.log(aliasToCanonical);
   const taken: TakenCourse[] = [];
   let totalCredits = 0;
   const disciplineCredits: Record<string, number> = {};
@@ -48,7 +47,6 @@ export function buildPrereqContext(
   for (const raw of completedCourseCodes) {
     const norm = normalizeCourseCode(raw);
     let course = cache.getCourse(norm);
-    console.log(course);
     if (!course) {
       const mapped = aliasToCanonical.get(norm);
       if (mapped) course = cache.getCourse(mapped);
@@ -73,8 +71,6 @@ export function buildPrereqContext(
       disciplineCredits[discipline] = (disciplineCredits[discipline] ?? 0) + credits;
     }
   }
-
-  console.log(taken);
 
   return { taken, totalCredits, disciplineCredits, studentPrograms };
 }

@@ -129,6 +129,24 @@ function normalizeLevelOrDisjunction(text: string): string {
 }
 
 /**
+ * "12 course units in CSI or SDS" shares one credit pool across disciplines — wrap so
+ * extractDisciplines finds them and tryMergeSharedCreditDisciplineOr can merge.
+ */
+function normalizeDisciplineOrInCredits(text: string): string {
+  return text
+    .replace(/\bin\s+([A-Z]{3,4})\s+or\s+([A-Z]{3,4})\b/gi, 'in ($1) or ($2)')
+    .replace(/\bdans\s+([A-Z]{3,4})\s+ou\s+([A-Z]{3,4})\b/gi, 'dans ($1) ou ($2)');
+}
+
+function shouldSplitPrereqAndAt(left: string, right: string): boolean {
+  const leftTrim = left.trim();
+  const rightTrim = right.trim();
+  if (leftTrim.endsWith(')')) return true;
+  if (/^\d+\s/.test(rightTrim)) return true;
+  return false;
+}
+
+/**
  * Extracts 1000/2000/… level numbers from prerequisite text (English + French).
  * Replaces the narrower `at the … level`-only helper used for program electives.
  */
@@ -259,6 +277,33 @@ function splitTopLevel(text: string, separators: RegExp): string[] {
   return parts;
 }
 
+/** Remove one outer `(...)` layer when the whole string is a single balanced group. */
+function stripOuterParensOnce(inner: string): string | undefined {
+  if (!inner.startsWith('(') || !inner.endsWith(')')) return undefined;
+  let depth2 = 0;
+  let wrapsAll = true;
+  for (let i = 0; i < inner.length; i++) {
+    const ch = inner[i];
+    if (ch === '(') {
+      depth2++;
+    } else if (ch === ')') {
+      depth2--;
+      if (depth2 === 0 && i < inner.length - 1) {
+        wrapsAll = false;
+        break;
+      }
+    }
+    if (depth2 < 0) {
+      wrapsAll = false;
+      break;
+    }
+  }
+  if (wrapsAll && depth2 === 0) {
+    return inner.slice(1, -1).trim();
+  }
+  return undefined;
+}
+
 /**
  * "18 units in (CSI) or software engineering (SEG) at the … level" shares one credit pool across
  * discipline branches — do not emit a separate or_group per `or`.
@@ -376,31 +421,42 @@ function parsePrereqClause(clause: string): CoursePrereqNode | undefined {
     }
   }
 
-  // If the whole clause is wrapped in a single pair of parentheses, strip them.
-  if (inner.startsWith('(') && inner.endsWith(')')) {
-    let depth2 = 0;
-    let wrapsAll = true;
-    for (let i = 0; i < inner.length; i++) {
-      const ch = inner[i];
-      if (ch === '(') {
-        depth2++;
-      } else if (ch === ')') {
-        depth2--;
-        if (depth2 === 0 && i < inner.length - 1) {
-          wrapsAll = false;
-          break;
-        }
-      }
-      if (depth2 < 0) {
-        wrapsAll = false;
+  // Split "((X) or Y) and 12 course units in …" / "SEG 2105 and 6 university course units …"
+  // at depth 0 so nested `or` inside parentheses is parsed before top-level discipline OR.
+  const andParts = splitTopLevel(inner, /\s+and\s+/i);
+  if (andParts.length > 1) {
+    let allBoundariesValid = true;
+    for (let i = 0; i < andParts.length - 1; i++) {
+      if (!shouldSplitPrereqAndAt(andParts[i], andParts[i + 1])) {
+        allBoundariesValid = false;
         break;
       }
     }
-    if (wrapsAll && depth2 === 0) {
-      inner = inner.slice(1, -1).trim();
-      if (!inner) return undefined;
+    if (allBoundariesValid) {
+      const children: CoursePrereqNode[] = [];
+      for (const part of andParts) {
+        const trimmed = part.trim();
+        if (!trimmed) continue;
+        const node = parsePrereqClause(trimmed);
+        if (node) children.push(node);
+      }
+      if (children.length === 0) return undefined;
+      if (children.length === 1) return children[0];
+      return {
+        type: 'and_group',
+        text: inner,
+        children,
+      };
     }
   }
+
+  // Strip redundant outer parentheses (e.g. `((MAT 2371, STA 2100) or STA 2391)` → inner OR at depth 0).
+  while (true) {
+    const peeled = stripOuterParensOnce(inner);
+    if (peeled === undefined || peeled === '') break;
+    inner = peeled;
+  }
+  if (!inner) return undefined;
 
   // Detect "X or Y for students enrolled in A (P1) or B (P2) programs or Z for all other students"
   const enrolledPattern =
@@ -428,7 +484,7 @@ function parsePrereqClause(clause: string): CoursePrereqNode | undefined {
   }
 
   const orRegex = /\s+(or|ou)\s+/i;
-  const innerForOr = normalizeLevelOrDisjunction(inner);
+  const innerForOr = normalizeDisciplineOrInCredits(normalizeLevelOrDisjunction(inner));
   const hasOr = orRegex.test(innerForOr);
 
   if (hasOr) {
@@ -518,7 +574,7 @@ function parsePrereqClause(clause: string): CoursePrereqNode | undefined {
   };
 }
 
-function parseCoursePrerequisites(text: string): CoursePrereqNode | undefined {
+export function parseCoursePrerequisites(text: string): CoursePrereqNode | undefined {
   const body = text.replace(/\s+/g, ' ').trim();
   if (!body) return undefined;
 

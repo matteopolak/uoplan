@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "vitest run",
     "scrape:catalogue": "node src/scraper.ts",
     "backfill:aliases": "node src/backfillAliases.ts",
     "scrape:schedules": "node src/schedule_scraper.ts",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
-    "@types/tough-cookie": "^4.0.5"
+    "@types/tough-cookie": "^4.0.5",
+    "vitest": "^4.1.0"
   }
 }

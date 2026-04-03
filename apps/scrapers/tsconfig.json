@@ -5,7 +5,10 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "esModuleInterop": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "allowImportingTsExtensions": true,
+    "noEmit": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
 }
