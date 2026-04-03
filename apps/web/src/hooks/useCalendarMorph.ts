@@ -6,6 +6,7 @@ export interface CapturedEvent {
   rect: DOMRect;
   heading: string;
   section: string;
+  virtual: boolean;
   time: string;
   professor: string;
   ratingColor: string;
@@ -14,6 +15,7 @@ export interface CapturedEvent {
 interface PhantomText {
   heading: string;
   section: string;
+  virtual: boolean;
   time: string;
   professor: string;
   ratingColor: string;
@@ -46,6 +48,7 @@ function toPhantomText(event: CapturedEvent): PhantomText {
   return {
     heading: event.heading,
     section: event.section,
+    virtual: event.virtual,
     time: event.time,
     professor: event.professor,
     ratingColor: event.ratingColor,
@@ -91,7 +94,18 @@ function captureEventPositions(container: HTMLElement | null): CapturedEvent[] {
         el.querySelector(".fc-uoplan-event-professor-name")?.textContent?.trim() ??
         "";
       const ratingColor = el.dataset.ratingColor ?? "";
-      captures.push({ courseCode, colorHex, rect, heading, section, time, professor, ratingColor });
+      const virtual = el.dataset.virtual === "true";
+      captures.push({
+        courseCode,
+        colorHex,
+        rect,
+        heading,
+        section,
+        virtual,
+        time,
+        professor,
+        ratingColor,
+      });
     }
   }
   return captures;

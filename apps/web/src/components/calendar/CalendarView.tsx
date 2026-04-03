@@ -70,7 +70,6 @@ export const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
       if (selectedIndex !== morph.displayedIndex && !morph.isHidingEvents) {
         morph.triggerTransition(selectedIndex);
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedIndex]);
 
     const swap = useSwapModal(getSwapCandidates, morph.displayedIndex, cache);
@@ -191,7 +190,10 @@ export const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
               eventContent={eventContent}
               eventClick={(info) => {
                 const ext = info.event.extendedProps as CalendarEvent;
-                swap.openModal(ext.enrollmentIndex, ext.courseCode);
+                swap.openModal(ext.enrollmentIndex, ext.courseCode, {
+                  virtual: ext.virtual,
+                  componentSection: ext.componentSection,
+                });
               }}
             />
           </div>

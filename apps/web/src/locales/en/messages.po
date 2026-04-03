@@ -126,6 +126,9 @@ msgstr "Back to setup"
 msgid "calendarView.empty"
 msgstr "No schedules generated yet. Complete the steps above and click Generate."
 
+msgid "calendar.event.virtual"
+msgstr "Virtual"
+
 msgid "calendarPage.downloadIcs"
 msgstr "Download ICS"
 

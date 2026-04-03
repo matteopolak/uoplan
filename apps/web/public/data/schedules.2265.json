@@ -357,7 +357,7 @@
                 "day": "We",
                 "startMinutes": 1140,
                 "endMinutes": 1310,
-                "virtual": false
+                "virtual": true
               }
             ],
             "instructors": [
