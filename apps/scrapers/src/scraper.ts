@@ -71,6 +71,7 @@ const CourseSchema = z.object({
   credits: z.number(),
   description: z.string(),
   component: z.string().optional(),
+  aliases: z.array(z.string()).optional(),
   prereqText: z.string().optional(),
   prerequisites: CoursePrereqNodeSchema.optional(),
 });
@@ -171,6 +172,42 @@ function extractCourseCodes(text: string): string[] {
     codes.push(`${m[1]} ${m[2]}`.replace(/\s+/, ' '));
   }
   return Array.from(new Set(codes));
+}
+
+function normalizeCodeKey(s: string): string {
+  return s.replace(/\s+/g, ' ').trim().toUpperCase();
+}
+
+/**
+ * Course codes from "Previously …" / "Antérieurement …" (legacy renumbering).
+ * Scans component and description; does not add standalone catalogue rows.
+ */
+function extractPreviouslyAliases(combined: string, ownCode: string): string[] {
+  const normalized = combined.replace(/\s+/g, ' ').trim();
+  if (!normalized) return [];
+  const ownKey = normalizeCodeKey(ownCode);
+  const re = /\b(?:Previously|Antérieurement)\s*:?\s*/gi;
+  const codes = new Set<string>();
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(normalized)) !== null) {
+    const rest = normalized.slice(m.index + m[0].length);
+    let segment: string;
+    const boundaryWithSentence = rest.match(
+      /^([\s\S]*?)(?=\.\s+(?:They|The|Students|Reserved|Priority|Consult|Supplemental|It |Also |The courses |Réservé|Les cours ))/,
+    );
+    if (boundaryWithSentence) {
+      segment = boundaryWithSentence[1];
+    } else {
+      const dotIdx = rest.indexOf('.');
+      segment = dotIdx === -1 ? rest : rest.slice(0, dotIdx);
+    }
+    let segmentTrim = segment.replace(/^\(\s*/, '').replace(/\s*\)\s*$/, '').trim();
+    segmentTrim = segmentTrim.replace(/\.\s*$/, '').trim();
+    for (const c of extractCourseCodes(segmentTrim)) {
+      if (normalizeCodeKey(c) !== ownKey) codes.add(c);
+    }
+  }
+  return Array.from(codes);
 }
 
 function extractPrereqSentence(raw: string): string | undefined {
@@ -743,12 +780,16 @@ async function scrapeCourses(url: string): Promise<Course[]> {
     const componentMatch = extraBlock.match(/(?:Course Component|Volet)\s*:\s*(.*)/i);
     const component = componentMatch ? componentMatch[1] : undefined;
 
+    const aliasSource = [component, descBlock].filter(Boolean).join(' ');
+    const aliases = extractPreviouslyAliases(aliasSource, code);
+
     courses.push(CourseSchema.parse({
       code,
       title,
       credits,
       description: descBlock,
       component,
+      ...(aliases.length > 0 ? { aliases } : {}),
       prereqText,
       prerequisites,
     }));

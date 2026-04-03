@@ -17,6 +17,43 @@ export interface DataCache {
 const isStageWorkTermCourse = isWorkTermCourse;
 
 /**
+ * After merging a first-year (or other) catalogue snapshot with the latest catalogue,
+ * copy each course's `aliases` from the latest rows when defined so the data cache
+ * and prerequisite alias map match current "Previously …" renumbering.
+ */
+export function applyLatestAliasesToMergedCourses(
+  latestCourses: readonly Course[],
+  mergedCourses: Course[],
+): Course[] {
+  const latestByCode = new Map(
+    latestCourses.map((c) => [normalizeCourseCode(c.code), c]),
+  );
+  return mergedCourses.map((course) => {
+    const latest = latestByCode.get(normalizeCourseCode(course.code));
+    if (!latest || latest.aliases === undefined) return course;
+    return { ...course, aliases: latest.aliases };
+  });
+}
+
+/**
+ * Drop merged catalogue rows whose codes are listed only as `aliases` on the latest
+ * catalogue (legacy renumbered courses). Keeps canonical rows so `getCourse` does not
+ * return duplicate courses for old and new codes.
+ */
+export function removeMergedCoursesSupersededByAliases(
+  latestCourses: readonly Course[],
+  mergedCourses: Course[],
+): Course[] {
+  const supersededCodes = new Set<string>();
+  for (const c of latestCourses) {
+    for (const a of c.aliases ?? []) {
+      supersededCodes.add(normalizeCourseCode(a));
+    }
+  }
+  return mergedCourses.filter((c) => !supersededCodes.has(normalizeCourseCode(c.code)));
+}
+
+/**
  * Wrap an existing DataCache with additional courses (e.g. OPT transfer credit stubs).
  * Extra courses are included in getCourse, getCoursesByDiscipline, and getAllCourses.
  */

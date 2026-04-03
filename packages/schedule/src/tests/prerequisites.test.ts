@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { Course, CoursePrereqNode, CourseSchedule } from 'schemas';
 import type { DataCache } from '../dataCache';
+import { normalizeCourseCode } from '../dataCache';
 import {
   buildPrereqContext,
   canTakeCourse,
@@ -22,21 +23,23 @@ function makeMockCache(
     credits: number;
     discipline?: string;
     prerequisites?: CoursePrereqNode;
+    aliases?: string[];
   }>,
 ): DataCache {
   const map = new Map<string, Course>();
   for (const c of courses) {
-    map.set(c.code, {
+    map.set(normalizeCourseCode(c.code), {
       code: c.code,
       title: c.code,
       credits: c.credits,
       description: '',
       prerequisites: c.prerequisites,
+      ...(c.aliases?.length ? { aliases: c.aliases } : {}),
     });
   }
   return {
     getCourse(code: string) {
-      return map.get(code);
+      return map.get(normalizeCourseCode(code));
     },
     getSchedule: (_code: string): CourseSchedule | undefined => undefined,
     getCoursesByDiscipline: () => [],
@@ -68,6 +71,30 @@ describe('prerequisitesContainNonCourse', () => {
 });
 
 describe('prerequisites evaluation', () => {
+  it('maps legacy alias codes to canonical in taken list for prerequisite checks', () => {
+    const cache = makeMockCache([
+      { code: 'STA 2100', credits: 3, aliases: ['MAT 2375'] },
+      { code: 'MAT 1341', credits: 3 },
+      {
+        code: 'CSI 4145',
+        credits: 3,
+        prerequisites: { type: 'course', code: 'STA 2100' },
+      },
+    ]);
+    const ctx = buildPrereqContext(['MAT 2375', 'MAT 1341'], cache);
+    expect(ctx.taken.some((t) => t.code === 'STA 2100')).toBe(true);
+    expect(canTakeCourse('CSI 4145', cache, ctx)).toBe(true);
+  });
+
+  it('deduplicates when both alias and canonical completed courses are listed', () => {
+    const cache = makeMockCache([
+      { code: 'STA 2100', credits: 3, aliases: ['MAT 2375'] },
+    ]);
+    const ctx = buildPrereqContext(['MAT 2375', 'STA 2100'], cache);
+    expect(ctx.taken.filter((t) => t.code === 'STA 2100').length).toBe(1);
+    expect(ctx.totalCredits).toBe(3);
+  });
+
   it('handles simple course prerequisite', () => {
     const node: CoursePrereqNode = { type: 'course', code: 'ADM 1100' };
     const cache = makeMockCache([{ code: 'ADM 1100', credits: 3 }]);

@@ -1,7 +1,14 @@
 import type { StateCreator } from "zustand";
 import type { AppStore } from "../types";
 import { recomputeStateForProgram, getDisciplineCodesForProgram } from "../requirementCompute";
-import { buildDataCache, normalizeCourseCode, withExtraCourses, isOptCourse } from "schedule";
+import {
+  applyLatestAliasesToMergedCourses,
+  buildDataCache,
+  normalizeCourseCode,
+  removeMergedCoursesSupersededByAliases,
+  withExtraCourses,
+  isOptCourse,
+} from "schedule";
 import type { Catalogue, Course } from "schemas";
 import { pruneOptionSelectionsForClear } from "../../components/requirements/requirementUtils";
 import {
@@ -36,7 +43,10 @@ function getMergedCatalogue(
     merged.set(key, course);
   }
 
-  return { ...catalogue, courses: Array.from(merged.values()) };
+  const mergedList = Array.from(merged.values());
+  const withAliases = applyLatestAliasesToMergedCourses(catalogue.courses, mergedList);
+  const courses = removeMergedCoursesSupersededByAliases(catalogue.courses, withAliases);
+  return { ...catalogue, courses };
 }
 
 export interface SelectionSlice {
