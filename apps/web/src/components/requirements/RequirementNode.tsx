@@ -317,7 +317,7 @@ export const RequirementNode = memo(function RequirementNode({
     if (!hasOptions || !registry) return;
     registry.register(nodeKey, () => setOpened(true));
     return () => registry.unregister(nodeKey);
-  }, []);
+  }, [hasOptions, registry, nodeKey]);
 
   const selected = node.requirementId
     ? (selectedPerRequirement[node.requirementId] ?? [])

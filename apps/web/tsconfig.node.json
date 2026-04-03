@@ -10,7 +10,6 @@
     "target": "ES2022"
   },
   "include": [
-    "vite.config.ts",
-    "lingui.config.ts"
+    "../../eslint.config.ts",
   ]
 }
