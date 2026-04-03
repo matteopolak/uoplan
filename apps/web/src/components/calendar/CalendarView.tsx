@@ -70,7 +70,7 @@ export const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
       if (selectedIndex !== morph.displayedIndex && !morph.isHidingEvents) {
         morph.triggerTransition(selectedIndex);
       }
-    }, [selectedIndex]);
+    }, [selectedIndex, morph]);
 
     const swap = useSwapModal(getSwapCandidates, morph.displayedIndex, cache);
 

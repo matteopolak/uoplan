@@ -9,7 +9,7 @@ export const baseConfig = defineConfig([
       "**/dist/**",
       "**/.turbo/**",
       "**/coverage/**",
-      "**/eslint.config.ts",
+      "**/*.config.ts",
       "apps/web/public/data/**",
     ],
   },
@@ -19,13 +19,7 @@ export const baseConfig = defineConfig([
     files: ["**/*.{ts,tsx,mts,cts}"],
     languageOptions: {
       parserOptions: {
-        projectService: {
-          allowDefaultProject: [
-            "*.config.ts",
-            "apps/*/*.config.ts",
-            "packages/*/*.config.ts",
-          ],
-        },
+        projectService: true
       },
     },
     rules: {
