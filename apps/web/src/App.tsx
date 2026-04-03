@@ -919,6 +919,15 @@ function App() {
               >
                 github.com/matteopolak/uoplan
               </Text>
+              {" • send feedback to "}
+              <Text
+                component="a"
+                href="mailto:admin@uoplan.party"
+                span
+                c="dimmed"
+              >
+                admin@uoplan.party
+              </Text>
             </Text>
           </Box>
         </Box>
