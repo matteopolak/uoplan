@@ -3,17 +3,25 @@ import {
   Alert,
   Box,
   Button,
+  Group,
+  Loader,
+  Modal,
+  MultiSelect,
+  NumberInput,
   Select,
   Stack,
   Text,
+  Textarea,
+  TextInput,
   Title,
-  MultiSelect,
-  NumberInput,
+  rem,
   type OptionsFilter,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import {
   IconMenu2,
+  IconRefresh,
+  IconShare,
   IconX,
 } from "@tabler/icons-react";
 import { useAppStore } from "../../store/appStore";
@@ -21,11 +29,12 @@ import { useShallow } from "zustand/react/shallow";
 import { CalendarView, type CalendarViewHandle } from "./CalendarView";
 import { GenerationErrorDetailBlocks } from "../GenerationErrorDetailBlocks";
 import { buildScheduleIcs, downloadTextFile, parseTranscriptPdf, isOptCourse, normalizeCourseCode } from "schedule";
-import { Loader } from "@mantine/core";
 import { createCourseOptions, renderCourseOption } from '../shared/CourseSelect';
 import { useTimetableDateRangeFromSchedule } from "../../hooks/useTimetableDateRange";
+import { useShareUrl } from "../../hooks/useShareUrl";
 import { tr } from "../../i18n";
 import { LanguageSwitcher } from "../shared/LanguageSwitcher";
+import { ResetModal } from "../shared/ResetModal";
 import { CourseFiltersCard } from "../requirements/CourseFiltersCard";
 import { CALENDAR_SIDEBAR_WIDTH_PX } from "./calendarLayout";
 
@@ -131,10 +140,15 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
   const setElectiveLevelBuckets = useAppStore((s) => s.setElectiveLevelBuckets);
   const setIncludeClosedComponents = useAppStore((s) => s.setIncludeClosedComponents);
   const setVirtualSectionsOnly = useAppStore((s) => s.setVirtualSectionsOnly);
+  const getShareUrl = useAppStore((s) => s.getShareUrl);
+  const getEncodedStateBase64 = useAppStore((s) => s.getEncodedStateBase64);
+  const resetToDefault = useAppStore((s) => s.resetToDefault);
 
   const morphRef = useRef<CalendarViewHandle>(null);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [resetModalOpen, setResetModalOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [transcriptError, setTranscriptError] = useState<string | null>(null);
@@ -143,6 +157,8 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
   const [timetableEndDate, setTimetableEndDate] = useState("");
 
   const isMobile = useMediaQuery("(max-width: 768px)");
+
+  const { shareCopied, handleCopyShare } = useShareUrl(getShareUrl);
 
   useTimetableDateRangeFromSchedule(
     generatedSchedules,
@@ -299,8 +315,6 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
           display: "flex",
           flexDirection: "column",
           gap: 24,
-          minHeight: 0,
-          maxHeight: "100%",
           overflowY: "auto",
           ...(isMobile
             ? {
@@ -344,8 +358,80 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
           {tr("basicCalendar.subtitle")}
         </Text>
 
-        <Stack gap="md">
+        <Group gap="xs" wrap="wrap">
           <LanguageSwitcher />
+          {indices && (
+            <Button
+              variant="filled"
+              color="dark"
+              size="sm"
+              radius={0}
+              leftSection={<IconShare size={14} />}
+              onClick={() => setShareModalOpen(true)}
+              style={{ backgroundColor: "#141517" }}
+            >
+              {tr("calendarPage.share")}
+            </Button>
+          )}
+          <Button
+            variant="filled"
+            color="dark"
+            size="sm"
+            radius={0}
+            leftSection={<IconRefresh size={14} />}
+            onClick={() => setResetModalOpen(true)}
+            style={{ backgroundColor: "#141517" }}
+          >
+            {tr("calendarPage.reset")}
+          </Button>
+        </Group>
+
+        <ResetModal
+          opened={resetModalOpen}
+          onClose={() => setResetModalOpen(false)}
+          onConfirm={() => {
+            resetToDefault();
+            setResetModalOpen(false);
+            onBack();
+          }}
+        />
+
+        {generatedSchedules.length > 0 && (
+          <Select
+            label={tr("basicCalendar.generatedSchedules")}
+            data={scheduleOptions}
+            value={String(
+              Math.min(selectedScheduleIndex, generatedSchedules.length - 1),
+            )}
+            onChange={(v) => {
+              const idx = Number(v ?? 0);
+              setSelectedScheduleIndex(idx);
+              morphRef.current?.animate(idx);
+            }}
+            size="md"
+            radius={0}
+          />
+        )}
+
+        <Button
+          size="sm"
+          color="violet"
+          variant="filled"
+          radius={0}
+          disabled={!dateRangeOk || !currentSchedule}
+          onClick={handleDownloadIcs}
+          styles={{
+            root: {
+              flexShrink: 0,
+              // Sidebar flex column was collapsing height; match Mantine sm control size.
+              minHeight: rem(32),
+            },
+          }}
+        >
+          {tr("basicCalendar.downloadIcs")}
+        </Button>
+
+        <Stack gap="md">
           <MultiSelect
             label={tr("basicCalendar.required.label")}
             placeholder={tr("basicCalendar.required.placeholder")}
@@ -414,11 +500,12 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
           />
 
           <Button
-            variant="filled"
+            variant="light"
             color="violet"
-            size="md"
+            size="sm"
             radius={0}
             loading={generating}
+            disabled={generating}
             onClick={handleGenerate}
           >
             {tr("basicCalendar.generate")}
@@ -438,36 +525,6 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
               summarizeEmptyPools={false}
             />
           </Alert>
-        )}
-
-        {generatedSchedules.length > 0 && (
-          <>
-            <Select
-              label={tr("basicCalendar.generatedSchedules")}
-              data={scheduleOptions}
-              value={String(
-                Math.min(selectedScheduleIndex, generatedSchedules.length - 1),
-              )}
-              onChange={(v) => {
-                const idx = Number(v ?? 0);
-                setSelectedScheduleIndex(idx);
-                morphRef.current?.animate(idx);
-              }}
-              size="md"
-              radius={0}
-            />
-
-            <Button
-              size="sm"
-              color="violet"
-              variant="filled"
-              radius={0}
-              disabled={!dateRangeOk}
-              onClick={handleDownloadIcs}
-            >
-              {tr("basicCalendar.downloadIcs")}
-            </Button>
-          </>
         )}
 
         <Box style={{ borderTop: "1px solid #2C2E33", paddingTop: 16, marginTop: 8 }}>
@@ -526,8 +583,6 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
           </Stack>
         </Box>
 
-        <Box style={{ flex: 1, minHeight: 24 }} />
-
         <Button
           variant="subtle"
           color="gray"
@@ -537,10 +592,41 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
             setWizardMode(null);
             onBack();
           }}
-          style={{ alignSelf: "stretch" }}
+          style={{ alignSelf: "stretch", flexShrink: 0, minHeight: 40 }}
         >
           {tr("basicCalendar.changeMode")}
         </Button>
+
+        <Modal
+          opened={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
+          title={tr("calendarPage.shareModal.title")}
+          size="md"
+        >
+          <Stack gap="md">
+            <Text size="sm" c="dimmed">
+              {tr("calendarPage.shareModal.description")}
+            </Text>
+            <TextInput
+              label={tr("calendarPage.shareModal.url")}
+              value={getShareUrl() ?? ""}
+              readOnly
+              size="sm"
+            />
+            <Textarea
+              label={tr("calendarPage.shareModal.stateCode")}
+              value={getEncodedStateBase64() ?? ""}
+              readOnly
+              minRows={3}
+              size="sm"
+            />
+            <Button variant="filled" onClick={handleCopyShare}>
+              {shareCopied
+                ? tr("calendarPage.shareModal.copied")
+                : tr("calendarPage.shareModal.copy")}
+            </Button>
+          </Stack>
+        </Modal>
       </Box>
 
       {/* Calendar area */}
