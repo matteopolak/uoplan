@@ -11,7 +11,7 @@ import type { DecodedState } from "schedule";
 import type { TimetableFailureDiagnostics } from "schedule";
 
 export interface GenerationErrorDetails {
-  emptyPools: Array<{ label: string; requirementId?: string }>;
+  emptyPools: Array<{ label: string; requirementId?: string; candidateCourses?: string[] }>;
   totalAvailable: number;
   totalNeeded: number;
   timetableFailure?: TimetableFailureDiagnostics;

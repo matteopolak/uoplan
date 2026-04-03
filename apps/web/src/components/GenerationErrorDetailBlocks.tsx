@@ -1,12 +1,16 @@
 import { List, Stack, Text } from "@mantine/core";
 import type { GenerationErrorDetails } from "../store/types";
 
-export function formatEmptyPoolLabel(p: {
-  label: string;
-  requirementId?: string;
-}): string {
-  const isGeneric = p.label === "course" || p.label === "or_course";
-  return isGeneric ? "Requirement" : p.label;
+function formatCourseList(courses: string[]): string {
+  if (courses.length === 0) return "";
+  if (courses.length === 1) return courses[0];
+  if (courses.length === 2) return `${courses[0]} or ${courses[1]}`;
+  if (courses.length > 5) {
+    return `${courses.slice(0, 5).join(", ")}, or ${courses.length - 5} more`;
+  }
+  const last = courses[courses.length - 1];
+  const rest = courses.slice(0, -1);
+  return `${rest.join(", ")}, or ${last}`;
 }
 
 function hasDetailContent(errorDetails: GenerationErrorDetails): boolean {
@@ -30,6 +34,44 @@ export function GenerationErrorDetailBlocks({
 
   const tf = errorDetails.timetableFailure;
 
+  const genericPools = errorDetails.emptyPools.filter(
+    (p) => p.label === "course" || p.label === "or_course"
+  );
+  const otherPools = errorDetails.emptyPools.filter(
+    (p) => p.label !== "course" && p.label !== "or_course"
+  );
+
+  const formattedEmptyPools: React.ReactNode[] = [];
+
+  if (genericPools.length > 0) {
+    const combinedCandidates = new Set<string>();
+    for (const p of genericPools) {
+      if (p.candidateCourses) {
+        for (const c of p.candidateCourses) {
+          combinedCandidates.add(c);
+        }
+      }
+    }
+    const candidates = Array.from(combinedCandidates).sort();
+    if (candidates.length > 0) {
+      formattedEmptyPools.push(
+        <List.Item key="generic">{formatCourseList(candidates)}</List.Item>
+      );
+    } else {
+      formattedEmptyPools.push(<List.Item key="generic">Requirement</List.Item>);
+    }
+  }
+
+  for (const p of otherPools) {
+    let text = p.label;
+    if (p.candidateCourses && p.candidateCourses.length > 0) {
+      text += ` ${formatCourseList(p.candidateCourses)}`;
+    }
+    formattedEmptyPools.push(
+      <List.Item key={p.requirementId ?? p.label}>{text}</List.Item>
+    );
+  }
+
   return (
     <Stack gap="sm" pt="xs">
       {errorDetails.totalAvailable < errorDetails.totalNeeded && (
@@ -50,11 +92,7 @@ export function GenerationErrorDetailBlocks({
             No eligible courses this term
           </Text>
           <List size="xs" spacing={4} withPadding>
-            {errorDetails.emptyPools.map((p) => (
-              <List.Item key={p.requirementId ?? p.label}>
-                {formatEmptyPoolLabel(p)}
-              </List.Item>
-            ))}
+            {formattedEmptyPools}
           </List>
         </>
       )}
