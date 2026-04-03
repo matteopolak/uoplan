@@ -42,6 +42,8 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
 
   const setCompletedCourses = useAppStore((s) => s.setCompletedCourses);
   const setStudentPrograms = useAppStore((s) => s.setStudentPrograms);
+  const minorProgram = useAppStore((s) => s.minorProgram);
+  const setMinorProgram = useAppStore((s) => s.setMinorProgram);
   const setFirstYear = useAppStore((s) => s.setFirstYear);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [transcriptError, setTranscriptError] = useState<string | null>(null);
@@ -57,27 +59,42 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
     [availableYears],
   );
 
-  const { uniquePrograms, valueToIndex, data } = useMemo(() => {
+  const { uniquePrograms, minors, valueToIndex, data, minorData, minorValueToIndex } = useMemo(() => {
     const seen = new Set<string>();
-    const unique: Program[] = [];
+    const uniquePrograms: Program[] = [];
+    const minors: Program[] = [];
+    
     for (const p of (yearCataloguePrograms ?? [])) {
       if (seen.has(p.url)) continue;
       seen.add(p.url);
-      unique.push(p);
+      uniquePrograms.push(p);
+      
+      const t = p.title.toLowerCase();
+      if (t.includes('minor in') || t.includes('advanced minor')) {
+        minors.push(p);
+      }
     }
     const valueToIndex = new Map<string, number>();
-    unique.forEach((p, i) => valueToIndex.set(p.url, i));
+    uniquePrograms.forEach((p, i) => valueToIndex.set(p.url, i));
+    
+    const minorValueToIndex = new Map<string, number>();
+    minors.forEach((p, i) => minorValueToIndex.set(p.url, i));
 
     const titleCount = new Map<string, number>();
-    const data = unique.map((p, i) => {
+    const data = uniquePrograms.map((p, i) => {
       const key = `program-${i}`;
       const count = (titleCount.get(p.title) ?? 0) + 1;
       titleCount.set(p.title, count);
       const label = count > 1 ? `${p.title} (${count})` : p.title;
       return { value: key, label };
     });
+    
+    const minorData = minors.map((p, i) => {
+      const key = `minor-${i}`;
+      return { value: key, label: p.title };
+    });
 
-    return { uniquePrograms: unique, valueToIndex, data };
+    return { uniquePrograms, minors, valueToIndex, data, minorData, minorValueToIndex };
   }, [yearCataloguePrograms]);
 
   const indexedCodes = useMemo(() => {
@@ -97,6 +114,9 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
 
   const selectedIndex = value !== null ? valueToIndex.get(value) ?? null : null;
   const selectValue = selectedIndex !== null ? `program-${selectedIndex}` : null;
+  
+  const minorSelectedIndex = minorProgram !== null ? minorValueToIndex.get(minorProgram.url) ?? null : null;
+  const minorSelectValue = minorSelectedIndex !== null ? `minor-${minorSelectedIndex}` : null;
 
   const handleTranscriptFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -188,6 +208,27 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
         nothingFoundMessage={tr("programStep.program.notFound")}
         size="md"
       />
+      {value && (
+        <Select
+          label="Select your minor (optional)"
+          placeholder="Search for a minor program..."
+          data={minorData}
+          value={minorSelectValue}
+          onChange={(v) => {
+            if (v == null) {
+              setMinorProgram(null);
+              return;
+            }
+            const i = parseInt(v.replace(/^minor-/, ''), 10);
+            const selected = minors[i] ?? null;
+            setMinorProgram(selected);
+          }}
+          searchable
+          clearable
+          nothingFoundMessage={tr("programStep.program.notFound")}
+          size="md"
+        />
+      )}
       {value && (
         <MultiSelect
           label={tr("programStep.disciplines.label")}

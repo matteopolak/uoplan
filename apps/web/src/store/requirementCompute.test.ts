@@ -100,6 +100,7 @@ describe("recomputeStateForProgram single-candidate schedule handling", () => {
 
     const state = recomputeStateForProgram(
       program,
+      null,
       [],
       cache,
       {},
@@ -120,6 +121,7 @@ describe("recomputeStateForProgram completed-course auto-assignment", () => {
     const cache = buildDataCache(overlappingElectivesCatalogue, emptySchedules);
     const state = recomputeStateForProgram(
       overlappingProgram,
+      null,
       ["CSI 3120", "CSI 4120"],
       cache,
       {},
@@ -195,6 +197,7 @@ describe("recomputeStateForProgram completed-course auto-assignment", () => {
 
     const state = recomputeStateForProgram(
       program,
+      null,
       ["SEG 3100"],
       cache,
       {},
@@ -259,6 +262,7 @@ describe("recomputeStateForProgram completed-course auto-assignment", () => {
 
     const beforeOption = recomputeStateForProgram(
       program,
+      null,
       ["SEG 3100"],
       cache,
       {},
@@ -278,6 +282,7 @@ describe("recomputeStateForProgram completed-course auto-assignment", () => {
 
     const afterOption = recomputeStateForProgram(
       program,
+      null,
       ["SEG 3100"],
       cache,
       beforeOption.selectedPerRequirement,

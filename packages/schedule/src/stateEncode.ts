@@ -32,7 +32,7 @@ function programSlug(p: Program): string {
   return (p as Program & { slug?: string }).slug ?? urlToSlug(p.url);
 }
 
-const VERSION = 8;
+const VERSION = 9;
 /** Oldest binary format still accepted by {@link decodeState}. */
 const MIN_DECODE_VERSION = 7;
 const MAX_U16 = 0xffff;
@@ -44,6 +44,7 @@ export interface EncodeInput {
   selectedTermId: string | null;
   firstYear: number | null;
   program: Program | null;
+  minorProgram: Program | null;
   completedCourses: string[];
   levelBuckets: CourseLevelBucket[];
   languageBuckets: CourseLanguageBucket[];
@@ -66,6 +67,7 @@ export interface DecodedState {
   selectedTermId: string | null;
   firstYear: number | null;
   program: Program | null;
+  minorProgram: Program | null;
   completedCourseCodes: string[];
   levelBuckets: CourseLevelBucket[];
   languageBuckets: CourseLanguageBucket[];
@@ -169,6 +171,12 @@ export function encodeState(
       : -1;
   if (input.program != null && programIndex < 0) return null;
 
+  const minorProgramIndex =
+    input.minorProgram != null
+      ? indices.programs.indexOf(programSlug(input.minorProgram))
+      : -1;
+  if (input.minorProgram != null && minorProgramIndex < 0) return null;
+
   const courseCodeToIndex = new Map<string, number>();
   indices.courses.forEach((code, i) => courseCodeToIndex.set(code, i));
 
@@ -188,7 +196,7 @@ export function encodeState(
     1 + // version
     1 + termIdBytes.length + // termId
     2 + // firstYear
-    2 + 2 + input.completedCourses.length * 2 + // programIndex + completed
+    2 + 2 + 2 + input.completedCourses.length * 2 + // programIndex + minorProgramIndex + completed
     1 + input.levelBuckets.length +
     1 + input.languageBuckets.length +
     1 + input.electiveLevelBuckets.length * 2 +
@@ -224,6 +232,7 @@ export function encodeState(
   off = writeU16(view, off, input.firstYear != null ? input.firstYear : 0);
 
   off = writeU16(view, off, programIndex === -1 ? MAX_U16 : programIndex);
+  off = writeU16(view, off, minorProgramIndex === -1 ? MAX_U16 : minorProgramIndex);
 
   const completed = input.completedCourses.map((c) => {
     if (isOptCourse(c)) return OPT_SENTINEL_BASE + Math.floor((getCourseLevel(c) ?? 1000) / 1000);
@@ -384,12 +393,28 @@ export function decodeState(
   const { value: programIndex, next: n1 } = readU16(view, off);
   off = n1;
 
+  let minorProgramIndex = MAX_U16;
+  if (version >= 9) {
+    if (off + 2 > buffer.length) return { error: 'Invalid state: truncated' };
+    const { value: mIdx, next: n1m } = readU16(view, off);
+    minorProgramIndex = mIdx;
+    off = n1m;
+  }
+
   let program: Program | null = null;
   if (programIndex !== MAX_U16 && programIndex < indices.programs.length) {
     const slug = indices.programs[programIndex];
     program = catalogue.programs.find((p) => programSlug(p) === slug) ?? null;
     if (program === null)
       return { error: 'Program from shared state is no longer in the catalogue' };
+  }
+
+  let minorProgram: Program | null = null;
+  if (minorProgramIndex !== MAX_U16 && minorProgramIndex < indices.programs.length) {
+    const slug = indices.programs[minorProgramIndex];
+    minorProgram = catalogue.programs.find((p) => programSlug(p) === slug) ?? null;
+    if (minorProgram === null)
+      return { error: 'Minor program from shared state is no longer in the catalogue' };
   }
 
   const { value: completedLen, next: n2 } = readU16(view, off);
@@ -557,6 +582,7 @@ export function decodeState(
     selectedTermId,
     firstYear,
     program,
+    minorProgram,
     completedCourseCodes,
     levelBuckets,
     languageBuckets,

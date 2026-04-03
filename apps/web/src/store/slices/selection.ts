@@ -55,6 +55,7 @@ export interface SelectionSlice {
   setBasicElectivesCount: AppStore["setBasicElectivesCount"];
   setBasicExcludedCategories: AppStore["setBasicExcludedCategories"];
   setProgram: AppStore["setProgram"];
+  setMinorProgram: AppStore["setMinorProgram"];
   setStudentPrograms: AppStore["setStudentPrograms"];
   setCompletedCourses: AppStore["setCompletedCourses"];
   addCompletedCourse: AppStore["addCompletedCourse"];
@@ -110,6 +111,7 @@ export const createSelectionSlice: StateCreator<
     const studentPrograms = getDisciplineCodesForProgram(program);
     set({
       program,
+      minorProgram: null, // Clear minor when main program changes
       studentPrograms,
       constrainedPerRequirement: {},
       requirementSlotsUserTouched: {},
@@ -123,6 +125,38 @@ export const createSelectionSlice: StateCreator<
     } = get();
     const state = recomputeStateForProgram(
       program,
+      null, // minor is null
+      completedCourses,
+      cache,
+      {},
+      {},
+      levelBuckets,
+      languageBuckets,
+      includeClosedComponents,
+      studentPrograms,
+      {},
+    );
+    set(state);
+  },
+
+  setMinorProgram: (minorProgram) => {
+    set({
+      minorProgram,
+      constrainedPerRequirement: {},
+      requirementSlotsUserTouched: {},
+    });
+    const {
+      program,
+      cache,
+      completedCourses,
+      levelBuckets,
+      languageBuckets,
+      includeClosedComponents,
+      studentPrograms,
+    } = get();
+    const state = recomputeStateForProgram(
+      program,
+      minorProgram,
       completedCourses,
       cache,
       {},
@@ -140,6 +174,7 @@ export const createSelectionSlice: StateCreator<
     set({ studentPrograms: programs });
     const {
       program,
+      minorProgram,
       cache,
       completedCourses,
       selectedPerRequirement,
@@ -151,6 +186,7 @@ export const createSelectionSlice: StateCreator<
     } = get();
     const state = recomputeStateForProgram(
       program,
+      minorProgram,
       completedCourses,
       cache,
       selectedPerRequirement,
@@ -180,6 +216,7 @@ export const createSelectionSlice: StateCreator<
     }
     const {
       program,
+      minorProgram,
       cache: cacheAfterRebuild,
       selectedPerRequirement,
       selectedOptionsPerRequirement,
@@ -200,6 +237,7 @@ export const createSelectionSlice: StateCreator<
 
     const state = recomputeStateForProgram(
       program,
+      minorProgram,
       courses,
       cache,
       selectedPerRequirement,
@@ -233,6 +271,7 @@ export const createSelectionSlice: StateCreator<
     };
     const {
       program,
+      minorProgram,
       cache,
       completedCourses,
       selectedOptionsPerRequirement,
@@ -243,6 +282,7 @@ export const createSelectionSlice: StateCreator<
     } = get();
     const state = recomputeStateForProgram(
       program,
+      minorProgram,
       completedCourses,
       cache,
       selectedPerRequirementNext,
@@ -260,6 +300,7 @@ export const createSelectionSlice: StateCreator<
     set({ levelBuckets: buckets });
     const {
       program,
+      minorProgram,
       cache,
       completedCourses,
       selectedPerRequirement,
@@ -271,6 +312,7 @@ export const createSelectionSlice: StateCreator<
     } = get();
     const state = recomputeStateForProgram(
       program,
+      minorProgram,
       completedCourses,
       cache,
       selectedPerRequirement,
@@ -288,6 +330,7 @@ export const createSelectionSlice: StateCreator<
     set({ languageBuckets: buckets });
     const {
       program,
+      minorProgram,
       cache,
       completedCourses,
       selectedPerRequirement,
@@ -299,6 +342,7 @@ export const createSelectionSlice: StateCreator<
     } = get();
     const state = recomputeStateForProgram(
       program,
+      minorProgram,
       completedCourses,
       cache,
       selectedPerRequirement,
@@ -323,6 +367,7 @@ export const createSelectionSlice: StateCreator<
     };
     const {
       program,
+      minorProgram,
       cache,
       completedCourses,
       selectedPerRequirement,
@@ -334,6 +379,7 @@ export const createSelectionSlice: StateCreator<
     } = get();
     const state = recomputeStateForProgram(
       program,
+      minorProgram,
       completedCourses,
       cache,
       selectedPerRequirement,
@@ -354,6 +400,7 @@ export const createSelectionSlice: StateCreator<
     );
     const {
       program,
+      minorProgram,
       cache,
       completedCourses,
       selectedPerRequirement,
@@ -365,6 +412,7 @@ export const createSelectionSlice: StateCreator<
     } = get();
     const state = recomputeStateForProgram(
       program,
+      minorProgram,
       completedCourses,
       cache,
       selectedPerRequirement,
