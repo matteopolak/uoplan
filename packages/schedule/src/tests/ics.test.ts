@@ -17,7 +17,7 @@ describe('buildScheduleIcs', () => {
                 sectionCode: 'A00',
                 component: 'LEC',
                 session: null,
-                times: [{ day: 'Mo', startMinutes: 540, endMinutes: 600 }],
+                times: [{ day: 'Mo', startMinutes: 540, endMinutes: 600, virtual: false }],
                 instructors: ['Prof, Name; Jr'],
                 meetingDates: null,
                 status: null,

@@ -29,7 +29,7 @@ const minimalSchedules: SchedulesData = {
             sectionCode: 'M00',
             component: 'LEC',
             session: null,
-            times: [{ day: 'Tu', startMinutes: 510, endMinutes: 680 }],
+            times: [{ day: 'Tu', startMinutes: 510, endMinutes: 680, virtual: false }],
             instructors: ['Jamel-Eddine Cherbib'],
             meetingDates: ['2026-01-12', '2026-04-15'],
             status: 'Open',

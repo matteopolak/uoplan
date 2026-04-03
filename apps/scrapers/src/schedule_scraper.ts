@@ -35,6 +35,7 @@ interface MeetingTime {
   day: DayOfWeek;
   startMinutes: number;
   endMinutes: number;
+  virtual: boolean;
 }
 
 type MeetingDateRange = [string, string];
@@ -231,8 +232,9 @@ function buildSearchBody(args: {
   subject: string;
   catalogNbr: string;
   termId?: string;
+  virtual?: boolean;
 }): string {
-  const { icsid, dataLang, icStateNum, subject, catalogNbr, termId } = args;
+  const { icsid, dataLang, icStateNum, subject, catalogNbr, termId, virtual } = args;
 
   const params = new URLSearchParams();
 
@@ -310,7 +312,7 @@ function buildSearchBody(args: {
   params.set('SSR_CLSRCH_WRK_SSR_COMPONENT$0', '');
   params.set('SSR_CLSRCH_WRK_SESSION_CODE$0', '');
   params.set('SSR_CLSRCH_WRK_INSTRUCTION_MODE$0', '');
-  params.set('SSR_CLSRCH_WRK_LOCATION$0', '');
+  params.set('SSR_CLSRCH_WRK_LOCATION$0', virtual ? 'ZZVIRTL' : '');
   params.set('UO_PUB_SRCH_WRK_UO_ONLINE_COURSES$chk$0', 'N');
   params.set('UO_PUB_SRCH_WRK_UO_AUDITOR_PERMITD$chk$0', 'N');
   params.set('UO_PUB_SRCH_WRK_UO_UOTTA_CARLETON$chk$0', 'N');
@@ -321,6 +323,7 @@ function buildSearchBody(args: {
 function parseScheduleHtml(
   html: string,
   { subject, catalogNbr }: { subject: string; catalogNbr: string },
+  virtual: boolean = false,
 ): CourseSchedule | null {
   const $ = cheerio.load(html);
 
@@ -392,7 +395,7 @@ function parseScheduleHtml(
         const start = parseTimeToMinutes(m[2]);
         const end = parseTimeToMinutes(m[3]);
         if (start == null || end == null) continue;
-        times.push({ day: dayKey, startMinutes: start, endMinutes: end });
+        times.push({ day: dayKey, startMinutes: start, endMinutes: end, virtual });
       }
 
       const meetingDates = datesText ? parseMeetingDates(datesText) : null;
@@ -434,15 +437,66 @@ function parseScheduleHtml(
   return schedule;
 }
 
-async function fetchScheduleForCourse(
+function timeKey(t: MeetingTime): string {
+  return `${t.day}|${t.startMinutes}|${t.endMinutes}`;
+}
+
+function sectionKey(componentKey: string, section: ComponentSection): string {
+  return `${componentKey}|${section.sectionCode ?? ''}|${section.section}`;
+}
+
+function mergeVirtualIntoBase(
+  base: CourseSchedule,
+  virtualOnly: CourseSchedule,
+): CourseSchedule {
+  // base is treated as "non-virtual"; this function flips the relevant meeting-times to virtual.
+  for (const [compKey, vSections] of Object.entries(virtualOnly.components)) {
+    if (!base.components[compKey]) base.components[compKey] = [];
+    const baseSections = base.components[compKey];
+
+    const baseSectionByKey = new Map<string, ComponentSection>();
+    baseSections.forEach((s) => baseSectionByKey.set(sectionKey(compKey, s), s));
+
+    for (const vSection of vSections) {
+      const key = sectionKey(compKey, vSection);
+      const baseSection = baseSectionByKey.get(key);
+
+      if (!baseSection) {
+        // Extremely defensive: if a virtual section doesn't exist in the base result, keep it.
+        baseSections.push(vSection);
+        baseSectionByKey.set(key, vSection);
+        continue;
+      }
+
+      const baseTimeByKey = new Map<string, number>();
+      baseSection.times.forEach((t, idx) => baseTimeByKey.set(timeKey(t), idx));
+
+      for (const vt of vSection.times) {
+        const tKey = timeKey(vt);
+        const baseTimeIdx = baseTimeByKey.get(tKey);
+        if (baseTimeIdx != null) {
+          baseSection.times[baseTimeIdx].virtual = true;
+        } else {
+          baseSection.times.push(vt);
+          baseTimeByKey.set(tKey, baseSection.times.length - 1);
+        }
+      }
+    }
+  }
+
+  return base;
+}
+
+async function fetchScheduleForCourseWithVirtual(
   clientInfo: ClientInfo,
   course: ParsedCourseCode,
   termId: string,
+  virtual: boolean,
 ): Promise<CourseSchedule | null> {
   const { client, dataLang } = clientInfo;
   const safeSubject = course.subject.replace(/[^A-Za-z0-9]+/g, '_');
   const safeCatalog = course.catalogNbr.replace(/[^A-Za-z0-9]+/g, '_');
-  const cacheFilename = `${safeSubject}-${safeCatalog}-${termId}.html`;
+  const cacheFilename = `${safeSubject}-${safeCatalog}-${termId}-${virtual ? 'virtual' : 'nonvirtual'}.html`;
   const cachePath = path.join(HTML_CACHE_DIR, cacheFilename);
 
   if (USE_CACHE_ONLY) {
@@ -460,14 +514,12 @@ async function fetchScheduleForCourse(
         return null;
       }
 
-      const scheduleFromCache = parseScheduleHtml(cachedHtml, {
-        subject: course.subject,
-        catalogNbr: course.catalogNbr,
-      });
-      if (scheduleFromCache) {
-        return scheduleFromCache;
-      }
-
+      const scheduleFromCache = parseScheduleHtml(
+        cachedHtml,
+        { subject: course.subject, catalogNbr: course.catalogNbr },
+        virtual,
+      );
+      if (scheduleFromCache) return scheduleFromCache;
       return null;
     } catch (err: unknown) {
       console.error(
@@ -499,6 +551,7 @@ async function fetchScheduleForCourse(
       subject: course.subject,
       catalogNbr: course.catalogNbr,
       termId,
+      virtual,
     });
 
     const res = await client.post(BASE_URL, {
@@ -568,13 +621,12 @@ async function fetchScheduleForCourse(
       return null;
     }
 
-    const schedule = parseScheduleHtml(res.body, {
-      subject: course.subject,
-      catalogNbr: course.catalogNbr,
-    });
-    if (schedule) {
-      return schedule;
-    }
+    const schedule = parseScheduleHtml(
+      res.body,
+      { subject: course.subject, catalogNbr: course.catalogNbr },
+      virtual,
+    );
+    if (schedule) return schedule;
 
     if (attempt < 10) {
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -587,6 +639,21 @@ async function fetchScheduleForCourse(
   );
   // Exit the whole process so the failure is visible and repeatable.
   process.exit(1);
+}
+
+async function fetchScheduleForCourse(
+  clientInfo: ClientInfo,
+  course: ParsedCourseCode,
+  termId: string,
+): Promise<CourseSchedule | null> {
+  const base = await fetchScheduleForCourseWithVirtual(clientInfo, course, termId, false);
+  const virtualOnly = await fetchScheduleForCourseWithVirtual(clientInfo, course, termId, true);
+
+  if (!base && !virtualOnly) return null;
+  if (base && !virtualOnly) return base;
+  if (!base && virtualOnly) return virtualOnly;
+
+  return mergeVirtualIntoBase(base!, virtualOnly!);
 }
 
 async function main(): Promise<void> {

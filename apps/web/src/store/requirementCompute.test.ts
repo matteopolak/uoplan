@@ -81,7 +81,7 @@ describe("recomputeStateForProgram single-candidate schedule handling", () => {
                 sectionCode: "A00",
                 component: "LEC",
                 session: null,
-                times: [{ day: "Mo", startMinutes: 480, endMinutes: 570 }],
+                times: [{ day: "Mo", startMinutes: 480, endMinutes: 570, virtual: false }],
                 instructors: ["TBA"],
                 meetingDates: ["2026-01-12", "2026-04-15"],
                 status: "Open",

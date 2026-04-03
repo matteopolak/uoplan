@@ -27,6 +27,7 @@ function makeSchedule(
             day: t.day,
             startMinutes: t.start,
             endMinutes: t.end,
+            virtual: false,
           })),
           instructors: [],
           meetingDates: null,

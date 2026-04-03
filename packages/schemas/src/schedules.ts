@@ -7,6 +7,7 @@ export const MeetingTimeSchema = z.object({
   day: DayOfWeekSchema,
   startMinutes: z.number(),
   endMinutes: z.number(),
+  virtual: z.boolean(),
 });
 export type MeetingTime = z.infer<typeof MeetingTimeSchema>;
 
