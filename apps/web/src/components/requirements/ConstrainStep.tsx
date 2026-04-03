@@ -427,6 +427,7 @@ export function ConstrainStep({
                     cache={cache}
                     completedCourses={completedSet}
                     selectedPerRequirement={constrainedPerRequirement}
+                    constrainedPerRequirement={constrainedPerRequirement}
                     onSelect={onConstrain}
                     selectedOptionsPerRequirement={
                       selectedOptionsPerRequirement
@@ -499,6 +500,7 @@ export function ConstrainStep({
                             cache={cache}
                             completedCourses={completedSet}
                             selectedPerRequirement={constrainedPerRequirement}
+                            constrainedPerRequirement={constrainedPerRequirement}
                             onSelect={onConstrain}
                             selectedOptionsPerRequirement={
                               selectedOptionsPerRequirement

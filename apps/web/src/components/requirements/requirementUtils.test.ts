@@ -316,6 +316,78 @@ describe("getConstrainMultiSelectOptions", () => {
     const { options } = getConstrainMultiSelectOptions(node, {}, ctx);
     expect(options.map((o) => o.value)).toEqual(["SEG 4100"]);
   });
+
+  it("exempts explicitly picked electives from virtual-only filtering", () => {
+    const schedNonVirtualOnly = {
+      subject: "SEG",
+      catalogNumber: "3100",
+      title: "Test",
+      courseCode: "SEG 3100",
+      timeZone: "America/Toronto",
+      components: {
+        LEC: [
+          {
+            section: "A00",
+            sectionCode: "A00",
+            component: "LEC",
+            session: null,
+            times: [
+              { day: "Mo", startMinutes: 540, endMinutes: 630, virtual: false },
+            ],
+            instructors: [],
+            meetingDates: null,
+            status: "Open",
+          },
+        ],
+      },
+    } as NonNullable<ReturnType<DataCache["getSchedule"]>>;
+
+    const cacheWithNonVirtual: DataCache = {
+      getCourse: (code) =>
+        ({ code, title: "Test", credits: 3 }) as NonNullable<
+          ReturnType<DataCache["getCourse"]>
+        >,
+      getSchedule: (code) => (code === "SEG 3100" ? schedNonVirtualOnly : undefined),
+      getCoursesByDiscipline: () => [],
+      getAllCourses: () => [],
+      getAllSchedules: () => [],
+    };
+
+    const node: RequirementWithStatus = {
+      type: "free_elective",
+      title: "Free",
+      complete: false,
+      satisfiedBy: [],
+      requirementId: "req-1",
+      candidateCourses: ["SEG 3100"],
+      creditsNeeded: 3,
+    };
+
+    const withoutExemptionCtx = {
+      ...defaultConstrainCtx,
+      cache: cacheWithNonVirtual,
+      prereqEligible: new Set(["SEG 3100"]),
+      virtualSectionsOnly: true,
+      constrainedPerRequirement: {},
+    };
+    const { options: optionsWithout } = getConstrainMultiSelectOptions(
+      node,
+      {},
+      withoutExemptionCtx,
+    );
+    expect(optionsWithout.map((o) => o.value)).toHaveLength(0);
+
+    const withExemptionCtx = {
+      ...withoutExemptionCtx,
+      constrainedPerRequirement: { "req-1": ["SEG 3100"] },
+    };
+    const { options: optionsWith } = getConstrainMultiSelectOptions(
+      node,
+      {},
+      withExemptionCtx,
+    );
+    expect(optionsWith.map((o) => o.value)).toEqual(["SEG 3100"]);
+  });
 });
 
 describe("partitionIncompleteConstrainRoots", () => {

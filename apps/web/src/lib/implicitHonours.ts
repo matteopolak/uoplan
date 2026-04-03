@@ -1,6 +1,7 @@
 import type { DataCache } from "schedule";
 import type { RemainingRequirement } from "schedule";
 import { getEffectiveSchedule, isHonoursProject, normalizeCourseCode } from "schedule";
+import { virtualScheduleFilterApplies } from "./electiveEligibility";
 
 export type ImplicitHonoursPick = { code: string; requirementId: string };
 
@@ -20,16 +21,10 @@ export function collectImplicitHonoursForSchedule(
   cache: DataCache,
   includeClosedComponents: boolean,
   virtualSectionsOnly: boolean,
+  explicitExemptNormalized: Set<string>,
   seenHonoursNorm: Set<string>,
 ): ImplicitHonoursPick[] {
   const picks: ImplicitHonoursPick[] = [];
-  const hasScheduleForReq = (code: string): boolean =>
-    !!getEffectiveSchedule(
-      cache,
-      code,
-      includeClosedComponents,
-      virtualSectionsOnly,
-    );
 
   for (const req of effectiveRemainingRequirements) {
     const reqId = req.requirementId;
@@ -50,7 +45,18 @@ export function collectImplicitHonoursForSchedule(
       const norm = normalizeCourseCode(code);
       if (completedSet.has(norm)) return false;
       if (!prereqEligibleSet.has(code)) return false;
-      return hasScheduleForReq(code);
+      const virtualOnly = virtualScheduleFilterApplies(
+        virtualSectionsOnly,
+        req.type,
+        code,
+        explicitExemptNormalized,
+      );
+      return !!getEffectiveSchedule(
+        cache,
+        code,
+        includeClosedComponents,
+        virtualOnly,
+      );
     });
 
     if (nonHonoursWithSchedule.length > 0) continue;

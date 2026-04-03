@@ -709,6 +709,7 @@ function App() {
                       completedRequirementsList={completedRequirementsList}
                       completedCourses={completedCourses}
                       unassignedCompletedCourses={unassignedCompletedCourses}
+                      constrainedPerRequirement={constrainedPerRequirement}
                       selectedPerRequirement={selectedPerRequirement}
                       onSelect={setSelectedForRequirement}
                       selectedOptionsPerRequirement={selectedOptionsPerRequirement}
