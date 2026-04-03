@@ -7,10 +7,8 @@ import {
   Select,
   Stack,
   Text,
-  Textarea,
-  TextInput,
   Title,
-  Modal,
+  Tooltip,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import {
@@ -69,7 +67,6 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
   const setSelectedScheduleIndex = useAppStore((s) => s.setSelectedScheduleIndex);
   const undoLastSwap = useAppStore((s) => s.undoLastSwap);
   const getShareUrl = useAppStore((s) => s.getShareUrl);
-  const getEncodedStateBase64 = useAppStore((s) => s.getEncodedStateBase64);
   const generateSchedules = useAppStore((s) => s.generateSchedules);
   const getSwapCandidates = useAppStore((s) => s.getSwapCandidates);
   const swapCourseInSchedule = useAppStore((s) => s.swapCourseInSchedule);
@@ -78,7 +75,6 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
   const morphRef = useRef<CalendarViewHandle>(null);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [generatingOneMore, setGeneratingOneMore] = useState(false);
   const [timetableStartDate, setTimetableStartDate] = useState("");
@@ -245,17 +241,19 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
         <Group gap="xs">
           <LanguageSwitcher />
           {indices && (
-            <Button
-              variant="filled"
-              color="dark"
-              size="sm"
-              radius={0}
-              leftSection={<IconShare size={14} />}
-              onClick={() => setShareModalOpen(true)}
-              style={{ backgroundColor: "#141517" }}
-            >
-              {tr("calendarPage.share")}
-            </Button>
+            <Tooltip label="Copied to clipboard!" opened={shareCopied} position="bottom" withArrow>
+              <Button
+                variant="filled"
+                color="dark"
+                size="sm"
+                radius={0}
+                leftSection={<IconShare size={14} />}
+                onClick={handleCopyShare}
+                style={{ backgroundColor: "#141517" }}
+              >
+                {tr("calendarPage.share")}
+              </Button>
+            </Tooltip>
           )}
           <Button
             variant="filled"
@@ -363,38 +361,6 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
         >
           {tr("calendarPage.backToSetup")}
         </Button>
-
-        {/* Share modal */}
-        <Modal
-          opened={shareModalOpen}
-          onClose={() => setShareModalOpen(false)}
-          title={tr("calendarPage.shareModal.title")}
-          size="md"
-        >
-          <Stack gap="md">
-            <Text size="sm" c="dimmed">
-              {tr("calendarPage.shareModal.description")}
-            </Text>
-            <TextInput
-              label={tr("calendarPage.shareModal.url")}
-              value={getShareUrl() ?? ""}
-              readOnly
-              size="sm"
-            />
-            <Textarea
-              label={tr("calendarPage.shareModal.stateCode")}
-              value={getEncodedStateBase64() ?? ""}
-              readOnly
-              minRows={3}
-              size="sm"
-            />
-            <Button variant="filled" onClick={handleCopyShare}>
-              {shareCopied
-                ? tr("calendarPage.shareModal.copied")
-                : tr("calendarPage.shareModal.copy")}
-            </Button>
-          </Stack>
-        </Modal>
       </Box>
 
       {/* Calendar area */}

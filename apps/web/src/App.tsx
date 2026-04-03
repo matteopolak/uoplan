@@ -13,6 +13,7 @@ import {
   Stack,
   Text,
   Title,
+  Tooltip,
 } from "@mantine/core";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMediaQuery } from "@mantine/hooks";
@@ -599,18 +600,18 @@ function App() {
                   <Group gap="xs">
                     <LanguageSwitcher onSwitch={handleLangSwitch} />
                     {indices && (
-                      <Button
-                        data-tour="share"
-                        variant="subtle"
-                        color="gray"
-                        size="xs"
-                        leftSection={<IconShare size={14} />}
-                        onClick={handleCopyShare}
-                      >
-                        {shareCopied
-                          ? tr("app.share.copied")
-                          : tr("app.share.action")}
-                      </Button>
+                      <Tooltip label="Copied to clipboard!" opened={shareCopied} position="bottom" withArrow>
+                        <Button
+                          data-tour="share"
+                          variant="subtle"
+                          color="gray"
+                          size="xs"
+                          leftSection={<IconShare size={14} />}
+                          onClick={handleCopyShare}
+                        >
+                          {tr("app.share.action")}
+                        </Button>
+                      </Tooltip>
                     )}
                     <Button
                       variant="subtle"
