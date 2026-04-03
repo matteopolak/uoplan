@@ -72,6 +72,7 @@ export function CourseFiltersCard({
               )
             }
             clearable={false}
+            w="100%"
           />
           <MultiSelect
             label={tr("constrainStep.languages.label")}
@@ -90,6 +91,7 @@ export function CourseFiltersCard({
               )
             }
             clearable={false}
+            w="100%"
           />
           <MultiSelect
             label={tr("constrainStep.electiveLevels.label")}
@@ -103,6 +105,7 @@ export function CourseFiltersCard({
               )
             }
             clearable={false}
+            w="100%"
           />
           <Switch
             label={tr("constrainStep.includeClosedSections")}
