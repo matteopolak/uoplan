@@ -657,6 +657,19 @@ async function fetchScheduleForCourse(
 }
 
 async function main(): Promise<void> {
+  const termsOnly = process.env.TERMS_ONLY === '1' || process.argv.includes('--terms-only');
+  if (termsOnly) {
+    console.log('TERMS_ONLY: scraping available terms...');
+    const clientInfo = await createClient();
+    const terms = await scrapeTerms(clientInfo.client);
+    terms.sort((a, b) => a.termId.localeCompare(b.termId));
+    const termsPath = path.join(PUBLIC_DIR, 'data', 'terms.json');
+    await fs.mkdir(path.dirname(termsPath), { recursive: true });
+    await fs.writeFile(termsPath, JSON.stringify({ terms }, null, 2), 'utf-8');
+    console.log(`Saved ${terms.length} term(s) to ${termsPath}`);
+    return;
+  }
+
   const onlySubject = process.env.ONLY_SUBJECT;
   const onlyCatalog = process.env.ONLY_CATALOG;
 
@@ -679,12 +692,18 @@ async function main(): Promise<void> {
 
   terms.sort((a, b) => a.termId.localeCompare(b.termId));
 
-  await fs.writeFile(
-    path.join(PUBLIC_DIR, 'data', 'terms.json'),
-    JSON.stringify({ terms }, null, 2),
-    'utf-8',
-  );
-  console.log(`Saved ${terms.length} term(s) to ${path.join(PUBLIC_DIR, 'data', 'terms.json')}`);
+  if (!onlyTermId) {
+    await fs.writeFile(
+      path.join(PUBLIC_DIR, 'data', 'terms.json'),
+      JSON.stringify({ terms }, null, 2),
+      'utf-8',
+    );
+    console.log(`Saved ${terms.length} term(s) to ${path.join(PUBLIC_DIR, 'data', 'terms.json')}`);
+  } else {
+    console.log(
+      'Skipping terms.json write (ONLY_TERM_ID is set; CI writes full terms via TERMS_ONLY before per-term jobs).',
+    );
+  }
   
   console.log(`Initialized ${clientInfos.length} PeopleSoft session(s).`);
 

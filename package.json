@@ -15,6 +15,7 @@
     "hooks:run": "lefthook run pre-commit",
     "scrape:catalogue": "pnpm --filter scrapers scrape:catalogue",
     "scrape:schedules": "pnpm --filter scrapers scrape:schedules",
+    "scrape:schedules:terms": "pnpm --filter scrapers scrape:schedules:terms",
     "scrape:ratemyprofessors": "pnpm --filter scrapers scrape:ratemyprofessors"
   },
   "devDependencies": {

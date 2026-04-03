@@ -10,9 +10,12 @@ permissions:
   contents: write
 
 jobs:
-  daily-scrape:
+  catalogue_and_terms:
     runs-on: ubuntu-latest
     timeout-minutes: 360
+
+    outputs:
+      terms: ${{ steps.set_terms.outputs.terms }}
 
     steps:
       - name: Checkout repository
@@ -33,6 +36,133 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Clear scraper caches (no cache mode)
+        run: rm -rf .cache
+
+      - name: Run catalogue scraper
+        run: pnpm run scrape:catalogue
+
+      - name: Scrape term list for schedule matrix
+        run: pnpm run scrape:schedules:terms
+
+      - name: Set terms matrix output
+        id: set_terms
+        run: |
+          {
+            echo 'terms<<EOF'
+            jq -c '[.terms[].termId]' apps/web/public/data/terms.json
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Upload catalogue and shared data for schedule jobs
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalogue-data
+          path: apps/web/public/data
+          if-no-files-found: error
+
+  schedule_term:
+    needs: catalogue_and_terms
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: true
+      matrix:
+        term: ${{ fromJSON(needs.catalogue_and_terms.outputs.terms) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download catalogue and shared data
+        uses: actions/download-artifact@v4
+        with:
+          name: catalogue-data
+          path: apps/web/public/data
+
+      - name: Clear scraper caches (no cache mode)
+        run: rm -rf .cache
+
+      - name: Run schedule scraper for one term
+        env:
+          ONLY_TERM_ID: ${{ matrix.term }}
+        run: pnpm run scrape:schedules
+
+      - name: Upload schedules for this term
+        uses: actions/upload-artifact@v4
+        with:
+          name: schedule-${{ matrix.term }}
+          path: apps/web/public/data/schedules.${{ matrix.term }}.json
+          if-no-files-found: error
+
+  ratemyprofessors:
+    needs: catalogue_and_terms
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Clear scraper caches (no cache mode)
+        run: rm -rf .cache
+
+      - name: Run RateMyProfessors scraper
+        run: pnpm run scrape:ratemyprofessors
+
+      - name: Upload RateMyProfessors data
+        uses: actions/upload-artifact@v4
+        with:
+          name: ratemyprofessors-data
+          path: apps/web/public/data/ratemyprofessors.json
+          if-no-files-found: error
+
+  merge_and_push:
+    needs:
+      - catalogue_and_terms
+      - schedule_term
+      - ratemyprofessors
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Backup existing JSON data
         run: |
@@ -62,17 +192,24 @@ jobs:
           done
           shopt -u nullglob
 
-      - name: Clear scraper caches (no cache mode)
-        run: rm -rf .cache
+      - name: Download catalogue and shared data from setup job
+        uses: actions/download-artifact@v4
+        with:
+          name: catalogue-data
+          path: apps/web/public/data
 
-      - name: Run catalogue scraper
-        run: pnpm run scrape:catalogue
+      - name: Download per-term schedule JSONs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: schedule-*
+          path: apps/web/public/data
+          merge-multiple: true
 
-      - name: Run schedule scraper
-        run: pnpm run scrape:schedules
-
-      - name: Run RateMyProfessors scraper
-        run: pnpm run scrape:ratemyprofessors
+      - name: Download RateMyProfessors data
+        uses: actions/download-artifact@v4
+        with:
+          name: ratemyprofessors-data
+          path: apps/web/public/data
 
       - name: Show JSON diffs (catalogue and schedules)
         run: |
@@ -131,6 +268,7 @@ jobs:
             'apps/web/public/data/catalogue.json' \
             'apps/web/public/data/catalogue.missing.json' \
             apps/web/public/data/catalogue.*.json \
+            'apps/web/public/data/indices.json' \
             apps/web/public/data/terms.json \
             apps/web/public/data/ratemyprofessors.json \
             apps/web/public/data/schedules.*.json \
@@ -148,7 +286,16 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add apps/web/public/data/catalogue.json apps/web/public/data/catalogue.missing.json apps/web/public/data/catalogue.*.json apps/web/public/data/terms.json apps/web/public/data/ratemyprofessors.json apps/web/public/data/schedules.*.json
+
+          # main may advance while scrapers run — rebase our working changes onto latest main
+          git stash push -u -m "daily-scrape pre-sync" -- apps/web/public/data/
+          if ! git pull --rebase origin main; then
+            git stash pop
+            exit 1
+          fi
+          git stash pop
+
+          git add apps/web/public/data/catalogue.json apps/web/public/data/catalogue.missing.json apps/web/public/data/catalogue.*.json apps/web/public/data/indices.json apps/web/public/data/terms.json apps/web/public/data/ratemyprofessors.json apps/web/public/data/schedules.*.json
 
           BOT_EMAIL="github-actions[bot]@users.noreply.github.com"
           LAST_AUTHOR_EMAIL=$(git log -1 --format='%ae')
