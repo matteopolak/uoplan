@@ -1,5 +1,6 @@
 import {
   filterScheduleExcludingClosed,
+  filterScheduleVirtualOnly,
   getEffectiveSchedule,
 } from '../scheduleFilters';
 import type { CourseSchedule } from 'schemas';
@@ -121,6 +122,81 @@ describe('filterScheduleExcludingClosed', () => {
   });
 });
 
+describe('filterScheduleVirtualOnly', () => {
+  it('keeps hybrid section with only virtual times remaining', () => {
+    const sched = makeSchedule({
+      LEC: [
+        {
+          section: 'A00',
+          sectionCode: 'A00',
+          component: 'LEC',
+          session: null,
+          times: [
+            { day: 'Mo', startMinutes: 540, endMinutes: 630, virtual: false },
+            { day: 'We', startMinutes: 540, endMinutes: 630, virtual: true },
+          ],
+          instructors: [],
+          meetingDates: null,
+          status: 'Open',
+        },
+      ],
+    });
+    const out = filterScheduleVirtualOnly(sched);
+    expect(out).toBeDefined();
+    expect(out?.components.LEC).toHaveLength(1);
+    expect(out?.components.LEC[0].times).toHaveLength(1);
+    expect(out?.components.LEC[0].times[0].virtual).toBe(true);
+  });
+
+  it('returns undefined when all times are non-virtual', () => {
+    const sched = makeSchedule({
+      LEC: [
+        {
+          section: 'A00',
+          sectionCode: 'A00',
+          component: 'LEC',
+          session: null,
+          times: [{ day: 'Mo', startMinutes: 540, endMinutes: 630, virtual: false }],
+          instructors: [],
+          meetingDates: null,
+          status: 'Open',
+        },
+      ],
+    });
+    expect(filterScheduleVirtualOnly(sched)).toBeUndefined();
+  });
+
+  it('returns undefined when one component has no sections left after strip', () => {
+    const sched = makeSchedule({
+      LEC: [
+        {
+          section: 'A00',
+          sectionCode: 'A00',
+          component: 'LEC',
+          session: null,
+          times: [{ day: 'Mo', startMinutes: 540, endMinutes: 630, virtual: true }],
+          instructors: [],
+          meetingDates: null,
+          status: 'Open',
+        },
+      ],
+      TUT: [
+        {
+          section: 'T01',
+          sectionCode: 'T01',
+          component: 'TUT',
+          session: null,
+          times: [{ day: 'We', startMinutes: 540, endMinutes: 630, virtual: false }],
+          instructors: [],
+          meetingDates: null,
+          status: 'Open',
+        },
+      ],
+    });
+    expect(filterScheduleVirtualOnly(sched)).toBeUndefined();
+  });
+});
+
 describe('getEffectiveSchedule', () => {
   const schedOpen = makeSchedule({
     LEC: [
@@ -159,5 +235,30 @@ describe('getEffectiveSchedule', () => {
     };
     const out = getEffectiveSchedule(cache, 'CSI 9999', false);
     expect(out).toBeUndefined();
+  });
+
+  it('returns undefined when virtualOnly and no virtual times remain', () => {
+    const schedNonVirtual = makeSchedule({
+      LEC: [
+        {
+          section: 'A00',
+          sectionCode: 'A00',
+          component: 'LEC',
+          session: null,
+          times: [{ day: 'Mo', startMinutes: 540, endMinutes: 630, virtual: false }],
+          instructors: [],
+          meetingDates: null,
+          status: 'Open',
+        },
+      ],
+    });
+    const cache: DataCache = {
+      getCourse: () => undefined,
+      getSchedule: () => schedNonVirtual,
+      getCoursesByDiscipline: () => [],
+      getAllCourses: () => [],
+      getAllSchedules: () => [schedNonVirtual],
+    };
+    expect(getEffectiveSchedule(cache, 'CSI 1234', true, true)).toBeUndefined();
   });
 });

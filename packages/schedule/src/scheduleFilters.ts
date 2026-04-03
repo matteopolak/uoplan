@@ -23,34 +23,75 @@ export function filterScheduleExcludingClosed(
 }
 
 /**
+ * Keeps only meeting times with virtual: true per section; drops sections with no times left.
+ * If any component ends up with no sections, returns undefined.
+ */
+export function filterScheduleVirtualOnly(
+  schedule: CourseSchedule
+): CourseSchedule | undefined {
+  const filtered: Record<string, ComponentSection[]> = {};
+  for (const [key, sections] of Object.entries(schedule.components)) {
+    const kept: ComponentSection[] = [];
+    for (const sec of sections ?? []) {
+      const times = (sec.times ?? []).filter((t) => t.virtual);
+      if (times.length === 0) continue;
+      kept.push({ ...sec, times });
+    }
+    if (kept.length === 0) return undefined;
+    filtered[key] = kept;
+  }
+  return {
+    ...schedule,
+    components: filtered,
+  };
+}
+
+function applyScheduleFilters(
+  schedule: CourseSchedule,
+  opts: { includeClosed: boolean; virtualOnly: boolean }
+): CourseSchedule | undefined {
+  let s: CourseSchedule | undefined = schedule;
+  if (!opts.includeClosed) {
+    s = filterScheduleExcludingClosed(s) ?? undefined;
+    if (!s) return undefined;
+  }
+  if (opts.virtualOnly) {
+    s = filterScheduleVirtualOnly(s) ?? undefined;
+  }
+  return s;
+}
+
+/**
  * Returns the schedule to use for eligibility (dropdowns, generation, swap).
- * When includeClosed is true, returns the raw schedule; when false, returns
- * the schedule with Closed sections filtered out, or undefined if incomplete.
+ * When includeClosed is false, Closed sections are removed first.
+ * When virtualOnly is true, non-virtual meeting times are stripped (and empty sections dropped).
  */
 export function getEffectiveSchedule(
   cache: DataCache,
   code: string,
-  includeClosed: boolean
+  includeClosed: boolean,
+  virtualOnly: boolean = false
 ): CourseSchedule | undefined {
   const s = cache.getSchedule(code);
   if (!s) return undefined;
-  if (includeClosed) return s;
-  return filterScheduleExcludingClosed(s) ?? undefined;
+  return applyScheduleFilters(s, { includeClosed, virtualOnly });
 }
 
 /**
  * Returns a DataCache that delegates to cache but getSchedule returns the
- * effective schedule (filtering Closed when includeClosed is false).
- * Used so schedule generation only sees open sections when the toggle is off.
+ * effective schedule (filtering Closed when includeClosed is false, and/or
+ * virtual-only times when virtualOnly is true).
  */
 export function cacheWithClosedFilter(
   cache: DataCache,
-  includeClosed: boolean
+  includeClosed: boolean,
+  virtualOnly: boolean = false
 ): DataCache {
-  if (includeClosed) return cache;
+  if (includeClosed && !virtualOnly) return cache;
   return {
     getCourse: (code) => cache.getCourse(code),
-    getSchedule: (code) => getEffectiveSchedule(cache, code, false),
+    getSchedule: (code) =>
+      getEffectiveSchedule(cache, code, includeClosed, virtualOnly),
     getCoursesByDiscipline: (d) => cache.getCoursesByDiscipline(d),
     getAllCourses: () => cache.getAllCourses(),
     getAllSchedules: () => cache.getAllSchedules(),

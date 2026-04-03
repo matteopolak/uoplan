@@ -25,6 +25,7 @@ function hasPersistedStateChange(next: AppStore, prev: AppStore): boolean {
     next.requirementTreeWithStatus !== prev.requirementTreeWithStatus ||
     next.remainingRequirements !== prev.remainingRequirements ||
     next.includeClosedComponents !== prev.includeClosedComponents ||
+    next.virtualSectionsOnly !== prev.virtualSectionsOnly ||
     next.studentPrograms !== prev.studentPrograms
   );
 }

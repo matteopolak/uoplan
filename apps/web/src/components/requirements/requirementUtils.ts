@@ -361,6 +361,7 @@ export interface ConstrainMultiSelectContext {
   unassignedCompletedSetNormalized: Set<string>;
   allAssignedCoursesNormalized: Set<string>;
   includeClosedComponents: boolean;
+  virtualSectionsOnly: boolean;
   completedOnly: boolean;
 }
 
@@ -412,7 +413,12 @@ export function getConstrainMultiSelectOptions(
         }
         if (
           ctx.cache &&
-          !getEffectiveSchedule(ctx.cache, c, ctx.includeClosedComponents)
+          !getEffectiveSchedule(
+            ctx.cache,
+            c,
+            ctx.includeClosedComponents,
+            ctx.virtualSectionsOnly,
+          )
         ) {
           const isSpecificCourseReq =
             node.type === "course" || node.type === "or_course";

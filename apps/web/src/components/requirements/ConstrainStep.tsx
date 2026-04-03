@@ -54,6 +54,8 @@ export interface ConstrainStepProps {
   onChangeElectiveLevelBuckets: (buckets: number[]) => void;
   includeClosedComponents: boolean;
   onIncludeClosedComponentsChange: (value: boolean) => void;
+  virtualSectionsOnly: boolean;
+  onVirtualSectionsOnlyChange: (value: boolean) => void;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -168,6 +170,8 @@ export function ConstrainStep({
   onChangeElectiveLevelBuckets,
   includeClosedComponents,
   onIncludeClosedComponentsChange,
+  virtualSectionsOnly,
+  onVirtualSectionsOnlyChange,
 }: ConstrainStepProps) {
   const [completedOpen, setCompletedOpen] = useState(false);
   const [collapsedUnavailableOpen, setCollapsedUnavailableOpen] =
@@ -228,6 +232,7 @@ export function ConstrainStep({
       unassignedCompletedSetNormalized: new Set<string>(),
       allAssignedCoursesNormalized: new Set<string>(),
       includeClosedComponents,
+      virtualSectionsOnly,
       completedOnly: false as const,
     }),
     [
@@ -238,6 +243,7 @@ export function ConstrainStep({
       languageBuckets,
       electiveLevelBuckets,
       includeClosedComponents,
+      virtualSectionsOnly,
     ],
   );
 
@@ -339,6 +345,8 @@ export function ConstrainStep({
         onChangeLanguageBuckets={onChangeLanguageBuckets}
         onChangeElectiveLevelBuckets={onChangeElectiveLevelBuckets}
         onIncludeClosedComponentsChange={onIncludeClosedComponentsChange}
+        virtualSectionsOnly={virtualSectionsOnly}
+        onVirtualSectionsOnlyChange={onVirtualSectionsOnlyChange}
       />
 
       {missingSelections.length > 0 && (
@@ -433,6 +441,7 @@ export function ConstrainStep({
                     unassignedCompletedSetNormalized={new Set()}
                     allAssignedCoursesNormalized={new Set()}
                     includeClosedComponents={includeClosedComponents}
+                    virtualSectionsOnly={virtualSectionsOnly}
                   />
                 );
               })}
@@ -504,6 +513,7 @@ export function ConstrainStep({
                             unassignedCompletedSetNormalized={new Set()}
                             allAssignedCoursesNormalized={new Set()}
                             includeClosedComponents={includeClosedComponents}
+                            virtualSectionsOnly={virtualSectionsOnly}
                           />
                         );
                       })}

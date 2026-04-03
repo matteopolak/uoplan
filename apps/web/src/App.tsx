@@ -94,6 +94,7 @@ function App() {
     languageBuckets,
     electiveLevelBuckets,
     includeClosedComponents,
+    virtualSectionsOnly,
     generationLimitFirstYearCredits,
     generationCompressedSchedule,
   } = useAppStore(
@@ -128,6 +129,7 @@ function App() {
       languageBuckets: s.languageBuckets,
       electiveLevelBuckets: s.electiveLevelBuckets,
       includeClosedComponents: s.includeClosedComponents,
+      virtualSectionsOnly: s.virtualSectionsOnly,
       generationLimitFirstYearCredits: s.generationLimitFirstYearCredits,
       generationCompressedSchedule: s.generationCompressedSchedule,
     })),
@@ -155,6 +157,7 @@ function App() {
   const setLanguageBuckets = useAppStore((s) => s.setLanguageBuckets);
   const setElectiveLevelBuckets = useAppStore((s) => s.setElectiveLevelBuckets);
   const setIncludeClosedComponents = useAppStore((s) => s.setIncludeClosedComponents);
+  const setVirtualSectionsOnly = useAppStore((s) => s.setVirtualSectionsOnly);
   const setGenerationLimitFirstYearCredits = useAppStore((s) => s.setGenerationLimitFirstYearCredits);
   const setGenerationCompressedSchedule = useAppStore((s) => s.setGenerationCompressedSchedule);
   const resetToDefault = useAppStore((s) => s.resetToDefault);
@@ -711,6 +714,8 @@ function App() {
                       selectedOptionsPerRequirement={selectedOptionsPerRequirement}
                       onSelectOption={setSelectedOptionForRequirement}
                       prereqEligibleCourses={filteredPrereqEligibleCourses}
+                      includeClosedComponents={includeClosedComponents}
+                      virtualSectionsOnly={virtualSectionsOnly}
                     />
                   </Stack>
                 )}
@@ -817,6 +822,8 @@ function App() {
                                 onChangeElectiveLevelBuckets={setElectiveLevelBuckets}
                                 includeClosedComponents={includeClosedComponents}
                                 onIncludeClosedComponentsChange={setIncludeClosedComponents}
+                                virtualSectionsOnly={virtualSectionsOnly}
+                                onVirtualSectionsOnlyChange={setVirtualSectionsOnly}
                               />
                             </Box>
                           </Collapse>

@@ -83,6 +83,8 @@ export interface AppState {
   professorRatings: ProfessorRatingsMap | null;
   generationSeed: number;
   includeClosedComponents: boolean;
+  /** When true, only virtual meeting times are kept per section for scheduling. */
+  virtualSectionsOnly: boolean;
   generationLimitFirstYearCredits: boolean;
   generationCompressedSchedule: boolean;
 }
@@ -118,6 +120,7 @@ export interface AppActions {
   setGenerationAllowedDays: (days: DayOfWeek[]) => void;
   setGenerationMinProfessorRating: (rating: number | null) => void;
   setIncludeClosedComponents: (value: boolean) => void;
+  setVirtualSectionsOnly: (value: boolean) => void;
   generateSchedules: (options?: { appendFirstOnly?: boolean }) => Promise<void>;
   clearGeneratedSchedules: () => void;
   setSelectedScheduleIndex: (idx: number) => void;

@@ -67,6 +67,7 @@ export function OptionsDrilldown({
     unassignedCompletedSetNormalized: EMPTY_SET,
     allAssignedCoursesNormalized: EMPTY_SET,
     includeClosedComponents: false,
+    virtualSectionsOnly: false,
     hideSelection: true as const,
   };
 

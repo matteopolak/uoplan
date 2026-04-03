@@ -34,6 +34,7 @@ const defaultConstrainCtx = {
   unassignedCompletedSetNormalized: new Set<string>(),
   allAssignedCoursesNormalized: new Set<string>(),
   includeClosedComponents: false,
+  virtualSectionsOnly: false,
   completedOnly: false,
 };
 

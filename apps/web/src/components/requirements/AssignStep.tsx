@@ -43,6 +43,8 @@ export interface AssignStepProps {
   selectedOptionsPerRequirement: Record<string, number>;
   onSelectOption: (requirementId: string, optionIndex: number) => void;
   prereqEligibleCourses: string[];
+  includeClosedComponents?: boolean;
+  virtualSectionsOnly?: boolean;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -59,6 +61,8 @@ export function AssignStep({
   selectedOptionsPerRequirement,
   onSelectOption,
   prereqEligibleCourses,
+  includeClosedComponents = true,
+  virtualSectionsOnly = false,
 }: AssignStepProps) {
   const [completedOpen, setCompletedOpen] = useState(false);
   const openFnsRef = useRef(new Map<string, () => void>());
@@ -198,7 +202,8 @@ export function AssignStep({
                     unassignedCompletedSetNormalized
                   }
                   allAssignedCoursesNormalized={allAssignedCoursesNormalized}
-                  includeClosedComponents
+                  includeClosedComponents={includeClosedComponents}
+                  virtualSectionsOnly={virtualSectionsOnly}
                   completedOnly
                 />
               );
