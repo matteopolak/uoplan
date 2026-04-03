@@ -127,7 +127,7 @@ function collectRequirementsFromSelectedBranches(
 
 function buildTimetableFailureDiagnostics(
   poolDiagnostics: {
-    emptyPools: Array<{ label: string; requirementId?: string }>;
+    emptyPools: Array<{ label: string; requirementId?: string; candidateCourses?: string[] }>;
     totalAvailable: number;
     totalNeeded: number;
   } | null,
@@ -475,7 +475,7 @@ export async function generateSchedulesAction(
   let lastChosenFromPool: Record<string, string> = {};
   let finalPoolMaps: Record<string, string>[] = [];
   let poolDiagnostics: {
-    emptyPools: Array<{ label: string; requirementId?: string }>;
+    emptyPools: Array<{ label: string; requirementId?: string; candidateCourses?: string[] }>;
     totalAvailable: number;
     totalNeeded: number;
   } | null = null;
@@ -986,6 +986,7 @@ export async function generateSchedulesAction(
     const emptyPools = poolsWithNoEligibleCandidates.map((p) => ({
       label: p.label,
       requirementId: p.requirementId,
+      candidateCourses: p.candidateCourses,
     }));
     poolDiagnostics = {
       emptyPools,
