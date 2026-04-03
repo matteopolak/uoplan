@@ -97,3 +97,31 @@ export function cacheWithClosedFilter(
     getAllSchedules: () => cache.getAllSchedules(),
   };
 }
+
+/**
+ * Like {@link cacheWithClosedFilter}, but `virtualOnly` is decided per-course.
+ *
+ * This is used so the global "virtual sections only" UX can apply selectively
+ * (e.g. only for elective pools), while still letting explicitly chosen
+ * courses keep in-person sections.
+ */
+export function cacheWithPerCourseVirtualFilter(
+  cache: DataCache,
+  includeClosed: boolean,
+  virtualFor: (code: string) => boolean,
+): DataCache {
+  const memo = new Map<string, CourseSchedule | undefined>();
+  return {
+    getCourse: (code) => cache.getCourse(code),
+    getSchedule: (code) => {
+      if (memo.has(code)) return memo.get(code);
+      const virtualOnly = virtualFor(code);
+      const s = getEffectiveSchedule(cache, code, includeClosed, virtualOnly);
+      memo.set(code, s);
+      return s;
+    },
+    getCoursesByDiscipline: (d) => cache.getCoursesByDiscipline(d),
+    getAllCourses: () => cache.getAllCourses(),
+    getAllSchedules: () => cache.getAllSchedules(),
+  };
+}

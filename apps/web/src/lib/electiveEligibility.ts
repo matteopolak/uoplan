@@ -1,4 +1,4 @@
-import { getCourseLevel } from "schedule";
+import { getCourseLevel, normalizeCourseCode } from "schedule";
 
 export const MAX_ELECTIVE_LEVEL = 4000;
 export const DEFAULT_BASIC_ELECTIVE_LEVEL_BUCKETS = [1000];
@@ -42,4 +42,26 @@ export function isWithinElectiveLevelBuckets(
   if (level == null) return true;
   const bucket = Math.floor(level / 1000) * 1000;
   return electiveLevelBuckets.includes(bucket);
+}
+
+/**
+ * Returns whether we should apply the "virtual sections only" filter to this
+ * course, given the requirement context and explicit-exemption rules.
+ *
+ * Policy:
+ * - If virtualSectionsOnly is off, never filter.
+ * - Only filter when the requirement type is elective-like.
+ * - If the course appears in explicit picks (constrained/assigned), exempt it.
+ */
+export function virtualScheduleFilterApplies(
+  virtualSectionsOnly: boolean,
+  requirementType: string | undefined,
+  courseCode: string,
+  explicitExemptNormalized: Set<string>,
+): boolean {
+  if (!virtualSectionsOnly) return false;
+  if (!isElectiveRequirementType(requirementType)) return false;
+  const norm = normalizeCourseCode(courseCode);
+  if (explicitExemptNormalized.has(norm)) return false;
+  return true;
 }

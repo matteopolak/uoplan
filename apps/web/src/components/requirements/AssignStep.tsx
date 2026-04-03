@@ -38,6 +38,7 @@ export interface AssignStepProps {
   completedRequirementsList: CompletedRequirementItem[];
   completedCourses: string[];
   unassignedCompletedCourses: string[];
+  constrainedPerRequirement: Record<string, string[]>;
   selectedPerRequirement: Record<string, string[]>;
   onSelect: (requirementId: string, courses: string[]) => void;
   selectedOptionsPerRequirement: Record<string, number>;
@@ -56,6 +57,7 @@ export function AssignStep({
   completedRequirementsList,
   completedCourses,
   unassignedCompletedCourses,
+  constrainedPerRequirement,
   selectedPerRequirement,
   onSelect,
   selectedOptionsPerRequirement,
@@ -189,6 +191,7 @@ export function AssignStep({
                   cache={cache}
                   completedCourses={completedSet}
                   selectedPerRequirement={selectedPerRequirement}
+                  constrainedPerRequirement={constrainedPerRequirement}
                   onSelect={onSelect}
                   selectedOptionsPerRequirement={selectedOptionsPerRequirement}
                   onSelectOption={onSelectOption}

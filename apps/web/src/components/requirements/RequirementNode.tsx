@@ -101,6 +101,8 @@ export interface RequirementNodeProps {
   cache: DataCache | null;
   completedCourses: Set<string>;
   selectedPerRequirement: Record<string, string[]>;
+  /** Constrain-step selections, used to exempt explicit courses from virtual-only filtering. */
+  constrainedPerRequirement?: Record<string, string[]>;
   onSelect: (requirementId: string, courses: string[]) => void;
   selectedOptionsPerRequirement: Record<string, number>;
   onSelectOption: (requirementId: string, optionIndex: number) => void;
@@ -226,6 +228,7 @@ export const RequirementNode = memo(function RequirementNode({
   cache,
   completedCourses,
   selectedPerRequirement,
+  constrainedPerRequirement,
   onSelect,
   selectedOptionsPerRequirement,
   onSelectOption,
@@ -341,6 +344,7 @@ export const RequirementNode = memo(function RequirementNode({
       allAssignedCoursesNormalized,
       includeClosedComponents,
       virtualSectionsOnly,
+      constrainedPerRequirement,
       completedOnly,
     });
   }, [
@@ -357,6 +361,7 @@ export const RequirementNode = memo(function RequirementNode({
     virtualSectionsOnly,
     completedOnly,
     selectedPerRequirement,
+    constrainedPerRequirement,
   ]);
 
   if (isSection) {
