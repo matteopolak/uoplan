@@ -1302,8 +1302,10 @@ async function main() {
   await generateIndices(dataDir);
 }
 
-main().catch(e => {
-  console.error('\nScrape failed!');
-  console.error(e);
-  process.exit(1);
-});
+if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
+  main().catch(e => {
+    console.error('\nScrape failed!');
+    console.error(e);
+    process.exit(1);
+  });
+}
