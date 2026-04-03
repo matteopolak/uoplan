@@ -25,10 +25,10 @@ export interface GenerateBasicSchedulesResult {
   generationError: GenerationErrorState | null;
 }
 
-export async function generateBasicSchedulesAction(
+export function generateBasicSchedulesAction(
   state: AppState,
   options?: { appendFirstOnly?: boolean }
-): Promise<GenerateBasicSchedulesResult | null> {
+): GenerateBasicSchedulesResult | null {
   const appendFirstOnly = options?.appendFirstOnly ?? false;
   const {
     cache,
@@ -45,6 +45,7 @@ export async function generateBasicSchedulesAction(
     professorRatings,
     generationSeed,
     includeClosedComponents,
+    virtualSectionsOnly,
     scheduleColorMaps: existingColorMaps,
     completedCourses,
     studentPrograms,
@@ -53,7 +54,11 @@ export async function generateBasicSchedulesAction(
   if (!cache) {
     return null;
   }
-  const effectiveCache = cacheWithClosedFilter(cache, includeClosedComponents);
+  const effectiveCache = cacheWithClosedFilter(
+    cache,
+    includeClosedComponents,
+    virtualSectionsOnly,
+  );
 
   const existingScheduleCount = appendFirstOnly ? state.generatedSchedules.length : 0;
   const rng = createSeededRng(((generationSeed >>> 0) + existingScheduleCount) >>> 0);
@@ -102,7 +107,12 @@ export async function generateBasicSchedulesAction(
     // Check if already pinned
     if (pinned.includes(code)) continue;
     
-    const sched = getEffectiveSchedule(effectiveCache, code, includeClosedComponents);
+    const sched = getEffectiveSchedule(
+      effectiveCache,
+      code,
+      includeClosedComponents,
+      virtualSectionsOnly,
+    );
     if (!sched) continue;
     
     if (getValidSectionCombos(sched, constraints).length === 0) continue;

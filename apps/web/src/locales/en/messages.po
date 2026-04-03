@@ -564,6 +564,9 @@ msgstr "Elective levels"
 msgid "constrainStep.includeClosedSections"
 msgstr "Include closed sections"
 
+msgid "constrainStep.virtualSectionsOnly"
+msgstr "Virtual meeting times only"
+
 msgid "requirementNode.satisfiedBy"
 msgstr "Satisfied by: {courses}"
 

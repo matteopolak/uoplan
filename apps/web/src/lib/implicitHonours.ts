@@ -19,11 +19,17 @@ export function collectImplicitHonoursForSchedule(
   prereqEligibleSet: Set<string>,
   cache: DataCache,
   includeClosedComponents: boolean,
+  virtualSectionsOnly: boolean,
   seenHonoursNorm: Set<string>,
 ): ImplicitHonoursPick[] {
   const picks: ImplicitHonoursPick[] = [];
   const hasScheduleForReq = (code: string): boolean =>
-    !!getEffectiveSchedule(cache, code, includeClosedComponents);
+    !!getEffectiveSchedule(
+      cache,
+      code,
+      includeClosedComponents,
+      virtualSectionsOnly,
+    );
 
   for (const req of effectiveRemainingRequirements) {
     const reqId = req.requirementId;

@@ -8,6 +8,7 @@ export interface ConstraintsSlice {
   setGenerationAllowedDays: AppStore["setGenerationAllowedDays"];
   setGenerationMinProfessorRating: AppStore["setGenerationMinProfessorRating"];
   setIncludeClosedComponents: AppStore["setIncludeClosedComponents"];
+  setVirtualSectionsOnly: AppStore["setVirtualSectionsOnly"];
   setGenerationLimitFirstYearCredits: AppStore["setGenerationLimitFirstYearCredits"];
   setGenerationCompressedSchedule: AppStore["setGenerationCompressedSchedule"];
 }
@@ -21,6 +22,11 @@ export const createConstraintsSlice: StateCreator<
   setIncludeClosedComponents: (value) => {
     clearEnrollmentsCache();
     set({ includeClosedComponents: value });
+  },
+
+  setVirtualSectionsOnly: (value) => {
+    clearEnrollmentsCache();
+    set({ virtualSectionsOnly: value });
   },
 
   setGenerationMinStartMinutes: (minutes) =>

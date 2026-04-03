@@ -59,6 +59,7 @@ describe("collectImplicitHonoursForSchedule", () => {
       eligible,
       cache,
       false,
+      false,
       seen,
     );
     expect(picks).toEqual([{ code: "ABC 4900", requirementId: "honours-req" }]);
@@ -73,6 +74,7 @@ describe("collectImplicitHonoursForSchedule", () => {
       completed,
       eligible,
       cache,
+      false,
       false,
       s,
     );
@@ -95,6 +97,7 @@ describe("collectImplicitHonoursForSchedule", () => {
       eligible,
       cache,
       false,
+      false,
       s,
     );
     expect(picks).toEqual([]);
@@ -109,6 +112,7 @@ describe("collectImplicitHonoursForSchedule", () => {
       completed,
       eligible,
       cache,
+      false,
       false,
       s,
     );
@@ -127,6 +131,7 @@ describe("collectImplicitHonoursForSchedule", () => {
       eligible,
       cache,
       false,
+      false,
       s,
     );
     expect(picks).toEqual([]);
@@ -141,6 +146,7 @@ describe("collectImplicitHonoursForSchedule", () => {
       completed,
       eligible,
       cache,
+      false,
       false,
       s,
     );

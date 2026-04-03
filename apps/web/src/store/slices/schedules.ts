@@ -97,6 +97,7 @@ export const createSchedulesSlice: StateCreator<
       generationMinProfessorRating,
       professorRatings,
       includeClosedComponents,
+      virtualSectionsOnly,
     } = get();
     if (!cache || scheduleIndex >= generatedSchedules.length) return;
 
@@ -108,6 +109,7 @@ export const createSchedulesSlice: StateCreator<
       cache,
       newCourseCode,
       includeClosedComponents,
+      virtualSectionsOnly,
     );
     if (!newSchedule) return;
 
@@ -123,7 +125,11 @@ export const createSchedulesSlice: StateCreator<
       const allCodes = schedule.enrollments.map(e => e.courseCode);
       allCodes[enrollmentIndex] = newCourseCode;
       
-      const effectiveCache = cacheWithClosedFilter(cache, includeClosedComponents);
+      const effectiveCache = cacheWithClosedFilter(
+        cache,
+        includeClosedComponents,
+        virtualSectionsOnly,
+      );
       
       const batch = generateSchedulesWithPinned(
         allCodes,
@@ -261,6 +267,7 @@ export const createSchedulesSlice: StateCreator<
       generationMinProfessorRating,
       professorRatings,
       includeClosedComponents,
+      virtualSectionsOnly,
       filteredPrereqEligibleCourses,
     } = get();
     if (!cache || scheduleIndex >= generatedSchedules.length) {
@@ -315,7 +322,12 @@ export const createSchedulesSlice: StateCreator<
         const alreadyInSchedule = schedule.enrollments.some((e) => e.courseCode === code);
         if (alreadyInSchedule) continue;
         
-        const sched = getEffectiveSchedule(cacheVal, code, includeClosedComponents);
+        const sched = getEffectiveSchedule(
+          cacheVal,
+          code,
+          includeClosedComponents,
+          virtualSectionsOnly,
+        );
         if (!sched) continue;
         
         const swapConstraints: GenerationConstraints = {
@@ -382,13 +394,14 @@ export const createSchedulesSlice: StateCreator<
     };
 
     function getValidEnrollmentsFor(code: string): CourseEnrollment[] {
-      const cacheKey = `${code}:${includeClosedComponents}`;
+      const cacheKey = `${code}:${includeClosedComponents}:${virtualSectionsOnly}`;
       const cached = validEnrollmentsByCourseCode.get(cacheKey);
       if (cached) return cached;
       const sched = getEffectiveSchedule(
         cacheVal,
         code,
         includeClosedComponents,
+        virtualSectionsOnly,
       );
       if (!sched) {
         validEnrollmentsByCourseCode.set(cacheKey, []);

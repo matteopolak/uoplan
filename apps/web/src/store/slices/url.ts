@@ -118,6 +118,7 @@ export const createUrlSlice: StateCreator<
       selectedScheduleIndex: Math.max(0, decoded.selectedScheduleIndex),
       generationSeed: decoded.generationSeed >>> 0,
       includeClosedComponents: decoded.includeClosedComponents ?? false,
+      virtualSectionsOnly: decoded.virtualSectionsOnly ?? false,
       generatedSchedules: [],
       generationError: null,
       constrainedPerRequirement,
@@ -148,6 +149,7 @@ export const createUrlSlice: StateCreator<
       requirementTreeWithStatus: s.requirementTreeWithStatus,
       remainingRequirements: s.remainingRequirements,
       includeClosedComponents: s.includeClosedComponents,
+      virtualSectionsOnly: s.virtualSectionsOnly,
       studentPrograms: s.studentPrograms,
     };
     return encodeStateToBase64(
@@ -177,6 +179,7 @@ export const createUrlSlice: StateCreator<
       requirementTreeWithStatus: s.requirementTreeWithStatus,
       remainingRequirements: s.remainingRequirements,
       includeClosedComponents: s.includeClosedComponents,
+      virtualSectionsOnly: s.virtualSectionsOnly,
       studentPrograms: s.studentPrograms,
     };
     const bytes = encodeState(

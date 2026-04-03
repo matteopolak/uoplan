@@ -71,6 +71,7 @@ export const useAppStore = create<AppStore>()((...a) => {
     generationAllowedDays: ["Mo", "Tu", "We", "Th", "Fr"],
     generationSeed: generateRandomSeed(),
     includeClosedComponents: false,
+    virtualSectionsOnly: false,
     generationMinProfessorRating: null,
     professorRatings: null,
     generationLimitFirstYearCredits: true,
@@ -129,6 +130,7 @@ export const useAppStore = create<AppStore>()((...a) => {
         swapHistory: [],
         generationSeed: generateRandomSeed(),
         includeClosedComponents: false,
+        virtualSectionsOnly: false,
       });
       if (typeof window !== "undefined") {
         localStorage.removeItem(LOCAL_STORAGE_KEY);

@@ -32,7 +32,9 @@ function programSlug(p: Program): string {
   return (p as Program & { slug?: string }).slug ?? urlToSlug(p.url);
 }
 
-const VERSION = 7;
+const VERSION = 8;
+/** Oldest binary format still accepted by {@link decodeState}. */
+const MIN_DECODE_VERSION = 7;
 const MAX_U16 = 0xffff;
 const MAX_U32 = 0xffffffff;
 /** Sentinel base for OPT transfer credit codes. Level 1000 → 0xFFF1, 2000 → 0xFFF2, etc. */
@@ -56,6 +58,7 @@ export interface EncodeInput {
   requirementTreeWithStatus: RequirementWithStatus[];
   remainingRequirements: RemainingRequirement[];
   includeClosedComponents: boolean;
+  virtualSectionsOnly: boolean;
   studentPrograms: string[];
 }
 
@@ -74,6 +77,7 @@ export interface DecodedState {
   courseSelections: Array<{ reqIndex: number; courseCodes: string[] }>;
   constrainedSelections: Array<{ reqIndex: number; courseCodes: string[] }>;
   includeClosedComponents: boolean;
+  virtualSectionsOnly: boolean;
   studentPrograms: string[];
 }
 
@@ -133,7 +137,7 @@ function readU32(view: DataView, offset: number): { value: number; next: number 
  * Encode user state to a compact binary format. Returns null if indices/catalogue
  * don't contain the current program or courses (e.g. program not in indices).
  *
- * Binary layout (VERSION 7):
+ * Binary layout (VERSION 8):
  *   U8  version
  *   U8  termId byte-length (0 = absent)
  *   [ASCII bytes for termId]
@@ -148,6 +152,7 @@ function readU32(view: DataView, offset: number): { value: number; next: number 
  *   U16 selectedScheduleIndex
  *   U32 generationSeed
  *   U8  includeClosedComponents
+ *   U8  virtualSectionsOnly (VERSION 8+; absent in VERSION 7 → false)
  *   U16 optionSelections count + [U16 reqIndex, U16 optionIndex × count]
  *   U16 courseSelections count + [U16 reqIndex, U16 count, U16 × count] × count
  *   U8  studentPrograms count + [U8 byteLen + ASCII bytes] × count
@@ -187,7 +192,7 @@ export function encodeState(
     1 + input.levelBuckets.length +
     1 + input.languageBuckets.length +
     1 + input.electiveLevelBuckets.length * 2 +
-    1 + 2 + 4 + 1 + // coursesThisSemester, scheduleIndex, seed, includeClosedComponents
+    1 + 2 + 4 + 1 + 1 + // coursesThisSemester, scheduleIndex, seed, includeClosed, virtualSectionsOnly
     (2 + Object.keys(input.selectedOptionsPerRequirement).length * 4) +
     (2 + (() => {
       let n = 0;
@@ -240,6 +245,7 @@ export function encodeState(
   off = writeU16(view, off, Math.min(MAX_U16, input.selectedScheduleIndex));
   off = writeU32(view, off, Math.min(MAX_U32, input.generationSeed >>> 0));
   off = writeU8(view, off, input.includeClosedComponents ? 1 : 0);
+  off = writeU8(view, off, input.virtualSectionsOnly ? 1 : 0);
 
   const optEntries = Object.entries(input.selectedOptionsPerRequirement)
     .map(([reqId, optionIndex]) => {
@@ -317,7 +323,7 @@ export function peekTermAndYear(
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   if (bytes.length < 1) return null;
   const version = view.getUint8(0);
-  if (version !== VERSION) return null;
+  if (version < MIN_DECODE_VERSION || version > VERSION) return null;
   let off = 1;
 
   if (off + 1 > bytes.length) return null;
@@ -352,7 +358,7 @@ export function decodeState(
   if (buffer.length < 1) return { error: 'Invalid state: too short' };
   const { value: version, next: n0 } = readU8(view, off);
   off = n0;
-  if (version !== VERSION) {
+  if (version < MIN_DECODE_VERSION || version > VERSION) {
     return { error: 'Invalid or unsupported state version' };
   }
 
@@ -450,6 +456,14 @@ export function decodeState(
   const { value: incClosed, next: nInc } = readU8(view, off);
   off = nInc;
   const includeClosedComponents = incClosed !== 0;
+
+  let virtualSectionsOnly = false;
+  if (version >= 8) {
+    if (off + 1 > buffer.length) return { error: 'Invalid state: truncated' };
+    const { value: virt, next: nVirt } = readU8(view, off);
+    off = nVirt;
+    virtualSectionsOnly = virt !== 0;
+  }
 
   if (off + 2 > buffer.length) return { error: 'Invalid state: truncated' };
   const { value: optCount, next: n8 } = readU16(view, off);
@@ -554,6 +568,7 @@ export function decodeState(
     courseSelections,
     constrainedSelections,
     includeClosedComponents,
+    virtualSectionsOnly,
     studentPrograms,
   };
 }

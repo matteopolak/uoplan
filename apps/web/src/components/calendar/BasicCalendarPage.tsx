@@ -91,6 +91,7 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
     languageBuckets,
     electiveLevelBuckets,
     includeClosedComponents,
+    virtualSectionsOnly,
     completedCourses,
     indices,
   } = useAppStore(
@@ -108,6 +109,7 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
       languageBuckets: s.languageBuckets,
       electiveLevelBuckets: s.electiveLevelBuckets,
       includeClosedComponents: s.includeClosedComponents,
+      virtualSectionsOnly: s.virtualSectionsOnly,
       completedCourses: s.completedCourses,
       indices: s.indices,
     })),
@@ -127,6 +129,7 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
   const setLanguageBuckets = useAppStore((s) => s.setLanguageBuckets);
   const setElectiveLevelBuckets = useAppStore((s) => s.setElectiveLevelBuckets);
   const setIncludeClosedComponents = useAppStore((s) => s.setIncludeClosedComponents);
+  const setVirtualSectionsOnly = useAppStore((s) => s.setVirtualSectionsOnly);
 
   const morphRef = useRef<CalendarViewHandle>(null);
 
@@ -389,6 +392,7 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
             languageBuckets={languageBuckets}
             electiveLevelBuckets={electiveLevelBuckets}
             includeClosedComponents={includeClosedComponents}
+            virtualSectionsOnly={virtualSectionsOnly}
             showGraduateElectiveLevels
             onChangeLevelBuckets={(buckets) => {
               setLevelBuckets(buckets);
@@ -404,6 +408,10 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
             }}
             onIncludeClosedComponentsChange={(value) => {
               setIncludeClosedComponents(value);
+              clearGeneratedSchedules();
+            }}
+            onVirtualSectionsOnlyChange={(value) => {
+              setVirtualSectionsOnly(value);
               clearGeneratedSchedules();
             }}
           />

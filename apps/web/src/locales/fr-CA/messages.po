@@ -564,6 +564,9 @@ msgstr "Niveaux des cours au choix"
 msgid "constrainStep.includeClosedSections"
 msgstr "Inclure les sections fermées"
 
+msgid "constrainStep.virtualSectionsOnly"
+msgstr "Horaires virtuels seulement"
+
 msgid "requirementNode.satisfiedBy"
 msgstr "Satisfait par : {courses}"
 

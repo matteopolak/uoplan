@@ -193,6 +193,7 @@ export async function generateSchedulesAction(
     professorRatings,
     generationSeed,
     includeClosedComponents,
+    virtualSectionsOnly,
     generationLimitFirstYearCredits,
     generationCompressedSchedule,
     scheduleColorMaps: existingColorMaps,
@@ -219,6 +220,7 @@ export async function generateSchedulesAction(
   const effectiveCache = cacheWithClosedFilter(
     cacheVal,
     includeClosedComponents,
+    virtualSectionsOnly,
   );
 
   const unassigned = [...new Set(unassignedCompletedCourses)].sort();
@@ -303,6 +305,7 @@ export async function generateSchedulesAction(
     prereqEligibleSet,
     cacheVal,
     includeClosedComponents,
+    virtualSectionsOnly,
     seenHonours,
   );
   const implicitHonoursRequirementId = new Map<string, string>();
@@ -320,7 +323,12 @@ export async function generateSchedulesAction(
   for (const code of uniqueConstrained) {
     if (isHonoursProject(code, cacheVal)) continue;
     if (
-      !getEffectiveSchedule(cacheVal, code, includeClosedComponents) ||
+      !getEffectiveSchedule(
+        cacheVal,
+        code,
+        includeClosedComponents,
+        virtualSectionsOnly,
+      ) ||
       completedSet.has(normalizeCourseCode(code)) ||
       !prereqEligibleSet.has(code)
     ) {
@@ -454,6 +462,7 @@ export async function generateSchedulesAction(
       cacheVal,
       code,
       includeClosedComponents,
+      virtualSectionsOnly,
     );
     if (
       !sched ||
@@ -527,6 +536,7 @@ export async function generateSchedulesAction(
           cacheVal,
           code,
           includeClosedComponents,
+          virtualSectionsOnly,
         );
       });
       return hasSchedulableNonHonours;
@@ -540,6 +550,7 @@ export async function generateSchedulesAction(
           cacheVal,
           code,
           includeClosedComponents,
+          virtualSectionsOnly,
         );
         if (
           !sched ||

@@ -126,6 +126,7 @@ export interface RequirementNodeProps {
   /** Normalized course codes already assigned to any requirement (auto-matched or user-selected). */
   allAssignedCoursesNormalized: Set<string>;
   includeClosedComponents: boolean;
+  virtualSectionsOnly: boolean;
   /** When true, restrict the dropdown to only courses in completedCourses (Assign step). */
   completedOnly?: boolean;
   /** When true, hide the course-selection dropdown and credits prompts (Options step). */
@@ -240,6 +241,7 @@ export const RequirementNode = memo(function RequirementNode({
   unassignedCompletedSetNormalized,
   allAssignedCoursesNormalized,
   includeClosedComponents,
+  virtualSectionsOnly,
   completedOnly = false,
   hideSelection = false,
   optionsStepHideCardTitle = false,
@@ -312,8 +314,6 @@ export const RequirementNode = memo(function RequirementNode({
     if (!hasOptions || !registry) return;
     registry.register(nodeKey, () => setOpened(true));
     return () => registry.unregister(nodeKey);
-    // nodeKey and registry are stable for the lifetime of the component
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const selected = node.requirementId
@@ -340,6 +340,7 @@ export const RequirementNode = memo(function RequirementNode({
       unassignedCompletedSetNormalized,
       allAssignedCoursesNormalized,
       includeClosedComponents,
+      virtualSectionsOnly,
       completedOnly,
     });
   }, [
@@ -353,6 +354,7 @@ export const RequirementNode = memo(function RequirementNode({
     unassignedCompletedSetNormalized,
     allAssignedCoursesNormalized,
     includeClosedComponents,
+    virtualSectionsOnly,
     completedOnly,
     selectedPerRequirement,
   ]);
@@ -616,6 +618,7 @@ export const RequirementNode = memo(function RequirementNode({
                     }
                     allAssignedCoursesNormalized={allAssignedCoursesNormalized}
                     includeClosedComponents={includeClosedComponents}
+                    virtualSectionsOnly={virtualSectionsOnly}
                     completedOnly={completedOnly}
                     hideSelection={hideSelection}
                     optionsStepHideCardTitle={optionsStepHideCardTitle}
@@ -836,6 +839,7 @@ export const RequirementNode = memo(function RequirementNode({
                     }
                     allAssignedCoursesNormalized={allAssignedCoursesNormalized}
                     includeClosedComponents={includeClosedComponents}
+                    virtualSectionsOnly={virtualSectionsOnly}
                     completedOnly={completedOnly}
                     hideSelection={hideSelection}
                     optionsStepHideCardTitle={optionsStepHideCardTitle}
@@ -981,6 +985,7 @@ export const RequirementNode = memo(function RequirementNode({
                 }
                 allAssignedCoursesNormalized={allAssignedCoursesNormalized}
                 includeClosedComponents={includeClosedComponents}
+                virtualSectionsOnly={virtualSectionsOnly}
                 completedOnly={completedOnly}
                 hideSelection={hideSelection}
                 optionsStepHideCardTitle={optionsStepHideCardTitle}
@@ -1132,6 +1137,7 @@ export const RequirementNode = memo(function RequirementNode({
                 }
                 allAssignedCoursesNormalized={allAssignedCoursesNormalized}
                 includeClosedComponents={includeClosedComponents}
+                virtualSectionsOnly={virtualSectionsOnly}
                 completedOnly={completedOnly}
                 hideSelection={hideSelection}
                 optionsStepHideCardTitle={optionsStepHideCardTitle}

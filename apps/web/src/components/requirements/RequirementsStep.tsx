@@ -52,6 +52,8 @@ export interface RequirementsStepProps {
   onChangeElectiveLevelBuckets: (buckets: number[]) => void;
   includeClosedComponents: boolean;
   onIncludeClosedComponentsChange: (value: boolean) => void;
+  /** When omitted, RequirementNode uses false (virtual-only schedule filter). */
+  virtualSectionsOnly?: boolean;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -166,6 +168,7 @@ export function RequirementsStep({
   onChangeElectiveLevelBuckets,
   includeClosedComponents,
   onIncludeClosedComponentsChange,
+  virtualSectionsOnly = false,
 }: RequirementsStepProps) {
   const [completedOpen, setCompletedOpen] = useState(false);
   const openFnsRef = useRef(new Map<string, () => void>());
@@ -422,6 +425,7 @@ export function RequirementsStep({
                   }
                   allAssignedCoursesNormalized={allAssignedCoursesNormalized}
                   includeClosedComponents={includeClosedComponents}
+                  virtualSectionsOnly={virtualSectionsOnly}
                 />
               );
             })

@@ -63,6 +63,7 @@ function makeInput(overrides: Partial<EncodeInput> = {}): EncodeInput {
     requirementTreeWithStatus: [],
     remainingRequirements: [],
     includeClosedComponents: false,
+    virtualSectionsOnly: false,
     studentPrograms: ['CSI', 'MAT'],
     ...overrides,
   };
@@ -115,6 +116,7 @@ describe('encodeState / decodeState roundtrip', () => {
     expect(decoded.selectedScheduleIndex).toBe(2);
     expect(decoded.generationSeed).toBe(0xdeadbeef >>> 0);
     expect(decoded.includeClosedComponents).toBe(false);
+    expect(decoded.virtualSectionsOnly).toBe(false);
     expect(decoded.studentPrograms).toEqual(['CSI', 'MAT']);
   });
 
@@ -183,6 +185,37 @@ describe('encodeState / decodeState roundtrip', () => {
     expect('error' in decoded).toBe(false);
     if ('error' in decoded) return;
     expect(decoded.includeClosedComponents).toBe(true);
+  });
+
+  it('round-trips virtualSectionsOnly = true', () => {
+    const input = makeInput({ virtualSectionsOnly: true });
+    const bytes = encodeState(input, catalogue, indices)!;
+    const decoded = decodeState(bytes, catalogue, indices);
+    expect('error' in decoded).toBe(false);
+    if ('error' in decoded) return;
+    expect(decoded.virtualSectionsOnly).toBe(true);
+  });
+
+  it('decodes version 7 payload as virtualSectionsOnly false', () => {
+    const v8false = encodeState(makeInput({ virtualSectionsOnly: false }), catalogue, indices)!;
+    const v8true = encodeState(makeInput({ virtualSectionsOnly: true }), catalogue, indices)!;
+    expect(v8false.length).toBe(v8true.length);
+    let diff = -1;
+    for (let i = 0; i < v8false.length; i++) {
+      if (v8false[i] !== v8true[i]) {
+        diff = i;
+        break;
+      }
+    }
+    expect(diff).toBeGreaterThan(0);
+    const v7 = new Uint8Array(v8false.length - 1);
+    v7.set(v8false.subarray(0, diff));
+    v7.set(v8false.subarray(diff + 1), diff);
+    v7[0] = 7;
+    const decoded = decodeState(v7, catalogue, indices);
+    expect('error' in decoded).toBe(false);
+    if ('error' in decoded) return;
+    expect(decoded.virtualSectionsOnly).toBe(false);
   });
 
   it('returns null when program is not in indices', () => {

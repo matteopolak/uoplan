@@ -6,11 +6,13 @@ export interface CourseFiltersCardProps {
   languageBuckets: ("en" | "fr" | "other")[];
   electiveLevelBuckets: number[];
   includeClosedComponents: boolean;
+  virtualSectionsOnly: boolean;
   showGraduateElectiveLevels?: boolean;
   onChangeLevelBuckets: (buckets: ("undergrad" | "grad")[]) => void;
   onChangeLanguageBuckets: (buckets: ("en" | "fr" | "other")[]) => void;
   onChangeElectiveLevelBuckets: (buckets: number[]) => void;
   onIncludeClosedComponentsChange: (value: boolean) => void;
+  onVirtualSectionsOnlyChange: (value: boolean) => void;
 }
 
 export function CourseFiltersCard({
@@ -18,11 +20,13 @@ export function CourseFiltersCard({
   languageBuckets,
   electiveLevelBuckets,
   includeClosedComponents,
+  virtualSectionsOnly,
   showGraduateElectiveLevels = false,
   onChangeLevelBuckets,
   onChangeLanguageBuckets,
   onChangeElectiveLevelBuckets,
   onIncludeClosedComponentsChange,
+  onVirtualSectionsOnlyChange,
 }: CourseFiltersCardProps) {
   const electiveLevelOptions = showGraduateElectiveLevels
     ? [
@@ -112,6 +116,13 @@ export function CourseFiltersCard({
             checked={includeClosedComponents}
             onChange={(e) =>
               onIncludeClosedComponentsChange(e.currentTarget.checked)
+            }
+          />
+          <Switch
+            label={tr("constrainStep.virtualSectionsOnly")}
+            checked={virtualSectionsOnly}
+            onChange={(e) =>
+              onVirtualSectionsOnlyChange(e.currentTarget.checked)
             }
           />
         </Group>
