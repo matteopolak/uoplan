@@ -303,16 +303,9 @@ jobs:
           if [ "$LAST_AUTHOR_EMAIL" = "$BOT_EMAIL" ]; then
             # Previous commit was from the bot — amend it in place
             git commit --amend --no-edit
+            git push --force-with-lease origin HEAD:main
           else
-            # Previous commit was from a human — amend but keep their authorship
-            # and credit the bot as a co-author
-            BOT_COAUTHOR="Co-Authored-By: github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
-            LAST_MSG=$(git log -1 --format='%B')
-            if echo "$LAST_MSG" | grep -qF "$BOT_COAUTHOR"; then
-              git commit --amend --no-edit
-            else
-              git commit --amend -m "${LAST_MSG}"$'\n\n'"${BOT_COAUTHOR}"
-            fi
+            # Previous commit was from a human — make a new commit
+            git commit -m "chore: update daily scrape data"
+            git push origin HEAD:main
           fi
-
-          git push --force-with-lease origin HEAD:main
