@@ -3,7 +3,7 @@ import {
   Alert,
   Box,
   Button,
-  Group,
+  
   Loader,
   MultiSelect,
   NumberInput,
@@ -11,15 +11,13 @@ import {
   Stack,
   Text,
   Title,
-  Tooltip,
+  
   rem,
   type OptionsFilter,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import {
   IconMenu2,
-  IconRefresh,
-  IconShare,
   IconX,
 } from "@tabler/icons-react";
 import { useAppStore } from "../../store/appStore";
@@ -29,11 +27,9 @@ import { GenerationErrorDetailBlocks } from "../GenerationErrorDetailBlocks";
 import { buildScheduleIcs, downloadTextFile, parseTranscriptPdf, isOptCourse, normalizeCourseCode } from "schedule";
 import { createCourseOptions, renderCourseOption } from '../shared/CourseSelect';
 import { useTimetableDateRangeFromSchedule } from "../../hooks/useTimetableDateRange";
-import { useShareUrl } from "../../hooks/useShareUrl";
 import { tr } from "../../i18n";
-import { LanguageSwitcher } from "../shared/LanguageSwitcher";
-import { ResetModal } from "../shared/ResetModal";
 import { CourseFiltersCard } from "../requirements/CourseFiltersCard";
+import { BasicCalendarHeaderActions } from "./BasicCalendarHeaderActions";
 import { CALENDAR_SIDEBAR_WIDTH_PX } from "./calendarLayout";
 
 interface BasicCalendarPageProps {
@@ -138,13 +134,13 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
   const setElectiveLevelBuckets = useAppStore((s) => s.setElectiveLevelBuckets);
   const setIncludeClosedComponents = useAppStore((s) => s.setIncludeClosedComponents);
   const setVirtualSectionsOnly = useAppStore((s) => s.setVirtualSectionsOnly);
-  const getShareUrl = useAppStore((s) => s.getShareUrl);
-  const resetToDefault = useAppStore((s) => s.resetToDefault);
+  
+  
 
   const morphRef = useRef<CalendarViewHandle>(null);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [resetModalOpen, setResetModalOpen] = useState(false);
+  
   const [generating, setGenerating] = useState(false);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [transcriptError, setTranscriptError] = useState<string | null>(null);
@@ -154,7 +150,7 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
 
   const isMobile = useMediaQuery("(max-width: 768px)");
 
-  const { shareCopied, handleCopyShare } = useShareUrl(getShareUrl);
+  
 
   useTimetableDateRangeFromSchedule(
     generatedSchedules,
@@ -354,45 +350,7 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
           {tr("basicCalendar.subtitle")}
         </Text>
 
-        <Group gap="xs" wrap="wrap">
-          <LanguageSwitcher />
-          {indices && (
-            <Tooltip label="Copied to clipboard!" opened={shareCopied} position="bottom" withArrow color="dark">
-              <Button
-                variant="filled"
-                color="dark"
-                size="sm"
-                radius={0}
-                leftSection={<IconShare size={14} />}
-                onClick={handleCopyShare}
-                style={{ backgroundColor: "#141517" }}
-              >
-                {tr("calendarPage.share")}
-              </Button>
-            </Tooltip>
-          )}
-          <Button
-            variant="filled"
-            color="dark"
-            size="sm"
-            radius={0}
-            leftSection={<IconRefresh size={14} />}
-            onClick={() => setResetModalOpen(true)}
-            style={{ backgroundColor: "#141517" }}
-          >
-            {tr("calendarPage.reset")}
-          </Button>
-        </Group>
-
-        <ResetModal
-          opened={resetModalOpen}
-          onClose={() => setResetModalOpen(false)}
-          onConfirm={() => {
-            resetToDefault();
-            setResetModalOpen(false);
-            onBack();
-          }}
-        />
+        <BasicCalendarHeaderActions onBack={onBack} />
 
         {generatedSchedules.length > 0 && (
           <Select
