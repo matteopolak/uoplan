@@ -1,4 +1,5 @@
 import { getCourseLevel, normalizeCourseCode } from "schedule";
+import { isBroadElectivePoolType } from "../store/scheduleHelpers";
 
 export const MAX_ELECTIVE_LEVEL = 4000;
 export const DEFAULT_BASIC_ELECTIVE_LEVEL_BUCKETS = [1000];
@@ -50,7 +51,9 @@ export function isWithinElectiveLevelBuckets(
  *
  * Policy:
  * - If virtualSectionsOnly is off, never filter.
- * - Only filter when the requirement type is elective-like.
+ * - Only filter for broad (whole-catalog) elective pools — same notion as
+ *   {@link isBroadElectivePoolType}. Discipline-scoped pools (e.g. discipline_elective)
+ *   are treated like structured requirements.
  * - If the course appears in explicit picks (constrained/assigned), exempt it.
  */
 export function virtualScheduleFilterApplies(
@@ -60,7 +63,7 @@ export function virtualScheduleFilterApplies(
   explicitExemptNormalized: Set<string>,
 ): boolean {
   if (!virtualSectionsOnly) return false;
-  if (!isElectiveRequirementType(requirementType)) return false;
+  if (!isBroadElectivePoolType(requirementType ?? "")) return false;
   const norm = normalizeCourseCode(courseCode);
   if (explicitExemptNormalized.has(norm)) return false;
   return true;
