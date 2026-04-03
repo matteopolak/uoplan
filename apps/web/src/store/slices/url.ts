@@ -37,6 +37,13 @@ export const createUrlSlice: StateCreator<
       if (yearProgram) program = yearProgram;
     }
 
+    let minorProgram = decoded.minorProgram ?? null;
+    if (minorProgram != null && yearCataloguePrograms != null) {
+      const slug = urlToSlug(minorProgram.url);
+      const yearProgram = yearCataloguePrograms.find((p) => urlToSlug(p.url) === slug);
+      if (yearProgram) minorProgram = yearProgram;
+    }
+
     // Augment cache with fake entries for any OPT transfer credit codes
     const optCodes = decoded.completedCourseCodes.map(normalizeCourseCode).filter(isOptCourse);
     const cache = optCodes.length > 0
@@ -46,6 +53,7 @@ export const createUrlSlice: StateCreator<
     const studentPrograms = decoded.studentPrograms;
     const firstPass = recomputeStateForProgram(
       program,
+      minorProgram,
       decoded.completedCourseCodes,
       cache,
       {},
@@ -95,6 +103,7 @@ export const createUrlSlice: StateCreator<
 
     const full = recomputeStateForProgram(
       program,
+      minorProgram,
       decoded.completedCourseCodes,
       cache,
       selectedPerRequirement,
@@ -108,6 +117,7 @@ export const createUrlSlice: StateCreator<
 
     set({
       program,
+      minorProgram,
       studentPrograms,
       completedCourses: decoded.completedCourseCodes,
       cache,
@@ -136,6 +146,7 @@ export const createUrlSlice: StateCreator<
       selectedTermId: s.selectedTermId,
       firstYear: s.firstYear,
       program: s.program,
+      minorProgram: s.minorProgram,
       completedCourses: s.completedCourses,
       levelBuckets: s.levelBuckets,
       languageBuckets: s.languageBuckets,
@@ -166,6 +177,7 @@ export const createUrlSlice: StateCreator<
       selectedTermId: s.selectedTermId,
       firstYear: s.firstYear,
       program: s.program,
+      minorProgram: s.minorProgram,
       completedCourses: s.completedCourses,
       levelBuckets: s.levelBuckets,
       languageBuckets: s.languageBuckets,

@@ -46,6 +46,7 @@ export interface AppState {
   yearCatalogueLoading: boolean;
 
   program: Program | null;
+  minorProgram: Program | null;
   studentPrograms: string[];
   completedCourses: string[];
   remainingRequirements: RemainingRequirement[];
@@ -103,6 +104,7 @@ export interface AppActions {
   getShareUrl: () => string | null;
   getEncodedStateBase64: () => string | null;
   setProgram: (program: Program | null) => void;
+  setMinorProgram: (program: Program | null) => void;
   setStudentPrograms: (programs: string[]) => void;
   setCompletedCourses: (courses: string[]) => void;
   addCompletedCourse: (code: string) => void;

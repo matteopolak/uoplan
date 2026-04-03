@@ -120,6 +120,7 @@ export const createDataSlice: StateCreator<
       const s = get();
       const full = recomputeStateForProgram(
         s.program,
+        s.minorProgram,
         s.completedCourses,
         cache,
         s.selectedPerRequirement,
