@@ -60,6 +60,7 @@ describe("collectImplicitHonoursForSchedule", () => {
       cache,
       false,
       false,
+      new Set<string>(),
       seen,
     );
     expect(picks).toEqual([{ code: "ABC 4900", requirementId: "honours-req" }]);
@@ -76,6 +77,7 @@ describe("collectImplicitHonoursForSchedule", () => {
       cache,
       false,
       false,
+      new Set<string>(),
       s,
     );
     expect(picks).toEqual([]);
@@ -98,6 +100,7 @@ describe("collectImplicitHonoursForSchedule", () => {
       cache,
       false,
       false,
+      new Set<string>(),
       s,
     );
     expect(picks).toEqual([]);
@@ -114,6 +117,7 @@ describe("collectImplicitHonoursForSchedule", () => {
       cache,
       false,
       false,
+      new Set<string>(),
       s,
     );
     expect(picks).toEqual([]);
@@ -132,6 +136,7 @@ describe("collectImplicitHonoursForSchedule", () => {
       cache,
       false,
       false,
+      new Set<string>(),
       s,
     );
     expect(picks).toEqual([]);
@@ -148,6 +153,7 @@ describe("collectImplicitHonoursForSchedule", () => {
       cache,
       false,
       false,
+      new Set<string>(),
       s,
     );
     expect(picks).toEqual([]);

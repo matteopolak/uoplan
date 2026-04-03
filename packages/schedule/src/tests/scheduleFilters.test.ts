@@ -2,6 +2,7 @@ import {
   filterScheduleExcludingClosed,
   filterScheduleVirtualOnly,
   getEffectiveSchedule,
+  cacheWithPerCourseVirtualFilter,
 } from '../scheduleFilters';
 import type { CourseSchedule } from 'schemas';
 import type { DataCache } from '../dataCache';
@@ -260,5 +261,77 @@ describe('getEffectiveSchedule', () => {
       getAllSchedules: () => [schedNonVirtual],
     };
     expect(getEffectiveSchedule(cache, 'CSI 1234', true, true)).toBeUndefined();
+  });
+});
+
+describe('cacheWithPerCourseVirtualFilter', () => {
+  it('applies virtual filtering per-code', () => {
+    const schedBoth = makeSchedule({
+      LEC: [
+        {
+          section: 'A00',
+          sectionCode: 'A00',
+          component: 'LEC',
+          session: null,
+          times: [
+            { day: 'Mo', startMinutes: 540, endMinutes: 630, virtual: false },
+            { day: 'We', startMinutes: 540, endMinutes: 630, virtual: true },
+          ],
+          instructors: [],
+          meetingDates: null,
+          status: 'Open',
+        },
+      ],
+    });
+
+    const cache: DataCache = {
+      getCourse: () => undefined,
+      getSchedule: (code) => (code === 'CSI 1234' ? schedBoth : undefined),
+      getCoursesByDiscipline: () => [],
+      getAllCourses: () => [],
+      getAllSchedules: () => [],
+    };
+
+    const wrapped = cacheWithPerCourseVirtualFilter(cache, true, (code) =>
+      code === 'CSI 1234',
+    );
+
+    const out = wrapped.getSchedule('CSI 1234');
+    expect(out).toBeDefined();
+    expect(out?.components.LEC[0].times).toHaveLength(1);
+    expect(out?.components.LEC[0].times[0].virtual).toBe(true);
+  });
+
+  it('keeps non-virtual times when virtualOnly is false', () => {
+    const schedBoth = makeSchedule({
+      LEC: [
+        {
+          section: 'A00',
+          sectionCode: 'A00',
+          component: 'LEC',
+          session: null,
+          times: [
+            { day: 'Mo', startMinutes: 540, endMinutes: 630, virtual: false },
+            { day: 'We', startMinutes: 540, endMinutes: 630, virtual: true },
+          ],
+          instructors: [],
+          meetingDates: null,
+          status: 'Open',
+        },
+      ],
+    });
+
+    const cache: DataCache = {
+      getCourse: () => undefined,
+      getSchedule: () => schedBoth,
+      getCoursesByDiscipline: () => [],
+      getAllCourses: () => [],
+      getAllSchedules: () => [],
+    };
+
+    const wrapped = cacheWithPerCourseVirtualFilter(cache, true, () => false);
+    const out = wrapped.getSchedule('CSI 1234');
+    expect(out).toBeDefined();
+    expect(out?.components.LEC[0].times).toHaveLength(2);
   });
 });

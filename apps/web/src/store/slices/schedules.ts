@@ -7,7 +7,7 @@ import {
   enrollmentsOverlap,
   getFirstOverlapWith,
   generateSchedulesWithPinned,
-  cacheWithClosedFilter,
+  cacheWithPerCourseVirtualFilter,
   type CourseEnrollment,
   type GenerationConstraints,
 } from "schedule";
@@ -18,6 +18,7 @@ import {
   isElectiveRequirementType,
   isWithinElectiveLevelCap,
   isWithinElectiveLevelBuckets,
+  virtualScheduleFilterApplies,
 } from "../../lib/electiveEligibility";
 
 const validEnrollmentsByCourseCode = new Map<string, CourseEnrollment[]>();
@@ -52,7 +53,7 @@ export const createSchedulesSlice: StateCreator<
 
   generateBasicSchedules: async (options) => {
     const { generateBasicSchedulesAction } = await import("../../lib/generateBasicSchedulesAction");
-    const result = await generateBasicSchedulesAction(get(), options);
+    const result = generateBasicSchedulesAction(get(), options);
     if (result) {
       set(result);
     }
@@ -86,6 +87,7 @@ export const createSchedulesSlice: StateCreator<
   ) => {
     const {
       wizardMode,
+      basicPinnedCourses,
       generatedSchedules,
       cache,
       chosenCourseToRequirementId,
@@ -98,6 +100,9 @@ export const createSchedulesSlice: StateCreator<
       professorRatings,
       includeClosedComponents,
       virtualSectionsOnly,
+      remainingRequirements,
+      constrainedPerRequirement,
+      selectedPerRequirement,
     } = get();
     if (!cache || scheduleIndex >= generatedSchedules.length) return;
 
@@ -105,11 +110,44 @@ export const createSchedulesSlice: StateCreator<
     const oldEnrollment = schedule.enrollments[enrollmentIndex];
     if (!oldEnrollment) return;
 
+    const explicitExemptNormalized = new Set<string>();
+    for (const codes of Object.values(constrainedPerRequirement)) {
+      for (const code of codes) {
+        explicitExemptNormalized.add(normalizeCourseCode(code));
+      }
+    }
+    for (const codes of Object.values(selectedPerRequirement)) {
+      for (const code of codes) {
+        explicitExemptNormalized.add(normalizeCourseCode(code));
+      }
+    }
+
+    let virtualOnlyForNewCourse = false;
+    if (wizardMode === "basic") {
+      // Basic mode only swaps electives; pinned "required" courses are excluded
+      // from swap candidates, and schedule-generation uses per-course virtual filtering.
+      virtualOnlyForNewCourse = virtualSectionsOnly;
+    } else {
+      const poolMap =
+        schedulePoolMaps[scheduleIndex] ?? chosenCourseToRequirementId;
+      const oldCode = oldEnrollment.courseCode;
+      const reqId = poolMap[oldCode];
+      const reqType = remainingRequirements.find(
+        (r) => r.requirementId === reqId,
+      )?.type;
+      virtualOnlyForNewCourse = virtualScheduleFilterApplies(
+        virtualSectionsOnly,
+        reqType,
+        newCourseCode,
+        explicitExemptNormalized,
+      );
+    }
+
     const newSchedule = getEffectiveSchedule(
       cache,
       newCourseCode,
       includeClosedComponents,
-      virtualSectionsOnly,
+      virtualOnlyForNewCourse,
     );
     if (!newSchedule) return;
 
@@ -125,10 +163,15 @@ export const createSchedulesSlice: StateCreator<
       const allCodes = schedule.enrollments.map(e => e.courseCode);
       allCodes[enrollmentIndex] = newCourseCode;
       
-      const effectiveCache = cacheWithClosedFilter(
+      const pinnedNormalized = new Set(
+        basicPinnedCourses.map(normalizeCourseCode),
+      );
+      const effectiveCache = cacheWithPerCourseVirtualFilter(
         cache,
         includeClosedComponents,
-        virtualSectionsOnly,
+        (code) =>
+          virtualSectionsOnly &&
+          !pinnedNormalized.has(normalizeCourseCode(code)),
       );
       
       const batch = generateSchedulesWithPinned(
@@ -269,6 +312,8 @@ export const createSchedulesSlice: StateCreator<
       includeClosedComponents,
       virtualSectionsOnly,
       filteredPrereqEligibleCourses,
+      constrainedPerRequirement,
+      selectedPerRequirement,
     } = get();
     if (!cache || scheduleIndex >= generatedSchedules.length) {
       return { candidates: [], poolCourses: [], rejectedWithConflict: [] };
@@ -377,6 +422,14 @@ export const createSchedulesSlice: StateCreator<
       for (const c of filteredPrereqEligibleCourses) candidateSet.add(c);
     }
 
+    const explicitExemptNormalized = new Set<string>();
+    for (const codes of Object.values(constrainedPerRequirement)) {
+      for (const code of codes) explicitExemptNormalized.add(normalizeCourseCode(code));
+    }
+    for (const codes of Object.values(selectedPerRequirement)) {
+      for (const code of codes) explicitExemptNormalized.add(normalizeCourseCode(code));
+    }
+
     const others = schedule.enrollments.filter(
       (e, i) => i !== enrollmentIndex && e.courseCode !== oldCode,
     );
@@ -394,14 +447,20 @@ export const createSchedulesSlice: StateCreator<
     };
 
     function getValidEnrollmentsFor(code: string): CourseEnrollment[] {
-      const cacheKey = `${code}:${includeClosedComponents}:${virtualSectionsOnly}`;
+      const virtualOnly = virtualScheduleFilterApplies(
+        virtualSectionsOnly,
+        poolRequirementType,
+        code,
+        explicitExemptNormalized,
+      );
+      const cacheKey = `${code}:${includeClosedComponents}:${virtualOnly}`;
       const cached = validEnrollmentsByCourseCode.get(cacheKey);
       if (cached) return cached;
       const sched = getEffectiveSchedule(
         cacheVal,
         code,
         includeClosedComponents,
-        virtualSectionsOnly,
+        virtualOnly,
       );
       if (!sched) {
         validEnrollmentsByCourseCode.set(cacheKey, []);

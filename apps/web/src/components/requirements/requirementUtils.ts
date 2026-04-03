@@ -8,6 +8,7 @@ import {
 import {
   isElectiveRequirementType,
   isWithinElectiveLevelCap,
+  virtualScheduleFilterApplies,
 } from "../../lib/electiveEligibility";
 
 function normalizeTitleForCompare(title: string | undefined): string {
@@ -362,6 +363,8 @@ export interface ConstrainMultiSelectContext {
   allAssignedCoursesNormalized: Set<string>;
   includeClosedComponents: boolean;
   virtualSectionsOnly: boolean;
+  /** Constrain-step selections, used for virtual-only exemption in AssignStep UI. */
+  constrainedPerRequirement?: Record<string, string[]>;
   completedOnly: boolean;
 }
 
@@ -383,6 +386,11 @@ export function getConstrainMultiSelectOptions(
   const selected = node.requirementId
     ? (selectedPerRequirement[node.requirementId] ?? [])
     : [];
+
+  const explicitExemptNormalized = new Set<string>([
+    ...(node.requirementId ? ctx.constrainedPerRequirement?.[node.requirementId] ?? [] : []),
+    ...selected,
+  ].map((c) => normalizeCourseCode(c)));
 
   const isElectiveType = isElectiveRequirementType(node.type);
   const isElectiveWithExclusions =
@@ -417,7 +425,12 @@ export function getConstrainMultiSelectOptions(
             ctx.cache,
             c,
             ctx.includeClosedComponents,
-            ctx.virtualSectionsOnly,
+            virtualScheduleFilterApplies(
+              ctx.virtualSectionsOnly,
+              node.type,
+              c,
+              explicitExemptNormalized,
+            ),
           )
         ) {
           const isSpecificCourseReq =

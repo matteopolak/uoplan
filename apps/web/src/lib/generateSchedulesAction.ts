@@ -11,7 +11,12 @@ import {
   type RequirementWithStatus,
   type RemainingRequirement,
 } from "schedule";
-import { cacheWithClosedFilter, getCourseLevel, getEffectiveSchedule } from "schedule";
+import {
+  cacheWithClosedFilter,
+  cacheWithPerCourseVirtualFilter,
+  getCourseLevel,
+  getEffectiveSchedule,
+} from "schedule";
 import { courseMatchesFilters } from "schedule";
 import { normalizeCourseCode } from "schedule";
 import {
@@ -36,6 +41,7 @@ import { buildColorMap, buildColorMaps } from "./colorMap";
 import {
   isElectiveRequirementType,
   isWithinElectiveLevelCap,
+  virtualScheduleFilterApplies,
 } from "./electiveEligibility";
 
 const UNKNOWN_COURSE_LEVEL = 999_000;
@@ -217,10 +223,26 @@ export async function generateSchedulesAction(
     existingReqIds,
   );
   const effectiveRemainingRequirements = [...remainingRequirements, ...branchRequirements];
+
+  const explicitExemptNormalized = new Set<string>();
+  for (const codes of Object.values(constrainedPerRequirement)) {
+    for (const code of codes) explicitExemptNormalized.add(normalizeCourseCode(code));
+  }
+  for (const codes of Object.values(selectedPerRequirement)) {
+    for (const code of codes) explicitExemptNormalized.add(normalizeCourseCode(code));
+  }
+
+  const requirementTypeById = new Map<string, string | undefined>();
+  for (const req of effectiveRemainingRequirements) {
+    if (req.requirementId) requirementTypeById.set(req.requirementId, req.type);
+  }
+
+  // Closed-only: virtual filtering is applied per course (depending on pool type
+  // and explicit exemptions) when selecting candidates / generating timetables.
   const effectiveCache = cacheWithClosedFilter(
     cacheVal,
     includeClosedComponents,
-    virtualSectionsOnly,
+    false,
   );
 
   const unassigned = [...new Set(unassignedCompletedCourses)].sort();
@@ -306,6 +328,7 @@ export async function generateSchedulesAction(
     cacheVal,
     includeClosedComponents,
     virtualSectionsOnly,
+    explicitExemptNormalized,
     seenHonours,
   );
   const implicitHonoursRequirementId = new Map<string, string>();
@@ -327,7 +350,7 @@ export async function generateSchedulesAction(
         cacheVal,
         code,
         includeClosedComponents,
-        virtualSectionsOnly,
+        false,
       ) ||
       completedSet.has(normalizeCourseCode(code)) ||
       !prereqEligibleSet.has(code)
@@ -458,11 +481,17 @@ export async function generateSchedulesAction(
   } | null = null;
 
   function isEligibleCandidate(code: string, poolType?: string): boolean {
+    const virtualOnly = virtualScheduleFilterApplies(
+      virtualSectionsOnly,
+      poolType,
+      code,
+      explicitExemptNormalized,
+    );
     const sched = getEffectiveSchedule(
       cacheVal,
       code,
       includeClosedComponents,
-      virtualSectionsOnly,
+      virtualOnly,
     );
     if (
       !sched ||
@@ -536,7 +565,12 @@ export async function generateSchedulesAction(
           cacheVal,
           code,
           includeClosedComponents,
-          virtualSectionsOnly,
+          virtualScheduleFilterApplies(
+            virtualSectionsOnly,
+            pool.type,
+            code,
+            explicitExemptNormalized,
+          ),
         );
       });
       return hasSchedulableNonHonours;
@@ -550,7 +584,12 @@ export async function generateSchedulesAction(
           cacheVal,
           code,
           includeClosedComponents,
-          virtualSectionsOnly,
+          virtualScheduleFilterApplies(
+            virtualSectionsOnly,
+            pool.type,
+            code,
+            explicitExemptNormalized,
+          ),
         );
         if (
           !sched ||
@@ -889,19 +928,35 @@ export async function generateSchedulesAction(
       lastFilteredPool = optionalPool;
       shuffleInPlace(lastFilteredPool, rng);
 
+      const attemptCache = cacheWithPerCourseVirtualFilter(
+        cacheVal,
+        includeClosedComponents,
+        (code) => {
+          const reqId =
+            chosenFromPool[code] ?? requirementIdForPinnedCourse(code);
+          const reqType = reqId ? requirementTypeById.get(reqId) : undefined;
+          return virtualScheduleFilterApplies(
+            virtualSectionsOnly,
+            reqType,
+            code,
+            explicitExemptNormalized,
+          );
+        },
+      );
+
       const batch =
         pinned.length === 0
           ? genSchedules(
               lastFilteredPool,
               coursesThisSemester,
-              effectiveCache,
+              attemptCache,
               constraints,
             )
           : generateSchedulesWithPinned(
               pinned,
               lastFilteredPool,
               coursesThisSemester,
-              effectiveCache,
+              attemptCache,
               constraints,
             );
 
@@ -1015,13 +1070,29 @@ export async function generateSchedulesAction(
     };
   }
 
+  const diagnosticsCache = cacheWithPerCourseVirtualFilter(
+    cacheVal,
+    includeClosedComponents,
+    (code) => {
+      const reqId =
+        lastChosenFromPool[code] ?? requirementIdForPinnedCourse(code);
+      const reqType = reqId ? requirementTypeById.get(reqId) : undefined;
+      return virtualScheduleFilterApplies(
+        virtualSectionsOnly,
+        reqType,
+        code,
+        explicitExemptNormalized,
+      );
+    },
+  );
+
   if (appendFirstOnly && limitedSchedules.length === 0) {
     const { details, timetableFailure } = buildTimetableFailureDiagnostics(
       poolDiagnostics,
       pinned,
       filteredOptionalPool,
       coursesThisSemester,
-      effectiveCache,
+      diagnosticsCache,
       constraints,
     );
     return {
@@ -1045,7 +1116,7 @@ export async function generateSchedulesAction(
       pinned,
       filteredOptionalPool,
       coursesThisSemester,
-      effectiveCache,
+      diagnosticsCache,
       constraints,
     );
     return {

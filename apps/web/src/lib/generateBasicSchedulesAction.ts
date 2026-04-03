@@ -8,7 +8,11 @@ import {
   type GenerationConstraints,
   courseMatchesFilters,
 } from "schedule";
-import { cacheWithClosedFilter, getEffectiveSchedule } from "schedule";
+import {
+  cacheWithClosedFilter,
+  cacheWithPerCourseVirtualFilter,
+  normalizeCourseCode,
+} from "schedule";
 import { shuffleInPlace } from "../store/scheduleHelpers";
 import { diagnoseTimetableFailure, canTakeCourse, buildPrereqContext } from "schedule";
 import { buildColorMap, buildColorMaps } from "./colorMap";
@@ -54,10 +58,14 @@ export function generateBasicSchedulesAction(
   if (!cache) {
     return null;
   }
-  const effectiveCache = cacheWithClosedFilter(
+
+  const pinned = basicPinnedCourses;
+  const pinnedNormalized = new Set(pinned.map(normalizeCourseCode));
+  const baseCache = cacheWithClosedFilter(cache, includeClosedComponents, false);
+  const effectiveCache = cacheWithPerCourseVirtualFilter(
     cache,
     includeClosedComponents,
-    virtualSectionsOnly,
+    (code) => virtualSectionsOnly && !pinnedNormalized.has(normalizeCourseCode(code)),
   );
 
   const existingScheduleCount = appendFirstOnly ? state.generatedSchedules.length : 0;
@@ -71,7 +79,6 @@ export function generateBasicSchedulesAction(
     professorRatings: professorRatings ?? undefined,
   };
 
-  const pinned = basicPinnedCourses;
   const targetCount = pinned.length + basicElectivesCount;
   
   // Find valid electives
@@ -79,7 +86,7 @@ export function generateBasicSchedulesAction(
   const excludedPrefixes = basicExcludedCategories.map(c => c.toLowerCase());
   const filters = { levels: levelBuckets, languageBuckets };
   
-  const prereqCtx = buildPrereqContext(completedCourses, effectiveCache, studentPrograms);
+  const prereqCtx = buildPrereqContext(completedCourses, baseCache, studentPrograms);
 
   for (const course of cache.getAllCourses()) {
     const code = course.code;
@@ -107,12 +114,7 @@ export function generateBasicSchedulesAction(
     // Check if already pinned
     if (pinned.includes(code)) continue;
     
-    const sched = getEffectiveSchedule(
-      effectiveCache,
-      code,
-      includeClosedComponents,
-      virtualSectionsOnly,
-    );
+    const sched = effectiveCache.getSchedule(code);
     if (!sched) continue;
     
     if (getValidSectionCombos(sched, constraints).length === 0) continue;
