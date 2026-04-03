@@ -20,6 +20,10 @@ export type SwapCandidatesGetter = (
 export interface SwapModalState {
   enrollmentIndex: number;
   courseCode: string;
+  /** Set from the clicked calendar block when opening the swap modal. */
+  virtual?: boolean;
+  /** Component/section line for the clicked block (e.g. "LEC - A01"). */
+  componentSection?: string;
 }
 
 /**
@@ -112,13 +116,22 @@ export function useSwapModal(
   }, [cache, swapResult.candidates, swapResult.rejectedWithConflict]);
 
   const openModal = useCallback(
-    (enrollmentIndex: number, courseCode: string) => {
-      setSwapModal({ enrollmentIndex, courseCode });
+    (
+      enrollmentIndex: number,
+      courseCode: string,
+      ctx?: { virtual?: boolean; componentSection?: string },
+    ) => {
+      setSwapModal({
+        enrollmentIndex,
+        courseCode,
+        virtual: ctx?.virtual,
+        componentSection: ctx?.componentSection,
+      });
       setSwapResult(EMPTY_SWAP_RESULT);
       setLoading(true);
       setQuery("");
     },
-    []
+    [],
   );
 
   const closeModal = useCallback(() => {

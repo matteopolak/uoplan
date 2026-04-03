@@ -189,6 +189,9 @@ msgstr "Annuler l'echange ({count})"
 msgid "calendarView.empty"
 msgstr "Aucun horaire n'à encore ete généré. Completez les étapes ci-dessus et cliquez sur Générer."
 
+msgid "calendar.event.virtual"
+msgstr "Virtuel"
+
 msgid "languageSwitcher.ariaLabel"
 msgstr "Choisir la langue de l'application"
 

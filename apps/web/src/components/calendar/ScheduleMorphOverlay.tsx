@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { hexToRgb } from "schedule";
 import type { Phantom } from "../../hooks/useCalendarMorph";
 import { PHANTOM_MS, HALF_PHANTOM_MS } from "../../hooks/useCalendarMorph";
+import { tr } from "../../i18n";
 
 const HALF_S = HALF_PHANTOM_MS / 1000;
 const FULL_S = PHANTOM_MS / 1000;
@@ -21,12 +22,14 @@ function rectToStyle(rect: DOMRect) {
 function TextContent({
   heading,
   section,
+  virtual,
   time,
   professor,
   ratingColor,
 }: {
   heading: string;
   section: string;
+  virtual: boolean;
   time: string;
   professor: string;
   ratingColor: string;
@@ -35,7 +38,16 @@ function TextContent({
   return (
     <div className="fc-uoplan-event-body">
       <span className="fc-uoplan-event-code">{heading}</span>
-      {section && <span className="fc-uoplan-event-type">{section}</span>}
+      {section && (
+        <div className="fc-uoplan-event-type-row">
+          <span className="fc-uoplan-event-type">{section}</span>
+          {virtual && (
+            <span className="fc-uoplan-event-virtual">
+              {tr("calendar.event.virtual")}
+            </span>
+          )}
+        </div>
+      )}
       {time && <span className="fc-uoplan-event-time">{time}</span>}
       {professor && (
         <span
@@ -144,6 +156,7 @@ function PhantomBlock({
           <TextContent
             heading={fromText.heading}
             section={fromText.section}
+            virtual={fromText.virtual}
             time={fromText.time}
             professor={fromText.professor}
             ratingColor={fromText.ratingColor}
@@ -160,6 +173,7 @@ function PhantomBlock({
           <TextContent
             heading={toText.heading}
             section={toText.section}
+            virtual={toText.virtual}
             time={toText.time}
             professor={toText.professor}
             ratingColor={toText.ratingColor}
@@ -184,6 +198,7 @@ function PhantomBlock({
       <TextContent
         heading={fromText.heading}
         section={fromText.section}
+        virtual={fromText.virtual}
         time={fromText.time}
         professor={fromText.professor}
         ratingColor={fromText.ratingColor}

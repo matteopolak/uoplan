@@ -27,6 +27,7 @@ import { useTimetableDateRangeFromSchedule } from "../../hooks/useTimetableDateR
 import { tr } from "../../i18n";
 import { LanguageSwitcher } from "../shared/LanguageSwitcher";
 import { CourseFiltersCard } from "../requirements/CourseFiltersCard";
+import { CALENDAR_SIDEBAR_WIDTH_PX } from "./calendarLayout";
 
 interface BasicCalendarPageProps {
   onBack: () => void;
@@ -290,7 +291,7 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
 
       <Box
         style={{
-          width: 360,
+          width: CALENDAR_SIDEBAR_WIDTH_PX,
           flexShrink: 0,
           padding: "24px 20px",
           borderRight: "2px solid #2C2E33",
@@ -374,19 +375,6 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
             radius={0}
           />
 
-          <MultiSelect
-            label={tr("basicCalendar.exclude.label")}
-            placeholder={tr("basicCalendar.exclude.placeholder")}
-            searchable
-            data={allCategories.map(c => ({ value: c, label: c }))}
-            value={basicExcludedCategories}
-            onChange={(v) => {
-              setBasicExcludedCategories(v);
-              clearGeneratedSchedules();
-            }}
-            radius={0}
-          />
-
           <CourseFiltersCard
             levelBuckets={levelBuckets}
             languageBuckets={languageBuckets}
@@ -394,6 +382,15 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
             includeClosedComponents={includeClosedComponents}
             virtualSectionsOnly={virtualSectionsOnly}
             showGraduateElectiveLevels
+            collapsible
+            excludeElectiveSubjects={{
+              data: allCategories.map((c) => ({ value: c, label: c })),
+              value: basicExcludedCategories,
+              onChange: (v) => {
+                setBasicExcludedCategories(v);
+                clearGeneratedSchedules();
+              },
+            }}
             onChangeLevelBuckets={(buckets) => {
               setLevelBuckets(buckets);
               clearGeneratedSchedules();

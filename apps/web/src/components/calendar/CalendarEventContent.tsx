@@ -3,6 +3,7 @@ import { Box, Tooltip } from "@mantine/core";
 import type { DataCache } from "schedule";
 import { COURSE_COLORS, COURSE_COLOR_HEX, hexToRgb, ratingColorToCssVar, ratingToColor } from "schedule";
 import type { CalendarEvent } from "../../hooks/useCalendarEvents";
+import { tr } from "../../i18n";
 import { ProfessorRatingTooltipLabel } from "./ProfessorRatingTooltipLabel";
 
 /**
@@ -65,6 +66,7 @@ export function CalendarEventContent({
       data-course-code={ext.courseCode}
       data-color-hex={hex}
       data-event-time={timeRange}
+      data-virtual={ext.virtual ? "true" : undefined}
       data-rating-color={hasProfessorRating ? markerColor : ""}
       style={{
         cursor: "pointer",
@@ -76,7 +78,14 @@ export function CalendarEventContent({
         <span className="fc-uoplan-event-code" title={heading}>
           {heading}
         </span>
-        <span className="fc-uoplan-event-type">{ext.componentSection}</span>
+        <div className="fc-uoplan-event-type-row">
+          <span className="fc-uoplan-event-type">{ext.componentSection}</span>
+          {ext.virtual && (
+            <span className="fc-uoplan-event-virtual">
+              {tr("calendar.event.virtual")}
+            </span>
+          )}
+        </div>
         <span className="fc-uoplan-event-time">{timeRange}</span>
         <span
           className="fc-uoplan-event-professor"
