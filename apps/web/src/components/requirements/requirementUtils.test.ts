@@ -388,6 +388,63 @@ describe("getConstrainMultiSelectOptions", () => {
     );
     expect(optionsWith.map((o) => o.value)).toEqual(["SEG 3100"]);
   });
+
+  it("does not apply virtual-only filtering to discipline_elective (structured pool)", () => {
+    const schedNonVirtualOnly = {
+      subject: "SEG",
+      catalogNumber: "3100",
+      title: "Test",
+      courseCode: "SEG 3100",
+      timeZone: "America/Toronto",
+      components: {
+        LEC: [
+          {
+            section: "A00",
+            sectionCode: "A00",
+            component: "LEC",
+            session: null,
+            times: [
+              { day: "Mo", startMinutes: 540, endMinutes: 630, virtual: false },
+            ],
+            instructors: [],
+            meetingDates: null,
+            status: "Open",
+          },
+        ],
+      },
+    } as NonNullable<ReturnType<DataCache["getSchedule"]>>;
+
+    const cacheWithNonVirtual: DataCache = {
+      getCourse: (code) =>
+        ({ code, title: "Test", credits: 3 }) as NonNullable<
+          ReturnType<DataCache["getCourse"]>
+        >,
+      getSchedule: (code) => (code === "SEG 3100" ? schedNonVirtualOnly : undefined),
+      getCoursesByDiscipline: () => [],
+      getAllCourses: () => [],
+      getAllSchedules: () => [],
+    };
+
+    const node: RequirementWithStatus = {
+      type: "discipline_elective",
+      title: "Discipline elective",
+      complete: false,
+      satisfiedBy: [],
+      requirementId: "req-de",
+      candidateCourses: ["SEG 3100"],
+      creditsNeeded: 3,
+    };
+
+    const ctx = {
+      ...defaultConstrainCtx,
+      cache: cacheWithNonVirtual,
+      prereqEligible: new Set(["SEG 3100"]),
+      virtualSectionsOnly: true,
+      constrainedPerRequirement: {},
+    };
+    const { options } = getConstrainMultiSelectOptions(node, {}, ctx);
+    expect(options.map((o) => o.value)).toEqual(["SEG 3100"]);
+  });
 });
 
 describe("partitionIncompleteConstrainRoots", () => {
