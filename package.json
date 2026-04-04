@@ -14,6 +14,7 @@
     "prepare": "lefthook install",
     "hooks:install": "lefthook install",
     "hooks:run": "lefthook run pre-commit",
+    "deadcode": "knip",
     "scrape:catalogue": "pnpm --filter scrapers scrape:catalogue",
     "scrape:schedules": "pnpm --filter scrapers scrape:schedules",
     "scrape:schedules:terms": "pnpm --filter scrapers scrape:schedules:terms",
@@ -22,8 +23,10 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.1.0",
+    "eslint-plugin-unused-imports": "^4.4.1",
     "globals": "^16.5.0",
     "jiti": "^2.6.1",
+    "knip": "^6.1.0",
     "lefthook": "^2.1.4",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.57.2"

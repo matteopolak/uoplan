@@ -1,6 +1,7 @@
 import js from "@eslint/js";
 import { defineConfig } from "eslint/config";
 import tseslint from "typescript-eslint";
+import unusedImports from "eslint-plugin-unused-imports";
 
 export const baseConfig = defineConfig([
   {
@@ -17,6 +18,9 @@ export const baseConfig = defineConfig([
   ...tseslint.configs.recommendedTypeChecked,
   {
     files: ["**/*.{ts,tsx,mts,cts}"],
+    plugins: {
+      "unused-imports": unusedImports,
+    },
     languageOptions: {
       parserOptions: {
         projectService: true
@@ -32,12 +36,16 @@ export const baseConfig = defineConfig([
           }
         }
       ],
-      "@typescript-eslint/no-unused-vars": [
-        "error",
+      "@typescript-eslint/no-unused-vars": "off",
+      "unused-imports/no-unused-imports": "error",
+      "unused-imports/no-unused-vars": [
+        "warn",
         {
-          argsIgnorePattern: "^_",
-          varsIgnorePattern: "^_",
-        },
+          "vars": "all",
+          "varsIgnorePattern": "^_",
+          "args": "after-used",
+          "argsIgnorePattern": "^_",
+        }
       ],
     },
   },
