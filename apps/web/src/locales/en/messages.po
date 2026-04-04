@@ -73,7 +73,7 @@ msgid "basicCalendar.electives.label"
 msgstr "Add Electives"
 
 msgid "basicCalendar.exclude.label"
-msgstr "Exclude Elective Subjects"
+msgstr "Exclude subjects"
 
 msgid "basicCalendar.exclude.placeholder"
 msgstr "e.g. ADM, CSI"
@@ -562,7 +562,7 @@ msgid "constrainStep.languages.other"
 msgstr "Other"
 
 msgid "constrainStep.electiveLevels.label"
-msgstr "Elective levels"
+msgstr "Levels"
 
 msgid "constrainStep.includeClosedSections"
 msgstr "Include closed sections"
@@ -603,3 +603,27 @@ msgstr "Term selection changes which course sections are available for schedule 
 msgid "app.stepHeader"
 msgstr "Step {current} of {total} - {description}"
 
+
+msgid "basicCourseFilters.title"
+msgstr "Elective options"
+
+msgid "basicCourseFilters.hint"
+msgstr "Options apply to generated electives."
+
+msgid "basicCourseFilters.careers.label"
+msgstr "Careers"
+
+msgid "basicCourseFilters.levels.label"
+msgstr "Levels"
+
+msgid "advancedCourseFilters.course.title"
+msgstr "Course filters"
+
+msgid "advancedCourseFilters.course.hint"
+msgstr "Applies to both core courses and electives."
+
+msgid "advancedCourseFilters.elective.title"
+msgstr "Elective filters"
+
+msgid "advancedCourseFilters.elective.hint"
+msgstr "Applies only to electives."

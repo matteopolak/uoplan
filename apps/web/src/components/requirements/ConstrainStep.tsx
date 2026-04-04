@@ -33,7 +33,7 @@ import {
   findFirstMissingPath,
 } from "./requirementUtils";
 
-import { CourseFiltersCard } from "./CourseFiltersCard";
+import { AdvancedCourseFiltersCard } from "./CourseFiltersCard";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -239,7 +239,7 @@ export function ConstrainStep({
 
   return (
     <Stack gap="lg" data-tour="constrain-schedule">
-      <CourseFiltersCard
+      <AdvancedCourseFiltersCard
         levelBuckets={levelBuckets}
         languageBuckets={languageBuckets}
         electiveLevelBuckets={electiveLevelBuckets}

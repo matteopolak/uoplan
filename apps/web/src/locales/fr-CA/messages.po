@@ -73,7 +73,7 @@ msgid "basicCalendar.electives.label"
 msgstr "Nombre de cours au choix"
 
 msgid "basicCalendar.exclude.label"
-msgstr "Exclure des matières au choix"
+msgstr "Exclure des matières"
 
 msgid "basicCalendar.exclude.placeholder"
 msgstr "ex. ADM, CSI"
@@ -562,7 +562,7 @@ msgid "constrainStep.languages.other"
 msgstr "Autre"
 
 msgid "constrainStep.electiveLevels.label"
-msgstr "Niveaux des cours au choix"
+msgstr "Niveaux"
 
 msgid "constrainStep.includeClosedSections"
 msgstr "Inclure les sections fermées"
@@ -602,3 +602,27 @@ msgstr "Le choix de la session détermine quelles sections de cours sont disponi
 
 msgid "app.stepHeader"
 msgstr "Étape {current} sur {total} - {description}"
+
+msgid "basicCourseFilters.title"
+msgstr "Options de cours à option"
+
+msgid "basicCourseFilters.hint"
+msgstr "Les options s'appliquent aux cours à option générés."
+
+msgid "basicCourseFilters.careers.label"
+msgstr "Carrières"
+
+msgid "basicCourseFilters.levels.label"
+msgstr "Niveaux"
+
+msgid "advancedCourseFilters.course.title"
+msgstr "Filtres de cours"
+
+msgid "advancedCourseFilters.course.hint"
+msgstr "S'applique aux cours obligatoires et aux cours à option."
+
+msgid "advancedCourseFilters.elective.title"
+msgstr "Filtres de cours à option"
+
+msgid "advancedCourseFilters.elective.hint"
+msgstr "S'applique uniquement aux cours à option."
