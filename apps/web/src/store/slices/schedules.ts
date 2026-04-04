@@ -63,6 +63,7 @@ export const createSchedulesSlice: StateCreator<
     set((state) => {
       const alreadyCleared =
         state.generatedSchedules.length === 0 &&
+        state.hasMoreSchedules === true &&
         state.scheduleColorMaps.length === 0 &&
         state.schedulePoolMaps.length === 0 &&
         state.selectedScheduleIndex === 0 &&
@@ -70,6 +71,7 @@ export const createSchedulesSlice: StateCreator<
       if (alreadyCleared) return state;
       return {
         generatedSchedules: [],
+        hasMoreSchedules: true,
         scheduleColorMaps: [],
         schedulePoolMaps: [],
         selectedScheduleIndex: 0,

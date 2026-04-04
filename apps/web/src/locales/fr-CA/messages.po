@@ -629,3 +629,9 @@ msgstr "Filtres de cours à option"
 
 msgid "advancedCourseFilters.elective.hint"
 msgstr "S'applique uniquement aux cours à option."
+msgid "calendarPage.noMoreSchedules"
+msgstr "Plus d'horaires"
+
+msgid "basicCalendar.noMoreSchedules"
+msgstr "Plus d'horaires"
+

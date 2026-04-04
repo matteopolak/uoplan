@@ -63,6 +63,7 @@ export interface AppState {
   levelBuckets: CourseLevelBucket[];
   languageBuckets: CourseLanguageBucket[];
   electiveLevelBuckets: number[];
+  hasMoreSchedules: boolean;
   generatedSchedules: GeneratedSchedule[];
   swapPool: string[];
   chosenCourseToRequirementId: Record<string, string>;

@@ -171,6 +171,7 @@ export interface GenerateSchedulesResult {
   selectedScheduleIndex: number;
   swapHistory: never[];
   generationError: GenerationErrorState | null;
+  hasMoreSchedules: boolean;
 }
 
 export async function generateSchedulesAction(
@@ -261,8 +262,14 @@ export async function generateSchedulesAction(
       scheduleColorMaps: existingColorMaps,
       selectedScheduleIndex: state.selectedScheduleIndex,
       swapHistory: [],
+      hasMoreSchedules: state.hasMoreSchedules,
       generationError: generationErrorState(
-        `Assign all completed courses to requirements before generating schedules. Unassigned: ${preview.join(", ")}${suffix}`,
+        `You have ${unassigned.length} completed course${
+          unassigned.length === 1 ? "" : "s"
+        } not assigned to a requirement: ${preview.join(", ")}${suffix}. ` +
+          `You must assign ${
+            unassigned.length === 1 ? "it" : "them"
+          } to requirements, or move them to the Excluded section.`,
       ),
     };
   }
@@ -277,6 +284,7 @@ export async function generateSchedulesAction(
     return sum + (course?.credits ?? 3);
   }, 0);
 
+  const deadline = Date.now() + 2000;
   const constraints: GenerationConstraints = {
     minStartMinutes: generationMinStartMinutes,
     maxEndMinutes: generationMaxEndMinutes,
@@ -284,9 +292,10 @@ export async function generateSchedulesAction(
     minProfessorRating: generationMinProfessorRating ?? undefined,
     professorRatings: professorRatings ?? undefined,
     maxFirstYearCredits: generationLimitFirstYearCredits
-      ? Math.max(0, 48 - completedFirstYearCredits)
+      ? 48 - (completedFirstYearCredits ?? 0)
       : undefined,
-    compressedSchedule: generationCompressedSchedule || undefined,
+    compressedSchedule: generationCompressedSchedule,
+    deadline,
   };
 
   const completedSet = new Set(completedCourses.map(normalizeCourseCode));
@@ -452,11 +461,12 @@ export async function generateSchedulesAction(
       swapPool: state.swapPool,
       chosenCourseToRequirementId: state.chosenCourseToRequirementId,
       schedulePoolMaps: state.schedulePoolMaps,
-      scheduleColorMaps: existingColorMaps,
+      scheduleColorMaps: state.scheduleColorMaps,
       selectedScheduleIndex: state.selectedScheduleIndex,
       swapHistory: [],
+      hasMoreSchedules: state.hasMoreSchedules,
       generationError: generationErrorState(
-        'Please choose exactly one option in each "or" block before generating schedules.',
+        "Complete Assign requirements before generating schedules.",
       ),
     };
   }
@@ -865,7 +875,10 @@ export async function generateSchedulesAction(
     }
 
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-      if (collectedSchedules.length >= targetUniqueSchedules) break;
+    if (Date.now() > deadline) {
+      break;
+    }
+    if (collectedSchedules.length >= targetUniqueSchedules) break;
       if (attempt > 0 && attempt % 5 === 0) await yieldToMain();
 
       for (const list of candidatesByRequirement.values()) {
@@ -1021,6 +1034,7 @@ export async function generateSchedulesAction(
         scheduleColorMaps: existingColorMaps,
         selectedScheduleIndex: state.selectedScheduleIndex,
         swapHistory: [],
+        hasMoreSchedules: false,
         generationError: generationErrorState(
           "Not enough courses for another schedule.",
           poolDiagnostics,
@@ -1036,6 +1050,7 @@ export async function generateSchedulesAction(
       scheduleColorMaps: existingColorMaps,
       selectedScheduleIndex: 0,
       swapHistory: [],
+      hasMoreSchedules: false,
       generationError: generationErrorState(
         "Not enough courses match your filters.",
         poolDiagnostics,
@@ -1067,6 +1082,7 @@ export async function generateSchedulesAction(
       scheduleColorMaps: newColorMaps,
       selectedScheduleIndex: newSchedules.length - 1,
       swapHistory: [],
+      hasMoreSchedules: Date.now() <= deadline,
       generationError: null,
     };
   }
@@ -1104,6 +1120,7 @@ export async function generateSchedulesAction(
       scheduleColorMaps: existingColorMaps,
       selectedScheduleIndex: state.selectedScheduleIndex,
       swapHistory: [],
+      hasMoreSchedules: false,
       generationError: generationErrorState(
         `${timetableFailure.leadMessage} Couldn't find another combination.`,
         details,
@@ -1128,6 +1145,7 @@ export async function generateSchedulesAction(
       scheduleColorMaps: [],
       selectedScheduleIndex: 0,
       swapHistory: [],
+      hasMoreSchedules: false,
       generationError: generationErrorState(timetableFailure.leadMessage, details),
     };
   }
@@ -1140,6 +1158,7 @@ export async function generateSchedulesAction(
     scheduleColorMaps: buildColorMaps(limitedSchedules),
     selectedScheduleIndex: 0,
     swapHistory: [],
+    hasMoreSchedules: Date.now() <= deadline,
     generationError: null,
   };
 }

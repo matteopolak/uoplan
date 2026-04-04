@@ -51,6 +51,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
     cache,
     professorRatings,
     scheduleColorMaps,
+    hasMoreSchedules,
   } = useAppStore(
     useShallow((s) => ({
       generatedSchedules: s.generatedSchedules,
@@ -61,6 +62,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
       cache: s.cache,
       professorRatings: s.professorRatings,
       scheduleColorMaps: s.scheduleColorMaps,
+      hasMoreSchedules: s.hasMoreSchedules,
     })),
   );
 
@@ -310,10 +312,10 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
           size="sm"
           radius={0}
           loading={generatingOneMore}
-          disabled={generatingOneMore}
+          disabled={generatingOneMore || !hasMoreSchedules}
           onClick={handleGenerateOneMore}
         >
-          {tr("calendarPage.generateNew")}
+          {hasMoreSchedules ? tr("calendarPage.generateNew") : tr("calendarPage.noMoreSchedules")}
         </Button>
 
         {generationError && (
@@ -427,10 +429,10 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
             style={{ flex: 1, border: "none", height: 56 }}
             leftSection={<IconRefresh size={22} />}
             loading={generatingOneMore}
-            disabled={generatingOneMore}
+            disabled={generatingOneMore || !hasMoreSchedules}
             onClick={handleGenerateOneMore}
           >
-            {tr("calendarPage.mobile.tryAnother")}
+            {hasMoreSchedules ? tr("calendarPage.mobile.tryAnother") : tr("calendarPage.noMoreSchedules")}
           </Button>
         </Box>
       )}
