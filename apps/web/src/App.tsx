@@ -424,7 +424,6 @@ function App() {
           style={{ width: "100%", minHeight: "100vh" }}
         >
     <Box
-      component="main"
       style={{
         minHeight: "100vh",
         padding: isMobile ? "20px 12px 48px" : "28px 20px 48px",
@@ -496,21 +495,23 @@ function App() {
         </Stack>
       </Modal>
 
-      <Title
-        order={1}
-        style={{
-          fontFamily: '"DM Serif Display", serif',
-          color: "#F8F9FA",
-          display: "flex",
-          alignItems: "baseline",
-          gap: 4,
-        }}
-      >
-        uoplan.party
-        <Badge color="blue" variant="light" size="sm">
-          {tr("app.beta")}
-        </Badge>
-      </Title>
+      <Box component="header">
+        <Title
+          order={1}
+          style={{
+            fontFamily: '"DM Serif Display", serif',
+            color: "#F8F9FA",
+            display: "flex",
+            alignItems: "baseline",
+            gap: 4,
+          }}
+        >
+          uoplan.party
+          <Badge color="blue" variant="light" size="sm">
+            {tr("app.beta")}
+          </Badge>
+        </Title>
+      </Box>
 
       <motion.div
         animate={{ opacity: isLangTransitioning ? 0 : 1, y: isLangTransitioning ? 4 : 0 }}
@@ -533,6 +534,8 @@ function App() {
       >
         {/* Step navigation sidebar */}
         <Box
+          component="nav"
+          aria-label="Wizard Steps"
           style={{
             display: "flex",
             justifyContent: isMobile ? "flex-start" : "flex-end",
@@ -553,7 +556,7 @@ function App() {
         </Box>
 
         {/* Main wizard panel */}
-        <Box style={{ minWidth: 0 }}>
+        <Box component="main" style={{ minWidth: 0 }}>
           <Box
             style={{
               backgroundColor: "#1E1E20",
@@ -563,16 +566,18 @@ function App() {
             }}
           >
             <AnimatePresence mode="wait">
-              <motion.div
+              <motion.section
                 key={effectiveActive}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2 }}
+                aria-labelledby="step-heading"
               >
                 {/* Step header row */}
                 <Group justify="space-between" mb={8}>
                   <Text
+                    id="step-heading"
                     size="xs"
                     fw={500}
                     style={{
@@ -769,10 +774,21 @@ function App() {
                             mb="xs"
                             style={{ cursor: "pointer" }}
                             onClick={() => setConstrainOpen((o) => !o)}
+                            aria-expanded={constrainOpen}
+                            aria-controls="constraints-collapse"
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setConstrainOpen((o) => !o);
+                              }
+                            }}
                           >
                             <Group gap="xs" align="center">
                               <IconChevronDown
                                 size={14}
+                                aria-hidden="true"
                                 style={{
                                   flexShrink: 0,
                                   transform: constrainOpen ? "rotate(0deg)" : "rotate(-90deg)",
@@ -787,14 +803,14 @@ function App() {
                               {tr("app.constraints.optional")}
                             </Badge>
                           </Group>
-                          <Collapse in={!constrainOpen}>
+                          <Collapse id="constraints-collapse" in={!constrainOpen}>
                             <Alert color="blue" variant="light" radius={0} mx="sm" mb="sm" style={{ border: "none" }}>
                               <Text size="sm">
                                 {tr("app.constraints.description")}
                               </Text>
                             </Alert>
                           </Collapse>
-                          <Collapse in={constrainOpen}>
+                          <Collapse id="constraints-collapse-open" in={constrainOpen}>
                             <Box p="sm" pt={0}>
                               <ConstrainStep
                                 cache={cache}
@@ -825,7 +841,7 @@ function App() {
                     />
                   </Stack>
                 )}
-              </motion.div>
+              </motion.section>
             </AnimatePresence>
 
             {/* Outside motion.div so position:sticky works (transform breaks sticky). */}
@@ -894,7 +910,7 @@ function App() {
           </Box>
 
           {/* Footer */}
-          <Box style={{ marginTop: 16, textAlign: "center" }}>
+          <Box component="footer" style={{ marginTop: 16, textAlign: "center" }}>
             <Text size="xs" c="dimmed">
               {typeof __BRANCH_NAME__ !== "undefined" && __BRANCH_NAME__
                 ? `${__BRANCH_NAME__} `

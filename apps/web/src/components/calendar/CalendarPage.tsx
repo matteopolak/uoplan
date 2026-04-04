@@ -179,6 +179,8 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
 
       {/* Sidebar */}
       <Box
+        component="aside"
+        aria-label="Calendar Controls"
         style={{
           width: CALENDAR_SIDEBAR_WIDTH_PX,
           flexShrink: 0,
@@ -390,6 +392,8 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
 
       {/* Calendar area */}
       <Box
+        component="section"
+        aria-label="Timetable"
         style={{
           flex: 1,
           minWidth: 0,
