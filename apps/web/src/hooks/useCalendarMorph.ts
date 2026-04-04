@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-export interface CapturedEvent {
+interface CapturedEvent {
   courseCode: string;
   colorHex: string;
   rect: DOMRect;
@@ -69,7 +69,7 @@ export const PHANTOM_MS = 350;
 /** The midpoint at which the phantom stops moving and starts fading (ms). */
 export const HALF_PHANTOM_MS = PHANTOM_MS / 2;
 /** Duration of the real-event reveal after phantoms complete (ms). */
-export const FADE_IN_MS = 100;
+const FADE_IN_MS = 100;
 
 const RENDER_SETTLE_MS = 50;
 
@@ -218,7 +218,7 @@ function buildPhantoms(
   return phantoms;
 }
 
-export interface CalendarMorphState {
+interface CalendarMorphState {
   displayedIndex: number;
   phantoms: Phantom[];
   /** Real events must be invisible — the overlay owns the visual. */

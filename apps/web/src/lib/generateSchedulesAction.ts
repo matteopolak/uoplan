@@ -1,4 +1,4 @@
-import type { AppState } from "../store/appStore";
+import type { AppState } from "../store/types";
 import type { GenerationErrorDetails, GenerationErrorState } from "../store/types";
 import type { DataCache } from "schedule";
 import { createSeededRng } from "schedule";
@@ -165,7 +165,7 @@ function generationErrorState(
   return { message, details };
 }
 
-export interface GenerateSchedulesResult {
+interface GenerateSchedulesResult {
   generatedSchedules: GeneratedSchedule[];
   swapPool: string[];
   chosenCourseToRequirementId: Record<string, string>;

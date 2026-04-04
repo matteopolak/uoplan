@@ -11,7 +11,7 @@ import {
 } from "@mantine/core";
 import { tr } from "../../i18n";
 
-export interface ModeStepProps {
+interface ModeStepProps {
   value: "basic" | "advanced" | null;
   onChange: (mode: "basic" | "advanced") => void;
 }

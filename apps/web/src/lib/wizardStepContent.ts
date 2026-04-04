@@ -4,7 +4,7 @@
 import { WizardStep } from "./wizardSteps";
 import { tr } from "../i18n";
 
-export type WizardContentStep = {
+type WizardContentStep = {
   /** Short title for tour popover + modal */
   title: string;
   /** Why this step exists */
@@ -62,10 +62,10 @@ export function getShareStepContent(): WizardContentStep {
 }
 
 /** CSS classes for structured tour description blocks (see driver-dark.css). */
-export const TOUR_DESC_PURPOSE_CLASS = "driver-tour-desc__purpose";
-export const TOUR_DESC_ACTION_CLASS = "driver-tour-desc__action";
-export const TOUR_DESC_LABEL_CLASS = "driver-tour-desc__label";
-export const TOUR_DESC_LABEL_SECOND_CLASS = "driver-tour-desc__label--second";
+const TOUR_DESC_PURPOSE_CLASS = "driver-tour-desc__purpose";
+const TOUR_DESC_ACTION_CLASS = "driver-tour-desc__action";
+const TOUR_DESC_LABEL_CLASS = "driver-tour-desc__label";
+const TOUR_DESC_LABEL_SECOND_CLASS = "driver-tour-desc__label--second";
 
 /**
  * HTML body for Driver.js popover description (two labeled blocks).

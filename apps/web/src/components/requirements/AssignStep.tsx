@@ -16,7 +16,7 @@ import { CompletedRequirementsAccordion } from "./CompletedRequirementsAccordion
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export interface AssignStepProps {
+interface AssignStepProps {
   cache: DataCache | null;
   remainingRequirements: RemainingRequirement[];
   requirementTreeWithStatus: RequirementWithStatus[];

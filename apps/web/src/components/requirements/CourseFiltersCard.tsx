@@ -14,13 +14,13 @@ import { useDisclosure } from "@mantine/hooks";
 import { IconChevronDown } from "@tabler/icons-react";
 import { tr } from "../../i18n";
 
-export interface ExcludeElectiveSubjectsProps {
+interface ExcludeElectiveSubjectsProps {
   data: { value: string; label: string }[];
   value: string[];
   onChange: (value: string[]) => void;
 }
 
-export interface BaseCourseFiltersProps {
+interface BaseCourseFiltersProps {
   levelBuckets: ("undergrad" | "grad")[];
   languageBuckets: ("en" | "fr" | "other")[];
   electiveLevelBuckets: number[];
@@ -34,7 +34,7 @@ export interface BaseCourseFiltersProps {
   onVirtualSectionsOnlyChange: (value: boolean) => void;
 }
 
-export interface BasicCourseFiltersCardProps extends BaseCourseFiltersProps {
+interface BasicCourseFiltersCardProps extends BaseCourseFiltersProps {
   excludeElectiveSubjects?: ExcludeElectiveSubjectsProps;
   collapsible?: boolean;
   defaultCollapsed?: boolean;
@@ -217,7 +217,7 @@ export function BasicCourseFiltersCard({
   );
 }
 
-export type AdvancedCourseFiltersCardProps = BaseCourseFiltersProps;
+type AdvancedCourseFiltersCardProps = BaseCourseFiltersProps;
 
 export function AdvancedCourseFiltersCard({
   levelBuckets,

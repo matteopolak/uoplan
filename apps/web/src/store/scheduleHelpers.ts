@@ -43,7 +43,7 @@ export function buildRequirementPools(
 }
 
 /** Default credits per course when converting creditsNeeded to number of courses. */
-export const DEFAULT_CREDITS_PER_COURSE = 3;
+const DEFAULT_CREDITS_PER_COURSE = 3;
 
 /**
  * Max courses this pool may contribute toward one generated term.
@@ -152,7 +152,7 @@ function greedyPlaceOne(
 }
 
 /** Subject prefix (e.g. "MAT") for diversity ordering; mirrors requirements.ts getDiscipline. */
-export function disciplinePrefixFromCourseCode(code: string): string {
+function disciplinePrefixFromCourseCode(code: string): string {
   return code.split(/\s+/)[0]?.toUpperCase() ?? "";
 }
 

@@ -2,7 +2,7 @@ import type { StateCreator } from "zustand";
 import type { AppStore } from "../types";
 import { clearEnrollmentsCache } from "./schedules";
 
-export interface ConstraintsSlice {
+interface ConstraintsSlice {
   setGenerationMinStartMinutes: AppStore["setGenerationMinStartMinutes"];
   setGenerationMaxEndMinutes: AppStore["setGenerationMaxEndMinutes"];
   setGenerationAllowedDays: AppStore["setGenerationAllowedDays"];

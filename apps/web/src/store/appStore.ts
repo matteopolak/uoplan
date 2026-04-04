@@ -10,7 +10,6 @@ import {
   createSelectionSlice,
 } from "./slices/index";
 
-export type { AppState, AppActions, AppStore } from "./types";
 
 export const useAppStore = create<AppStore>()((...a) => {
   const [set, get] = a;

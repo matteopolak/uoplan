@@ -3,7 +3,7 @@ import { Paper, Group, Text, Badge, Collapse, Stack, Box } from "@mantine/core";
 import { IconChevronDown } from "@tabler/icons-react";
 import type { CompletedRequirementItem } from "schedule";
 
-export interface CompletedRequirementsAccordionProps {
+interface CompletedRequirementsAccordionProps {
   completedItems: CompletedRequirementItem[];
   satisfiedCount: number;
   totalCount: number;
