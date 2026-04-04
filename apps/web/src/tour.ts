@@ -11,7 +11,7 @@ import {
 import { WizardStep } from './lib/wizardSteps';
 import { tr } from './i18n';
 
-const TOUR_DONE_KEY = 'uoplan-tour-done';
+localStorage.removeItem('uoplan-tour-done');
 
 function querySelectorOrBody(selector: string): Element {
   return document.querySelector(selector) ?? document.body;
@@ -125,12 +125,7 @@ export function runTour(
         d.refresh();
       }, 250);
     },
-    onDestroyed: () => {
-      localStorage.setItem(TOUR_DONE_KEY, '1');
-    },
   });
 
   driverObj.drive();
 }
-
-export { TOUR_DONE_KEY };

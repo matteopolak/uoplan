@@ -54,7 +54,6 @@ import {
 import { ScheduleCountStep } from "./components/steps/ScheduleCountStep";
 import { usePersistState } from "./hooks/usePersistState";
 import { useNavHistory } from "./hooks/useNavHistory";
-import { useTour } from "./hooks/useTour";
 import { useShareUrl } from "./hooks/useShareUrl";
 import { getWizardStepContent } from "./lib/wizardStepContent";
 import { LanguageSwitcher } from "./components/shared/LanguageSwitcher";
@@ -223,12 +222,6 @@ function App() {
     [needsOptionsStep, needsAssignStep],
   );
 
-  useTour(
-    !loading && !!indices,
-    setActive,
-    needsOptionsStep,
-    needsAssignStep,
-  );
 
   const effectiveActive = useMemo(
     () => normalizeActiveStep(active, needsOptionsStep, needsAssignStep),
