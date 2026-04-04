@@ -1,10 +1,10 @@
 import {
   useState,
-  useContext,
-  useEffect,
+  
+  
   useMemo,
   memo,
-  createContext,
+  
   type CSSProperties,
   type MouseEvent,
   type KeyboardEvent,
@@ -86,17 +86,10 @@ function optionsStepOptionCardAriaLabel(node: RequirementWithStatus): string {
   );
 }
 
-export interface ExpandRegistry {
-  register(key: string, open: () => void): void;
-  unregister(key: string): void;
-}
-export const ExpandRegistryContext = createContext<ExpandRegistry | null>(null);
-
 /** Path of (requirementId, optionIndex) from root to this node so selecting a nested option can auto-select parents. */
 export type AncestorSelection = { requirementId: string; optionIndex: number };
 
 export interface RequirementNodeProps {
-  nodeKey: string;
   node: RequirementWithStatus;
   cache: DataCache | null;
   completedCourses: Set<string>;
@@ -105,7 +98,7 @@ export interface RequirementNodeProps {
   constrainedPerRequirement?: Record<string, string[]>;
   onSelect: (requirementId: string, courses: string[]) => void;
   selectedOptionsPerRequirement: Record<string, number>;
-  onSelectOption: (requirementId: string, optionIndex: number) => void;
+  onSelectOption?: (requirementId: string, optionIndex: number) => void;
   /** When selecting this node's option, also set these parent options so the full path is selected. */
   ancestorSelections?: AncestorSelection[];
   activeBranch: boolean;
@@ -223,7 +216,6 @@ function SelectableOptionPaper({
 }
 
 export const RequirementNode = memo(function RequirementNode({
-  nodeKey,
   node: rawNode,
   cache,
   completedCourses,
@@ -311,13 +303,6 @@ export const RequirementNode = memo(function RequirementNode({
     if (hideSelection || !hasOptions) return;
     setOpened((o) => !o);
   };
-
-  const registry = useContext(ExpandRegistryContext);
-  useEffect(() => {
-    if (!hasOptions || !registry) return;
-    registry.register(nodeKey, () => setOpened(true));
-    return () => registry.unregister(nodeKey);
-  }, [hasOptions, registry, nodeKey]);
 
   const selected = node.requirementId
     ? (selectedPerRequirement[node.requirementId] ?? [])
@@ -600,7 +585,6 @@ export const RequirementNode = memo(function RequirementNode({
                     </Text>
                   )}
                   <RequirementNode
-                    nodeKey={childKey}
                     node={opt}
                     cache={cache}
                     completedCourses={completedCourses}
@@ -634,9 +618,9 @@ export const RequirementNode = memo(function RequirementNode({
                             onChange: () => {
                               ancestorSelections?.forEach(
                                 ({ requirementId, optionIndex }) =>
-                                  onSelectOption(requirementId, optionIndex),
+                                  onSelectOption?.(requirementId, optionIndex),
                               );
-                              onSelectOption(node.requirementId!, idx);
+                              onSelectOption?.(node.requirementId!, idx);
                             },
                             name: node.requirementId,
                             value: String(idx),
@@ -821,7 +805,6 @@ export const RequirementNode = memo(function RequirementNode({
                     </Text>
                   )}
                   <RequirementNode
-                    nodeKey={childKey}
                     node={opt}
                     cache={cache}
                     completedCourses={completedCourses}
@@ -855,9 +838,9 @@ export const RequirementNode = memo(function RequirementNode({
                             onChange: () => {
                               ancestorSelections?.forEach(
                                 ({ requirementId, optionIndex }) =>
-                                  onSelectOption(requirementId, optionIndex),
+                                  onSelectOption?.(requirementId, optionIndex),
                               );
-                              onSelectOption(node.requirementId!, idx);
+                              onSelectOption?.(node.requirementId!, idx);
                             },
                             name: node.requirementId,
                             value: String(idx),
@@ -969,7 +952,6 @@ export const RequirementNode = memo(function RequirementNode({
             return (
               <RequirementNode
                 key={childKey}
-                nodeKey={childKey}
                 node={child}
                 cache={cache}
                 completedCourses={completedCourses}
@@ -1119,7 +1101,6 @@ export const RequirementNode = memo(function RequirementNode({
             return (
               <RequirementNode
                 key={childKey}
-                nodeKey={childKey}
                 node={child}
                 cache={cache}
                 completedCourses={completedCourses}
@@ -1300,7 +1281,6 @@ export const RequirementNode = memo(function RequirementNode({
     </Paper>
   );
 }, function areEqual(prevProps, nextProps) {
-  if (prevProps.nodeKey !== nextProps.nodeKey) return false;
   if (prevProps.activeBranch !== nextProps.activeBranch) return false;
   if (prevProps.depth !== nextProps.depth) return false;
   if (prevProps.radio !== nextProps.radio) return false;
