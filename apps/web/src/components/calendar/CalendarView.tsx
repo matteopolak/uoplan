@@ -84,6 +84,15 @@ export const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
 
     const events = useCalendarEvents(currentSchedule, professorRatings, referenceWeekStart);
 
+    const hasWeekendCourses = useMemo(() => {
+      return events.some(e => {
+        const day = e.start.getDay();
+        return day === 0 || day === 6;
+      });
+    }, [events]);
+
+    const showWeekends = !isMobile || hasWeekendCourses;
+
     const eventContent = useCallback(
       (arg: { event: { extendedProps: unknown } }) => {
         const ext = arg.event.extendedProps as CalendarEvent;
@@ -166,7 +175,7 @@ export const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
               initialView="timeGridWeek"
               headerToolbar={false}
               firstDay={0}
-              weekends={true}
+              weekends={showWeekends}
               allDaySlot={false}
               slotDuration="01:00:00"
               slotMinTime="08:00:00"
