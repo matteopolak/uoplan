@@ -77,6 +77,7 @@ export const useAppStore = create<AppStore>()((...a) => {
     professorRatings: null,
     generationLimitFirstYearCredits: true,
     generationCompressedSchedule: false,
+    activeStep: 0,
 
     // Global action: touches many states
     resetToDefault: () => {
@@ -133,6 +134,7 @@ export const useAppStore = create<AppStore>()((...a) => {
         generationSeed: generateRandomSeed(),
         includeClosedComponents: false,
         virtualSectionsOnly: false,
+        activeStep: 0,
       });
       if (typeof window !== "undefined") {
         localStorage.removeItem(LOCAL_STORAGE_KEY);

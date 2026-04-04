@@ -76,4 +76,5 @@ message ShareableState {
   bool generation_limit_first_year_credits = 27;
   bool generation_compressed_schedule = 28;
   uint32 magic = 29;
+  uint32 active_step = 30;
 }
