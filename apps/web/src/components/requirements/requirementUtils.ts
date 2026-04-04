@@ -351,6 +351,19 @@ export function countSatisfiedTopLevelRoots(
   return n;
 }
 
+export function isCourseExplicitlyMentioned(
+  node: RequirementWithStatus,
+  code: string,
+): boolean {
+  if (node.type === "course" || node.type === "or_course") {
+    return !!node.candidateCourses?.includes(code);
+  }
+  if (node.options) {
+    return node.options.some((child) => isCourseExplicitlyMentioned(child, code));
+  }
+  return false;
+}
+
 /** Matches {@link RequirementNode} MultiSelect filtering (Assign / Constrain steps). */
 export interface ConstrainMultiSelectContext {
   cache: DataCache | null;
@@ -433,10 +446,9 @@ export function getConstrainMultiSelectOptions(
             ),
           )
         ) {
-          const isSpecificCourseReq =
-            node.type === "course" || node.type === "or_course";
-          if (isSpecificCourseReq && isHonoursProject(c, ctx.cache))
+          if (isHonoursProject(c, ctx.cache) && isCourseExplicitlyMentioned(node, c)) {
             return true;
+          }
           return false;
         }
         if (isElectiveType && !isWithinElectiveLevelCap(c)) {
