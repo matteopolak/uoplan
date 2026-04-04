@@ -630,3 +630,9 @@ msgstr "Elective filters"
 
 msgid "advancedCourseFilters.elective.hint"
 msgstr "Applies only to electives."
+msgid "calendarPage.noMoreSchedules"
+msgstr "No more schedules"
+
+msgid "basicCalendar.noMoreSchedules"
+msgstr "No more schedules"
+
