@@ -71,6 +71,7 @@ export interface EncodeInput {
   generationMinProfessorRating: number | null;
   generationLimitFirstYearCredits: boolean;
   generationCompressedSchedule: boolean;
+  activeStep: number;
 }
 
 export interface DecodedState {
@@ -104,6 +105,7 @@ export interface DecodedState {
   generationMinProfessorRating: number | null;
   generationLimitFirstYearCredits: boolean;
   generationCompressedSchedule: boolean;
+  activeStep: number;
 }
 
 export interface CatalogueLike {
@@ -218,6 +220,7 @@ export function encodeState(
     generationLimitFirstYearCredits: input.generationLimitFirstYearCredits,
     generationCompressedSchedule: input.generationCompressedSchedule,
     magic: STATE_MAGIC,
+    activeStep: input.activeStep,
   };
 
   // Requirements
@@ -382,6 +385,7 @@ export function decodeState(
       : null,
     generationLimitFirstYearCredits: state.generationLimitFirstYearCredits,
     generationCompressedSchedule: state.generationCompressedSchedule,
+    activeStep: state.activeStep ?? 0,
   };
 }
 

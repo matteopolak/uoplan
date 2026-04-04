@@ -88,6 +88,7 @@ export interface AppState {
   virtualSectionsOnly: boolean;
   generationLimitFirstYearCredits: boolean;
   generationCompressedSchedule: boolean;
+  activeStep: number;
 }
 
 export interface AppActions {

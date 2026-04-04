@@ -78,6 +78,7 @@ function makeInput(overrides: Partial<EncodeInput> = {}): EncodeInput {
     generationMinProfessorRating: null,
     generationLimitFirstYearCredits: false,
     generationCompressedSchedule: false,
+  activeStep: 0,
     ...overrides,
   };
 }

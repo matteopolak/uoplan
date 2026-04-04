@@ -142,6 +142,7 @@ export const createUrlSlice: StateCreator<
       generationMinProfessorRating: decoded.generationMinProfessorRating,
       generationLimitFirstYearCredits: decoded.generationLimitFirstYearCredits,
       generationCompressedSchedule: decoded.generationCompressedSchedule,
+      activeStep: decoded.activeStep ?? 0,
       generatedSchedules: [],
       generationError: null,
       constrainedPerRequirement,
@@ -186,6 +187,7 @@ export const createUrlSlice: StateCreator<
       generationMinProfessorRating: s.generationMinProfessorRating,
       generationLimitFirstYearCredits: s.generationLimitFirstYearCredits,
       generationCompressedSchedule: s.generationCompressedSchedule,
+      activeStep: s.activeStep,
     };
     return encodeStateToBase64(
       input,
@@ -228,6 +230,7 @@ export const createUrlSlice: StateCreator<
       generationMinProfessorRating: s.generationMinProfessorRating,
       generationLimitFirstYearCredits: s.generationLimitFirstYearCredits,
       generationCompressedSchedule: s.generationCompressedSchedule,
+      activeStep: s.activeStep,
     };
     const bytes = encodeState(
       input,
