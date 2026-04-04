@@ -3,7 +3,7 @@ import type { RemainingRequirement } from "schedule";
 import { getEffectiveSchedule, isHonoursProject, normalizeCourseCode } from "schedule";
 import { virtualScheduleFilterApplies } from "./electiveEligibility";
 
-export type ImplicitHonoursPick = { code: string; requirementId: string };
+type ImplicitHonoursPick = { code: string; requirementId: string };
 
 /**
  * When Assign does not pin a non-honours course and Constrain does not list one,

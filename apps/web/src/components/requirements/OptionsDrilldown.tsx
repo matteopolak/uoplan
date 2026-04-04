@@ -17,7 +17,7 @@ import { tr } from "../../i18n";
 const EMPTY_SET = new Set<string>();
 const EMPTY_RECORD: Record<string, string[]> = {};
 
-export interface OptionsDrilldownProps {
+interface OptionsDrilldownProps {
   /** Stable prefix for child RequirementNode keys and registry. */
   nodeKeyPrefix: string;
   node: RequirementWithStatus;

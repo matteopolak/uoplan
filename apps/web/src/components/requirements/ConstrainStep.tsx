@@ -32,7 +32,7 @@ import { CompletedRequirementsAccordion } from "./CompletedRequirementsAccordion
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export interface ConstrainStepProps {
+interface ConstrainStepProps {
   cache: DataCache | null;
   remainingRequirements: RemainingRequirement[];
   requirementTreeWithStatus: RequirementWithStatus[];

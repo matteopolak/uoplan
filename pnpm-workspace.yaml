@@ -1,8 +1,9 @@
 packages:
-  - 'apps/*'
-  - 'packages/*'
+  - apps/*
+  - packages/*
+
+minimumReleaseAge: 10080
 
 onlyBuiltDependencies:
   - esbuild
-
-minimumReleaseAge: 10080
+  - lefthook

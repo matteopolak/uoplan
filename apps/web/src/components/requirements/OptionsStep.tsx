@@ -5,7 +5,7 @@ import { OptionsDrilldown } from "./OptionsDrilldown";
 import { nodeHasOptionGroups } from "./requirementUtils";
 import { tr } from "../../i18n";
 
-export interface OptionsStepProps {
+interface OptionsStepProps {
   requirementTreeWithStatus: RequirementWithStatus[];
   completedCourses: string[];
   selectedOptionsPerRequirement: Record<string, number>;

@@ -86,10 +86,7 @@ function optionsStepOptionCardAriaLabel(node: RequirementWithStatus): string {
   );
 }
 
-/** Path of (requirementId, optionIndex) from root to this node so selecting a nested option can auto-select parents. */
-export type AncestorSelection = { requirementId: string; optionIndex: number };
-
-export interface RequirementNodeProps {
+interface RequirementNodeProps {
   node: RequirementWithStatus;
   cache: DataCache | null;
   completedCourses: Set<string>;
@@ -131,7 +128,7 @@ export interface RequirementNodeProps {
 
 type RadioConfig = NonNullable<RequirementNodeProps["radio"]>;
 
-export type OptionCardRadioConfig = RadioConfig;
+type OptionCardRadioConfig = RadioConfig;
 
 type SelectableOptionPaperProps = Omit<PaperProps, "children"> & {
   radio: OptionCardRadioConfig;

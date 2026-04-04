@@ -14,7 +14,7 @@ import {
 import { recomputeStateForProgram } from "../requirementCompute";
 import type { Course } from "schemas";
 
-export interface UrlSlice {
+interface UrlSlice {
   loadEncodedState: AppStore["loadEncodedState"];
   getEncodedStateBase64: AppStore["getEncodedStateBase64"];
   getShareUrl: AppStore["getShareUrl"];

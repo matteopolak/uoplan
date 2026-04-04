@@ -134,7 +134,7 @@ export function hasMissingOptionSelections(
  * Resolves which branch index applies for an `or_group` / `options_group`
  * (user pick in the Options step, else {@link RequirementWithStatus.satisfiedOptionIndex}).
  */
-export function selectedBranchIndexForOptionGroup(
+function selectedBranchIndexForOptionGroup(
   node: RequirementWithStatus,
   selectedOptions: Record<string, number>,
 ): number | undefined {
@@ -306,7 +306,7 @@ export function countSatisfiedTopLevelRoots(
   return n;
 }
 
-export function isCourseExplicitlyMentioned(
+function isCourseExplicitlyMentioned(
   node: RequirementWithStatus,
   code: string,
 ): boolean {
@@ -320,7 +320,7 @@ export function isCourseExplicitlyMentioned(
 }
 
 /** Matches {@link RequirementNode} MultiSelect filtering (Assign / Constrain steps). */
-export interface ConstrainMultiSelectContext {
+interface ConstrainMultiSelectContext {
   cache: DataCache | null;
   completedCourses: Set<string>;
   prereqEligible: Set<string>;
@@ -336,7 +336,7 @@ export interface ConstrainMultiSelectContext {
   completedOnly: boolean;
 }
 
-export interface ConstrainMultiSelectOption {
+interface ConstrainMultiSelectOption {
   value: string;
   label: string;
   disabled: boolean;
@@ -470,7 +470,7 @@ export function getConstrainMultiSelectOptions(
  * vacuously “empty” so e.g. a `pick` hides when **all** descendants with
  * pickers have empty pools.
  */
-export function subtreeHasOnlyEmptyConstrainDropdowns(
+function subtreeHasOnlyEmptyConstrainDropdowns(
   node: RequirementWithStatus,
   constrainedPerRequirement: Record<string, string[]>,
   ctx: ConstrainMultiSelectContext,
@@ -537,7 +537,7 @@ export function subtreeHasOnlyEmptyConstrainDropdowns(
   return true;
 }
 
-export interface PartitionedConstrainRoot {
+interface PartitionedConstrainRoot {
   node: RequirementWithStatus;
   /** Index of this root in the original `incompleteRoots` array (stable keys). */
   rootIndex: number;

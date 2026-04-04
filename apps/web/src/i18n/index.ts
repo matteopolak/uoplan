@@ -1,7 +1,7 @@
 import { i18n } from "@lingui/core";
 import { detect, fromNavigator, fromStorage } from "@lingui/detect-locale";
 
-export const LOCALE_STORAGE_KEY = "uoplan.lang";
+const LOCALE_STORAGE_KEY = "uoplan.lang";
 export const APP_LOCALES = ["en", "fr-CA"] as const;
 export type AppLocale = (typeof APP_LOCALES)[number];
 

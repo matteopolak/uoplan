@@ -13,7 +13,7 @@ import {
   type CourseLevelBucket,
 } from "schedule";
 
-export interface RecomputedState {
+interface RecomputedState {
   remainingRequirements: RemainingRequirement[];
   requirementTreeWithStatus: RequirementWithStatus[];
   completedRequirementsList: CompletedRequirementItem[];
@@ -46,7 +46,7 @@ function collectAssignedFromExactRequirements(
   return assigned;
 }
 
-export const GROUP_STYLE_TYPES = [
+const GROUP_STYLE_TYPES = [
   "group",
   "pick",
   "or_group",

@@ -24,7 +24,6 @@
     "@eslint/js": "^10.0.1",
     "eslint": "^10.1.0",
     "eslint-plugin-unused-imports": "^4.4.1",
-    "globals": "^16.5.0",
     "jiti": "^2.6.1",
     "knip": "^6.1.0",
     "lefthook": "^2.1.4",

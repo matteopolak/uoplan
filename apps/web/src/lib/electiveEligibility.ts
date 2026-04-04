@@ -1,7 +1,7 @@
 import { getCourseLevel, normalizeCourseCode } from "schedule";
 import { isBroadElectivePoolType } from "../store/scheduleHelpers";
 
-export const MAX_ELECTIVE_LEVEL = 4000;
+const MAX_ELECTIVE_LEVEL = 4000;
 export const DEFAULT_BASIC_ELECTIVE_LEVEL_BUCKETS = [1000];
 export const DEFAULT_BASIC_LEVEL_BUCKETS = ["undergrad"] as const;
 export const DEFAULT_BASIC_LANGUAGE_BUCKETS = ["en"] as const;

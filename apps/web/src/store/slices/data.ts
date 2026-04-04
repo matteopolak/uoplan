@@ -91,7 +91,7 @@ function isProfessorRatingsPayload(input: unknown): input is ProfessorRatingsPay
   return "professors" in input && Array.isArray(input.professors);
 }
 
-export interface DataSlice {
+interface DataSlice {
   loadData: AppStore["loadData"];
   setSelectedTermId: AppStore["setSelectedTermId"];
   setFirstYear: AppStore["setFirstYear"];

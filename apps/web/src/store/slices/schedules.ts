@@ -27,7 +27,7 @@ export function clearEnrollmentsCache() {
   validEnrollmentsByCourseCode.clear();
 }
 
-export interface SchedulesSlice {
+interface SchedulesSlice {
   generateSchedules: AppStore["generateSchedules"];
   generateBasicSchedules: AppStore["generateBasicSchedules"];
   clearGeneratedSchedules: AppStore["clearGeneratedSchedules"];

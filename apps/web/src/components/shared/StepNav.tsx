@@ -43,7 +43,7 @@ export const STEPS = [
   },
 ] as const;
 
-export type Step = (typeof STEPS)[number];
+type Step = (typeof STEPS)[number];
 
 interface StepNavProps {
   /** Indices into {@link STEPS}; pass every step (0–6) so optional rows can show as skipped. */

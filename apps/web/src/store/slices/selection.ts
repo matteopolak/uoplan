@@ -49,7 +49,7 @@ function getMergedCatalogue(
   return { ...catalogue, courses };
 }
 
-export interface SelectionSlice {
+interface SelectionSlice {
   setWizardMode: AppStore["setWizardMode"];
   setBasicPinnedCourses: AppStore["setBasicPinnedCourses"];
   setBasicElectivesCount: AppStore["setBasicElectivesCount"];
