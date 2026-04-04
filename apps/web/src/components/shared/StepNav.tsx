@@ -125,6 +125,7 @@ function StepItem({
 
   return (
     <Box
+      component="li"
       style={{
         display: "flex",
         flexDirection: isMobile ? "column" : "row",
@@ -137,6 +138,16 @@ function StepItem({
       }}
       onClick={() => {
         if (isClickable) onStepClick(actualIdx);
+      }}
+      role={isClickable ? "button" : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      aria-current={isActive ? "step" : undefined}
+      aria-disabled={!isClickable}
+      onKeyDown={(e) => {
+        if (isClickable && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onStepClick(actualIdx);
+        }
       }}
     >
       <Box
@@ -219,16 +230,21 @@ export function StepNav({
               }}
             />
           )}
-          <Group
-            gap="md"
-            wrap="nowrap"
-            style={{
-              justifyContent: "space-between",
-              width: "100%",
-              position: "relative",
-              zIndex: 1,
-            }}
-          >
+            <Group
+              component="ul"
+              role="list"
+              gap="md"
+              wrap="nowrap"
+              style={{
+                justifyContent: "space-between",
+                width: "100%",
+                position: "relative",
+                zIndex: 1,
+                padding: 0,
+                margin: 0,
+                listStyle: "none",
+              }}
+            >
             {visibleStepIndices.map((actualIdx, displayIdx) => (
               <StepItem
                 key={actualIdx}
@@ -294,7 +310,12 @@ export function StepNav({
             }}
           />
         )}
-        <Stack gap={0}>
+        <Stack 
+          component="ul" 
+          role="list"
+          gap={0} 
+          style={{ padding: 0, margin: 0, listStyle: "none" }}
+        >
           {visibleStepIndices.map((actualIdx, displayIdx) => (
             <StepItem
               key={actualIdx}
