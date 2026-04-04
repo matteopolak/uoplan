@@ -52,8 +52,8 @@ export const createSchedulesSlice: StateCreator<
   },
 
   generateBasicSchedules: async (options) => {
-    const { generateBasicSchedulesAction } = await import("../../lib/generateBasicSchedulesAction");
-    const result = generateBasicSchedulesAction(get(), options);
+    const { generateSchedulesAction } = await import("../../lib/generateSchedulesAction");
+    const result = await generateSchedulesAction(get(), options);
     if (result) {
       set(result);
     }
