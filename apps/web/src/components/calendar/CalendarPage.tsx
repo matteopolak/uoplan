@@ -29,6 +29,8 @@ import { useTimetableDateRangeFromSchedule } from "../../hooks/useTimetableDateR
 import { tr } from "../../i18n";
 import { LanguageSwitcher } from "../shared/LanguageSwitcher";
 import { CALENDAR_SIDEBAR_WIDTH_PX } from "./calendarLayout";
+import { BasicCalendarSidebarControls } from "./BasicCalendarSidebarControls";
+import { BasicCalendarHeaderActions } from "./BasicCalendarHeaderActions";
 
 interface CalendarPageProps {
   onBack: () => void;
@@ -52,6 +54,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
     professorRatings,
     scheduleColorMaps,
     hasMoreSchedules,
+    wizardMode,
   } = useAppStore(
     useShallow((s) => ({
       generatedSchedules: s.generatedSchedules,
@@ -63,6 +66,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
       professorRatings: s.professorRatings,
       scheduleColorMaps: s.scheduleColorMaps,
       hasMoreSchedules: s.hasMoreSchedules,
+      wizardMode: s.wizardMode,
     })),
   );
 
@@ -70,9 +74,12 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
   const undoLastSwap = useAppStore((s) => s.undoLastSwap);
   const getShareUrl = useAppStore((s) => s.getShareUrl);
   const generateSchedules = useAppStore((s) => s.generateSchedules);
+  const generateBasicSchedules = useAppStore((s) => s.generateBasicSchedules);
   const getSwapCandidates = useAppStore((s) => s.getSwapCandidates);
   const swapCourseInSchedule = useAppStore((s) => s.swapCourseInSchedule);
   const resetToDefault = useAppStore((s) => s.resetToDefault);
+
+  const isBasic = wizardMode === "basic";
 
   const morphRef = useRef<CalendarViewHandle>(null);
 
@@ -124,7 +131,8 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
 
   const handleGenerateOneMore = () => {
     setGeneratingOneMore(true);
-    void generateSchedules({ appendFirstOnly: true }).then(() => {
+    const generateFn = isBasic ? generateBasicSchedules : generateSchedules;
+    void generateFn({ appendFirstOnly: true }).then(() => {
       setGeneratingOneMore(false);
       // Trigger animation to the newly appended schedule
       const newIdx = useAppStore.getState().selectedScheduleIndex;
@@ -217,71 +225,84 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
             marginBottom: 0,
           }}
         >
-          {tr("calendarPage.title")}
+          {tr(isBasic ? "basicCalendar.title" : "calendarPage.title")}
         </Title>
         <Text size="sm" style={{ color: "#ADB5BD", marginTop: -8 }}>
-          {tr("calendarPage.subtitle")}
+          {tr(isBasic ? "basicCalendar.subtitle" : "calendarPage.subtitle")}
         </Text>
 
-        {swapHistory.length > 0 && (
-          <Button
-            variant="light"
-            color="gray"
-            size="sm"
-            radius={0}
-            leftSection={<IconArrowBackUp size={14} />}
-            onClick={() => undoLastSwap()}
-          >
-            {swapHistory.length === 1
-              ? tr("calendarPage.undoSwap")
-              : tr("calendarPage.undoSwapCount", {
-                  count: swapHistory.length,
-                })}
-          </Button>
-        )}
+        {isBasic ? (
+          <>
+            <BasicCalendarHeaderActions onBack={onBack} />
+            <BasicCalendarSidebarControls 
+              generating={generatingOneMore}
+              hasMoreSchedules={hasMoreSchedules}
+              onGenerate={handleGenerateOneMore}
+            />
+          </>
+        ) : (
+          <>
+            {swapHistory.length > 0 && (
+              <Button
+                variant="light"
+                color="gray"
+                size="sm"
+                radius={0}
+                leftSection={<IconArrowBackUp size={14} />}
+                onClick={() => undoLastSwap()}
+              >
+                {swapHistory.length === 1
+                  ? tr("calendarPage.undoSwap")
+                  : tr("calendarPage.undoSwapCount", {
+                      count: swapHistory.length,
+                    })}
+              </Button>
+            )}
 
-        <Group gap="xs">
-          <LanguageSwitcher />
-          {indices && (
-            <Tooltip label="Copied to clipboard!" opened={shareCopied} position="bottom" withArrow color="dark">
+            <Group gap="xs">
+              <LanguageSwitcher />
+              {indices && (
+                <Tooltip label="Copied to clipboard!" opened={shareCopied} position="bottom" withArrow color="dark">
+                  <Button
+                    variant="filled"
+                    color="dark"
+                    size="sm"
+                    radius={0}
+                    leftSection={<IconShare size={14} />}
+                    onClick={handleCopyShare}
+                    style={{ backgroundColor: "#141517" }}
+                  >
+                    {tr("calendarPage.share")}
+                  </Button>
+                </Tooltip>
+              )}
               <Button
                 variant="filled"
                 color="dark"
                 size="sm"
                 radius={0}
-                leftSection={<IconShare size={14} />}
-                onClick={handleCopyShare}
+                leftSection={<IconRefresh size={14} />}
+                onClick={() => setResetModalOpen(true)}
                 style={{ backgroundColor: "#141517" }}
               >
-                {tr("calendarPage.share")}
+                {tr("calendarPage.reset")}
               </Button>
-            </Tooltip>
-          )}
-          <Button
-            variant="filled"
-            color="dark"
-            size="sm"
-            radius={0}
-            leftSection={<IconRefresh size={14} />}
-            onClick={() => setResetModalOpen(true)}
-            style={{ backgroundColor: "#141517" }}
-          >
-            {tr("calendarPage.reset")}
-          </Button>
-        </Group>
+            </Group>
 
-        <ResetModal
-          opened={resetModalOpen}
-          onClose={() => setResetModalOpen(false)}
-          onConfirm={() => {
-            resetToDefault();
-            setResetModalOpen(false);
-            onBack();
-          }}
-        />
+            <ResetModal
+              opened={resetModalOpen}
+              onClose={() => setResetModalOpen(false)}
+              onConfirm={() => {
+                resetToDefault();
+                setResetModalOpen(false);
+                onBack();
+              }}
+            />
+          </>
+        )}
 
         <Select
-          label={tr("calendarPage.schedule.selectLabel")}
+          label={tr(isBasic ? "basicCalendar.generatedSchedules" : "calendarPage.schedule.selectLabel")}
           data={scheduleOptions}
           value={String(
             Math.min(selectedScheduleIndex, generatedSchedules.length - 1),
