@@ -279,6 +279,11 @@ function* combinations<T>(arr: T[], k: number): Generator<T[]> {
   }
 }
 
+export interface PrecomputedCombo {
+  combo: SectionCombo;
+  enrollment: CourseEnrollment;
+}
+
 export function generateSchedules(
   courseCodes: string[],
   targetCount: number,
@@ -286,13 +291,14 @@ export function generateSchedules(
   constraints?: GenerationConstraints
 ): GeneratedSchedule[] {
   const schedules: GeneratedSchedule[] = [];
-  const coursesWithCombos: { code: string; combos: SectionCombo[] }[] = [];
+  const coursesWithCombos: { code: string; combos: PrecomputedCombo[] }[] = [];
 
   for (const code of courseCodes) {
     if (isHonoursProject(code, cache)) {
+      const combo = {};
       coursesWithCombos.push({
         code: canonicalCourseCode(code, cache),
-        combos: [{}],
+        combos: [{ combo, enrollment: enrollmentForPicker(code, combo, cache) }],
       });
       continue;
     }
@@ -300,7 +306,13 @@ export function generateSchedules(
     if (!schedule) continue;
     const combos = getValidSectionCombos(schedule, constraints);
     if (combos.length > 0) {
-      coursesWithCombos.push({ code: schedule.courseCode, combos });
+      coursesWithCombos.push({
+        code: schedule.courseCode,
+        combos: combos.map(combo => ({
+          combo,
+          enrollment: enrollmentForPicker(schedule.courseCode, combo, cache)
+        }))
+      });
     }
   }
 
@@ -309,14 +321,12 @@ export function generateSchedules(
   }
 
   function findNonOverlappingCombos(
-    items: { code: string; combos: SectionCombo[] }[],
-    selected: { code: string; combo: SectionCombo }[],
+    items: { code: string; combos: PrecomputedCombo[] }[],
+    selected: { code: string; combo: PrecomputedCombo }[],
     idx: number
   ): boolean {
     if (idx === items.length) {
-      const enrollments: CourseEnrollment[] = selected.map(({ code, combo }) =>
-        enrollmentForPicker(code, combo, cache),
-      );
+      const enrollments: CourseEnrollment[] = selected.map(({ combo }) => combo.enrollment);
       if (constraints?.compressedSchedule && !satisfiesCompressedConstraint(enrollments)) {
         return false;
       }
@@ -326,17 +336,14 @@ export function generateSchedules(
 
     const { code, combos } = items[idx];
 
-    for (const combo of combos) {
-      const candidate = enrollmentForPicker(code, combo, cache);
-      const conflicts = selected.some(({ code: c, combo: co }) => {
-        return enrollmentsOverlap(
-          enrollmentForPicker(c, co, cache),
-          candidate,
-        );
+    for (const precomputed of combos) {
+      const candidate = precomputed.enrollment;
+      const conflicts = selected.some(({ combo: co }) => {
+        return enrollmentsOverlap(co.enrollment, candidate);
       });
       if (conflicts) continue;
 
-      selected.push({ code, combo });
+      selected.push({ code, combo: precomputed });
       if (findNonOverlappingCombos(items, selected, idx + 1)) return true;
       selected.pop();
     }
@@ -369,12 +376,13 @@ export function generateSchedulesWithPinned(
     return [];
   }
 
-  const pinned: { code: string; combos: SectionCombo[] }[] = [];
+  const pinned: { code: string; combos: PrecomputedCombo[] }[] = [];
   for (const code of pinnedCourseCodes) {
     if (isHonoursProject(code, cache)) {
+      const combo = {};
       pinned.push({
         code: canonicalCourseCode(code, cache),
-        combos: [{}],
+        combos: [{ combo, enrollment: enrollmentForPicker(code, combo, cache) }],
       });
       continue;
     }
@@ -382,16 +390,23 @@ export function generateSchedulesWithPinned(
     if (!schedule) return [];
     const combos = getValidSectionCombos(schedule, constraints);
     if (combos.length === 0) return [];
-    pinned.push({ code: schedule.courseCode, combos });
+    pinned.push({
+      code: schedule.courseCode,
+      combos: combos.map(combo => ({
+        combo,
+        enrollment: enrollmentForPicker(schedule.courseCode, combo, cache)
+      }))
+    });
   }
 
-  const optional: { code: string; combos: SectionCombo[] }[] = [];
+  const optional: { code: string; combos: PrecomputedCombo[] }[] = [];
   for (const code of optionalCourseCodes) {
     if (pinnedCourseCodes.includes(code)) continue;
     if (isHonoursProject(code, cache)) {
+      const combo = {};
       optional.push({
         code: canonicalCourseCode(code, cache),
-        combos: [{}],
+        combos: [{ combo, enrollment: enrollmentForPicker(code, combo, cache) }],
       });
       continue;
     }
@@ -399,22 +414,26 @@ export function generateSchedulesWithPinned(
     if (!schedule) continue;
     const combos = getValidSectionCombos(schedule, constraints);
     if (combos.length > 0) {
-      optional.push({ code: schedule.courseCode, combos });
+      optional.push({
+        code: schedule.courseCode,
+        combos: combos.map(combo => ({
+          combo,
+          enrollment: enrollmentForPicker(schedule.courseCode, combo, cache)
+        }))
+      });
     }
   }
 
   const schedules: GeneratedSchedule[] = [];
 
   function findOptionalForPinned(
-    optionalItems: { code: string; combos: SectionCombo[] }[],
-    chosenPinned: { code: string; combo: SectionCombo }[],
+    optionalItems: { code: string; combos: PrecomputedCombo[] }[],
+    chosenPinned: { code: string; combo: PrecomputedCombo }[],
     startIdx: number
   ): void {
     const remainingSlots = targetCount - chosenPinned.length;
     if (remainingSlots <= 0) {
-      const enrollments: CourseEnrollment[] = chosenPinned.map(({ code, combo }) =>
-        enrollmentForPicker(code, combo, cache),
-      );
+      const enrollments: CourseEnrollment[] = chosenPinned.map(({ combo }) => combo.enrollment);
       if (constraints?.compressedSchedule && !satisfiesCompressedConstraint(enrollments)) {
         return;
       }
@@ -423,8 +442,8 @@ export function generateSchedulesWithPinned(
     }
 
     function dfsOptional(
-      items: { code: string; combos: SectionCombo[] }[],
-      selected: { code: string; combo: SectionCombo }[],
+      items: { code: string; combos: PrecomputedCombo[] }[],
+      selected: { code: string; combo: PrecomputedCombo }[],
       idx: number
     ): boolean {
       // Only accept full schedules: we need exactly remainingSlots optional courses.
@@ -438,9 +457,7 @@ export function generateSchedulesWithPinned(
           }, 0);
           if (fyCredits > constraints.maxFirstYearCredits) return false;
         }
-        const enrollments: CourseEnrollment[] = all.map(({ code, combo }) =>
-          enrollmentForPicker(code, combo, cache),
-        );
+        const enrollments: CourseEnrollment[] = all.map(({ combo }) => combo.enrollment);
         if (constraints?.compressedSchedule && !satisfiesCompressedConstraint(enrollments)) {
           return false;
         }
@@ -451,25 +468,19 @@ export function generateSchedulesWithPinned(
 
       const { code, combos } = items[idx];
 
-      for (const combo of combos) {
-        const candidate = enrollmentForPicker(code, combo, cache);
-        const conflictsPinned = chosenPinned.some(({ code: c, combo: co }) => {
-          return enrollmentsOverlap(
-            enrollmentForPicker(c, co, cache),
-            candidate,
-          );
+      for (const precomputed of combos) {
+        const candidate = precomputed.enrollment;
+        const conflictsPinned = chosenPinned.some(({ combo: co }) => {
+          return enrollmentsOverlap(co.enrollment, candidate);
         });
         if (conflictsPinned) continue;
 
-        const conflictsOpt = selected.some(({ code: c, combo: co }) => {
-          return enrollmentsOverlap(
-            enrollmentForPicker(c, co, cache),
-            candidate,
-          );
+        const conflictsOpt = selected.some(({ combo: co }) => {
+          return enrollmentsOverlap(co.enrollment, candidate);
         });
         if (conflictsOpt) continue;
 
-        selected.push({ code, combo });
+        selected.push({ code, combo: precomputed });
         if (dfsOptional(items, selected, idx + 1)) return true;
         selected.pop();
       }
@@ -482,8 +493,8 @@ export function generateSchedulesWithPinned(
   }
 
   function dfsPinned(
-    items: { code: string; combos: SectionCombo[] }[],
-    selected: { code: string; combo: SectionCombo }[],
+    items: { code: string; combos: PrecomputedCombo[] }[],
+    selected: { code: string; combo: PrecomputedCombo }[],
     idx: number
   ): boolean {
     if (idx === items.length) {
@@ -493,17 +504,14 @@ export function generateSchedulesWithPinned(
 
     const { code, combos } = items[idx];
 
-    for (const combo of combos) {
-      const candidate = enrollmentForPicker(code, combo, cache);
-      const conflicts = selected.some(({ code: c, combo: co }) => {
-        return enrollmentsOverlap(
-          enrollmentForPicker(c, co, cache),
-          candidate,
-        );
+    for (const precomputed of combos) {
+      const candidate = precomputed.enrollment;
+      const conflicts = selected.some(({ combo: co }) => {
+        return enrollmentsOverlap(co.enrollment, candidate);
       });
       if (conflicts) continue;
 
-      selected.push({ code, combo });
+      selected.push({ code, combo: precomputed });
       if (dfsPinned(items, selected, idx + 1)) return true;
       selected.pop();
     }
