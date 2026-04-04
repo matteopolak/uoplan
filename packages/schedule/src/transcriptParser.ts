@@ -1,5 +1,33 @@
 import { normalizeCourseCode, isNonDegreeCourse } from "./utils/courseUtils";
 
+interface CompatReadableStream {
+  [Symbol.asyncIterator]: () => AsyncGenerator<Uint8Array, void, unknown>;
+  getReader(): {
+    read(): Promise<{ done: boolean; value: Uint8Array }>;
+    releaseLock(): void;
+  };
+}
+
+// Polyfill for older iOS Safari/Chrome which lacks async iteration on ReadableStream
+if (
+  typeof ReadableStream !== "undefined" &&
+  !(ReadableStream.prototype as unknown as CompatReadableStream)[Symbol.asyncIterator]
+) {
+  (ReadableStream.prototype as unknown as CompatReadableStream)[Symbol.asyncIterator] =
+    async function* (this: CompatReadableStream) {
+      const reader = this.getReader();
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) return;
+          yield value;
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    };
+}
+
 /** Course code pattern: 3–4 letters + 4–5 digits, optional letter suffix (e.g. ADM 1100, ESL 2121) */
 const COURSE_CODE_REGEX = /\b([A-Z]{3,4})\s*(\d{4,5}[A-Z]?)\b/gi;
 

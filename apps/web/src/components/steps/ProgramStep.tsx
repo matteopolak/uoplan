@@ -169,6 +169,7 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
         minorMatched: minorMatched ?? null,
       });
     } catch (err) {
+      console.error(err);
       setTranscriptError(
         err instanceof Error
           ? err.message
