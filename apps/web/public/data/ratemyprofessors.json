@@ -993,7 +993,7 @@
       "legacyId": 2161805,
       "name": "Aleksandra Nastic",
       "rating": 4.7,
-      "numRatings": 36
+      "numRatings": 37
     },
     {
       "id": "VGVhY2hlci0yNTE0MjIw",
@@ -2732,15 +2732,15 @@
       "numRatings": 1
     },
     {
-      "id": "VGVhY2hlci0zMDczNzky",
-      "legacyId": 3073792,
+      "id": "VGVhY2hlci0zMDczNzk0",
+      "legacyId": 3073794,
       "name": "Anne-Marie Parent",
       "rating": 0,
       "numRatings": 0
     },
     {
-      "id": "VGVhY2hlci0zMDczNzk0",
-      "legacyId": 3073794,
+      "id": "VGVhY2hlci0zMDczNzky",
+      "legacyId": 3073792,
       "name": "Anne-Marie Parent",
       "rating": 0,
       "numRatings": 0
@@ -10233,7 +10233,7 @@
       "legacyId": 3129123,
       "name": "Franky Yousry",
       "rating": 1.9,
-      "numRatings": 22
+      "numRatings": 23
     },
     {
       "id": "VGVhY2hlci0zNTA1NDc=",
@@ -11752,7 +11752,7 @@
       "legacyId": 1329500,
       "name": "Heather Poole",
       "rating": 2.7,
-      "numRatings": 201
+      "numRatings": 202
     },
     {
       "id": "VGVhY2hlci0xMzc2MDc1",
@@ -18150,7 +18150,7 @@
       "legacyId": 3072687,
       "name": "Lorena Ruci",
       "rating": 4.4,
-      "numRatings": 43
+      "numRatings": 44
     },
     {
       "id": "VGVhY2hlci0xNTU4NA==",
@@ -20662,8 +20662,8 @@
       "id": "VGVhY2hlci0zMDQ1NjEz",
       "legacyId": 3045613,
       "name": "Mathieu Bouchard",
-      "rating": 4,
-      "numRatings": 17
+      "rating": 4.1,
+      "numRatings": 19
     },
     {
       "id": "VGVhY2hlci0xMjIwOTMz",
@@ -20928,8 +20928,8 @@
       "id": "VGVhY2hlci0yNjY0NzA4",
       "legacyId": 2664708,
       "name": "Maxime Brunet",
-      "rating": 3.1,
-      "numRatings": 8
+      "rating": 2.9,
+      "numRatings": 9
     },
     {
       "id": "VGVhY2hlci0xNTcyMzM2",
@@ -31078,8 +31078,8 @@
       "id": "VGVhY2hlci0zMzI4MDU=",
       "legacyId": 332805,
       "name": "Trevor Tucker",
-      "rating": 4.3,
-      "numRatings": 164
+      "rating": 4.4,
+      "numRatings": 165
     },
     {
       "id": "VGVhY2hlci0yMDU3NDU3",
@@ -32198,8 +32198,8 @@
       "id": "VGVhY2hlci0yMDA3Mjg3",
       "legacyId": 2007287,
       "name": "Yaroslav Konar",
-      "rating": 3.7,
-      "numRatings": 83
+      "rating": 3.6,
+      "numRatings": 84
     },
     {
       "id": "VGVhY2hlci0yMTcwMDU3",
