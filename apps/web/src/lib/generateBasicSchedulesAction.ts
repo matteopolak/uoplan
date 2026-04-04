@@ -26,6 +26,7 @@ export interface GenerateBasicSchedulesResult {
   scheduleColorMaps: Record<string, number>[];
   selectedScheduleIndex: number;
   swapHistory: never[];
+  hasMoreSchedules: boolean;
   generationError: GenerationErrorState | null;
 }
 
@@ -71,12 +72,14 @@ export function generateBasicSchedulesAction(
   const existingScheduleCount = appendFirstOnly ? state.generatedSchedules.length : 0;
   const rng = createSeededRng(((generationSeed >>> 0) + existingScheduleCount) >>> 0);
 
+  const deadline = Date.now() + 2000;
   const constraints: GenerationConstraints = {
     minStartMinutes: generationMinStartMinutes,
     maxEndMinutes: generationMaxEndMinutes,
     allowedDays: generationAllowedDays,
     minProfessorRating: generationMinProfessorRating ?? undefined,
     professorRatings: professorRatings ?? undefined,
+    deadline,
   };
 
   const targetCount = pinned.length + basicElectivesCount;
@@ -158,6 +161,7 @@ export function generateBasicSchedulesAction(
       scheduleColorMaps: newColorMaps,
       selectedScheduleIndex: newSchedules.length - 1,
       swapHistory: [],
+      hasMoreSchedules: Date.now() <= deadline,
       generationError: null,
     };
   }
@@ -179,6 +183,7 @@ export function generateBasicSchedulesAction(
       scheduleColorMaps: [],
       selectedScheduleIndex: 0,
       swapHistory: [],
+      hasMoreSchedules: false,
       generationError: {
         message: timetableFailure.leadMessage,
         details: {
@@ -199,6 +204,7 @@ export function generateBasicSchedulesAction(
     scheduleColorMaps: buildColorMaps(limitedSchedules),
     selectedScheduleIndex: 0,
     swapHistory: [],
+    hasMoreSchedules: Date.now() <= deadline,
     generationError: null,
   };
 }

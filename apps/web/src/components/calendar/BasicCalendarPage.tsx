@@ -84,10 +84,7 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
   const {
     generatedSchedules,
     selectedScheduleIndex,
-    generationError,
-    cache,
-    professorRatings,
-    scheduleColorMaps,
+    indices,
     basicPinnedCourses,
     basicElectivesCount,
     basicExcludedCategories,
@@ -96,16 +93,18 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
     electiveLevelBuckets,
     includeClosedComponents,
     virtualSectionsOnly,
+    generationError,
+    cache,
+    professorRatings,
+    scheduleColorMaps,
     completedCourses,
-    indices,
+    hasMoreSchedules,
   } = useAppStore(
     useShallow((s) => ({
       generatedSchedules: s.generatedSchedules,
       selectedScheduleIndex: s.selectedScheduleIndex,
-      generationError: s.generationError,
-      cache: s.cache,
-      professorRatings: s.professorRatings,
-      scheduleColorMaps: s.scheduleColorMaps,
+      swapHistory: s.swapHistory,
+      indices: s.indices,
       basicPinnedCourses: s.basicPinnedCourses,
       basicElectivesCount: s.basicElectivesCount,
       basicExcludedCategories: s.basicExcludedCategories,
@@ -114,8 +113,12 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
       electiveLevelBuckets: s.electiveLevelBuckets,
       includeClosedComponents: s.includeClosedComponents,
       virtualSectionsOnly: s.virtualSectionsOnly,
+      generationError: s.generationError,
+      cache: s.cache,
+      professorRatings: s.professorRatings,
+      scheduleColorMaps: s.scheduleColorMaps,
       completedCourses: s.completedCourses,
-      indices: s.indices,
+      hasMoreSchedules: s.hasMoreSchedules,
     })),
   );
 
@@ -461,10 +464,10 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
             size="sm"
             radius={0}
             loading={generating}
-            disabled={generating}
+            disabled={generating || !hasMoreSchedules}
             onClick={handleGenerate}
           >
-            {tr("basicCalendar.generate")}
+            {hasMoreSchedules ? tr("basicCalendar.generate") : tr("basicCalendar.noMoreSchedules")}
           </Button>
         </Stack>
 

@@ -36,6 +36,8 @@ export interface GenerationConstraints {
   maxFirstYearCredits?: number;
   /** If true, each day may have at most one gap between classes, and that gap must be ≤ 90 minutes. */
   compressedSchedule?: boolean;
+  /** Unix timestamp (ms) deadline to stop searching for schedules. */
+  deadline?: number;
 }
 
 /** Default when the UI clears “days allowed” (empty array): same as initial app state (weekdays). */
@@ -331,8 +333,10 @@ export function generateSchedules(
         return false;
       }
       schedules.push({ enrollments });
-      return schedules.length >= MAX_SCHEDULES;
+      return schedules.length >= MAX_SCHEDULES || (constraints?.deadline != null && Date.now() > constraints.deadline);
     }
+
+    if (constraints?.deadline && Date.now() > constraints.deadline) return true;
 
     const { code, combos } = items[idx];
 
@@ -351,6 +355,7 @@ export function generateSchedules(
   }
 
   for (const combo of combinations(coursesWithCombos, targetCount)) {
+    if (constraints?.deadline && Date.now() > constraints.deadline) break;
     if (constraints?.maxFirstYearCredits != null) {
       const fyCredits = combo.reduce((sum, item) => {
         const m = item.code.match(/\d{4}/);
@@ -446,6 +451,7 @@ export function generateSchedulesWithPinned(
       selected: { code: string; combo: PrecomputedCombo }[],
       idx: number
     ): boolean {
+      if (constraints?.deadline && Date.now() > constraints.deadline) return true;
       // Only accept full schedules: we need exactly remainingSlots optional courses.
       if (selected.length === remainingSlots) {
         const all = [...chosenPinned, ...selected];
@@ -462,7 +468,7 @@ export function generateSchedulesWithPinned(
           return false;
         }
         schedules.push({ enrollments });
-        return schedules.length >= MAX_SCHEDULES;
+        return schedules.length >= MAX_SCHEDULES || (constraints?.deadline != null && Date.now() > constraints.deadline);
       }
       if (idx === items.length) return false;
 
@@ -499,8 +505,10 @@ export function generateSchedulesWithPinned(
   ): boolean {
     if (idx === items.length) {
       findOptionalForPinned(optional, selected, 0);
-      return schedules.length >= MAX_SCHEDULES;
+      return schedules.length >= MAX_SCHEDULES || (constraints?.deadline != null && Date.now() > constraints.deadline);
     }
+    
+    if (constraints?.deadline && Date.now() > constraints.deadline) return true;
 
     const { code, combos } = items[idx];
 
