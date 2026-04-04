@@ -28,7 +28,7 @@ import { buildScheduleIcs, downloadTextFile, parseTranscriptPdf, isOptCourse, no
 import { createCourseOptions, renderCourseOption } from '../shared/CourseSelect';
 import { useTimetableDateRangeFromSchedule } from "../../hooks/useTimetableDateRange";
 import { tr } from "../../i18n";
-import { CourseFiltersCard } from "../requirements/CourseFiltersCard";
+import { BasicCourseFiltersCard } from "../requirements/CourseFiltersCard";
 import { BasicCalendarHeaderActions } from "./BasicCalendarHeaderActions";
 import { CALENDAR_SIDEBAR_WIDTH_PX } from "./calendarLayout";
 
@@ -417,7 +417,7 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
             radius={0}
           />
 
-          <CourseFiltersCard
+          <BasicCourseFiltersCard
             levelBuckets={levelBuckets}
             languageBuckets={languageBuckets}
             electiveLevelBuckets={electiveLevelBuckets}
