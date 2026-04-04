@@ -475,6 +475,8 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
             radius={0}
             py="xs"
             title={generationError.message}
+            styles={{ title: { whiteSpace: "normal", lineHeight: 1.3 } }}
+            style={{ flexShrink: 0 }}
           >
             <GenerationErrorDetailBlocks
               errorDetails={genErrDetails}
