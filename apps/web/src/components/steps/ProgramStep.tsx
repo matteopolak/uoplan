@@ -308,7 +308,7 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
             )}
             {transcriptFeedback.programMatched && (
               <div style={{ marginTop: '8px' }}>
-                <Text size="sm">
+                <Text component="div" size="sm">
                   {tr("programStep.transcript.programDetected")}{" "}
                   <Badge color="green" variant="light" style={{ textTransform: 'none' }}>
                     {transcriptFeedback.programMatched.title}
