@@ -121,6 +121,7 @@ export function AssignStep({
           variant="light"
           radius={0}
           title="Assign all completed courses before continuing"
+          aria-live="polite"
         >
           <Text size="sm">
             You have {unassignedDisplay.length} completed course
@@ -132,7 +133,7 @@ export function AssignStep({
           </Text>
         </Alert>
       ) : (
-        <Alert color="green" variant="light" radius={0} title="All courses assigned">
+        <Alert color="green" variant="light" radius={0} title="All courses assigned" aria-live="polite">
           <Text size="sm">
             All completed courses are assigned to requirements. Click Next to
             continue.
