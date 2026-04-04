@@ -502,7 +502,7 @@ export async function generateSchedulesAction(
     ) {
       return false;
     }
-    if (poolType !== "course" && isHonoursProject(code, cacheVal)) return false;
+    if (isHonoursProject(code, cacheVal)) return false;
     if (isElectiveRequirementType(poolType) && !isWithinElectiveLevelCap(code)) {
       return false;
     }
@@ -619,7 +619,7 @@ export async function generateSchedulesAction(
             }
           }
         }
-        if (pool.type !== "course" && isHonoursProject(code, cacheVal)) continue;
+        if (isHonoursProject(code, cacheVal)) continue;
         if (getValidSectionCombos(sched, constraints).length === 0) continue;
         candidates.push(code);
       }

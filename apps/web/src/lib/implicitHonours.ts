@@ -30,6 +30,19 @@ export function collectImplicitHonoursForSchedule(
     const reqId = req.requirementId;
     if (!reqId || !req.candidateCourses?.length) continue;
 
+    // Do not infer honours for broad elective/pool requirements unless
+    // explicitly defined as course/or_course options (e.g. in an or_group).
+    if (
+      req.type === "non_course" ||
+      req.type === "elective" ||
+      req.type === "discipline_elective" ||
+      req.type === "faculty_elective" ||
+      req.type === "free_elective" ||
+      req.type === "non_discipline_elective"
+    ) {
+      continue;
+    }
+
     const assigned = selectedPerRequirement[reqId];
     if (assigned !== undefined && assigned.length === 0) continue;
     if (assigned?.some((c) => !isHonoursProject(c, cache))) continue;
