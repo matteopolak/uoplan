@@ -243,6 +243,18 @@ function App() {
     if (effectiveActive !== active) replaceActive(effectiveActive);
   }, [active, effectiveActive, replaceActive]);
 
+  // Redirect back to Options step if user bypassed it without selecting required paths
+  useEffect(() => {
+    if (
+      wizardMode !== "basic" &&
+      effectiveActive > WizardStep.Options &&
+      needsOptionsStep &&
+      missingOptions
+    ) {
+      setActive(WizardStep.Options);
+    }
+  }, [wizardMode, effectiveActive, needsOptionsStep, missingOptions, setActive]);
+
   const canProceedFromStep = (() => {
     if (effectiveActive === WizardStep.Term) return hasTerms && Boolean(selectedTermId) && Boolean(cache);
     if (effectiveActive === WizardStep.Mode) return Boolean(wizardMode);
@@ -707,7 +719,6 @@ function App() {
                       selectedPerRequirement={selectedPerRequirement}
                       onSelect={setSelectedForRequirement}
                       selectedOptionsPerRequirement={selectedOptionsPerRequirement}
-                      onSelectOption={setSelectedOptionForRequirement}
                       prereqEligibleCourses={filteredPrereqEligibleCourses}
                       includeClosedComponents={includeClosedComponents}
                       virtualSectionsOnly={virtualSectionsOnly}
@@ -807,7 +818,6 @@ function App() {
                                 constrainedPerRequirement={constrainedPerRequirement}
                                 onConstrain={setConstrainedForRequirement}
                                 selectedOptionsPerRequirement={selectedOptionsPerRequirement}
-                                onSelectOption={setSelectedOptionForRequirement}
                                 prereqEligibleCourses={filteredPrereqEligibleCourses}
                                 levelBuckets={levelBuckets}
                                 languageBuckets={languageBuckets}

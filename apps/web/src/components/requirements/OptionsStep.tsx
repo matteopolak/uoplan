@@ -1,7 +1,6 @@
-import { useMemo, useRef } from "react";
 import { Alert, Stack, Text } from "@mantine/core";
 import type { RequirementWithStatus } from "schedule";
-import { ExpandRegistryContext, getStableNodeKey, type ExpandRegistry } from "./RequirementNode";
+import { getStableNodeKey } from "./RequirementNode";
 import { OptionsDrilldown } from "./OptionsDrilldown";
 import { nodeHasOptionGroups } from "./requirementUtils";
 import { tr } from "../../i18n";
@@ -21,19 +20,6 @@ export function OptionsStep({
   onSelectOption,
   onClearOption,
 }: OptionsStepProps) {
-  const openFnsRef = useRef(new Map<string, () => void>());
-  const registry = useMemo<ExpandRegistry>(
-    () => ({
-      register(key, open) {
-        openFnsRef.current.set(key, open);
-      },
-      unregister(key) {
-        openFnsRef.current.delete(key);
-      },
-    }),
-    [],
-  );
-
   const completedCoursesSet = new Set(completedCourses);
 
   // Only show top-level nodes that contain (or are) option groups needing selection.
@@ -57,8 +43,7 @@ export function OptionsStep({
         </Text>
       </Alert>
 
-      <ExpandRegistryContext.Provider value={registry}>
-        <Stack gap="md">
+      <Stack gap="md">
           {relevantNodes.map((node, idx) => {
             const nodeKey = getStableNodeKey(node, `options:${idx}`);
             return (
@@ -76,7 +61,6 @@ export function OptionsStep({
             );
           })}
         </Stack>
-      </ExpandRegistryContext.Provider>
     </Stack>
   );
 }

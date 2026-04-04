@@ -74,7 +74,6 @@ export function OptionsDrilldown({
   if (node.type === "section") {
     return (
       <RequirementNode
-        nodeKey={`${nodeKeyPrefix}:section`}
         node={node}
         {...requirementNodeShared}
         activeBranch={activeBranch}
@@ -140,7 +139,6 @@ export function OptionsDrilldown({
               return (
                 <Box key={childKey}>
                   <RequirementNode
-                    nodeKey={childKey}
                     node={opt}
                     {...requirementNodeShared}
                     radio={{
@@ -274,7 +272,6 @@ export function OptionsDrilldown({
 
   return (
     <RequirementNode
-      nodeKey={nodeKeyPrefix}
       node={node}
       {...requirementNodeShared}
       activeBranch={activeBranch}
