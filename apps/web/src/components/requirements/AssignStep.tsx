@@ -1,4 +1,4 @@
-import { useRef, useMemo, type MouseEvent } from "react";
+import { useMemo, type MouseEvent } from "react";
 import {
   Stack,
   Text,
@@ -19,9 +19,7 @@ import type {
 } from "schedule";
 import {
   RequirementNode,
-  ExpandRegistryContext,
   getStableNodeKey,
-  type ExpandRegistry,
 } from "./RequirementNode";
 import {
   applyOptionSelections,
@@ -42,7 +40,6 @@ export interface AssignStepProps {
   selectedPerRequirement: Record<string, string[]>;
   onSelect: (requirementId: string, courses: string[]) => void;
   selectedOptionsPerRequirement: Record<string, number>;
-  onSelectOption: (requirementId: string, optionIndex: number) => void;
   prereqEligibleCourses: string[];
   includeClosedComponents?: boolean;
   virtualSectionsOnly?: boolean;
@@ -61,25 +58,11 @@ export function AssignStep({
   selectedPerRequirement,
   onSelect,
   selectedOptionsPerRequirement,
-  onSelectOption,
   prereqEligibleCourses,
   includeClosedComponents = true,
   virtualSectionsOnly = false,
 }: AssignStepProps) {
   const [completedOpen, setCompletedOpen] = useState(false);
-  const openFnsRef = useRef(new Map<string, () => void>());
-  const registry = useMemo<ExpandRegistry>(
-    () => ({
-      register(key, open) {
-        openFnsRef.current.set(key, open);
-      },
-      unregister(key) {
-        openFnsRef.current.delete(key);
-      },
-    }),
-    [],
-  );
-
   const completedSet = new Set(completedCourses);
   const prereqEligible = new Set(prereqEligibleCourses);
   const unassignedCompletedSet = new Set(unassignedCompletedCourses);
@@ -178,15 +161,13 @@ export function AssignStep({
         </Text>
       </Alert>
 
-      <ExpandRegistryContext.Provider value={registry}>
-        <Stack gap="md">
+      <Stack gap="md">
           {hasRemaining ? (
             incompleteNodes.map((node, idx) => {
               const nodeKey = getStableNodeKey(node, `root:${idx}`);
               return (
                 <RequirementNode
                   key={nodeKey}
-                  nodeKey={nodeKey}
                   node={node}
                   cache={cache}
                   completedCourses={completedSet}
@@ -194,7 +175,6 @@ export function AssignStep({
                   constrainedPerRequirement={constrainedPerRequirement}
                   onSelect={onSelect}
                   selectedOptionsPerRequirement={selectedOptionsPerRequirement}
-                  onSelectOption={onSelectOption}
                   activeBranch
                   prereqEligible={prereqEligible}
                   levelBuckets={["undergrad", "grad"]}
@@ -220,7 +200,6 @@ export function AssignStep({
             </Alert>
           )}
         </Stack>
-      </ExpandRegistryContext.Provider>
 
       {hasCompleted && (
         <Paper
