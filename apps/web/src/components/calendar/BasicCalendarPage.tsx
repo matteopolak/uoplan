@@ -407,13 +407,13 @@ export function BasicCalendarPage({ onBack }: BasicCalendarPageProps) {
             value={basicElectivesCount}
             onChange={(v) => {
               if (typeof v !== "number" || Number.isNaN(v)) return;
-              const nextCount = Math.max(0, Math.min(6, Math.trunc(v)));
+              const nextCount = Math.max(0, Math.min(8, Math.trunc(v)));
               if (nextCount === basicElectivesCount) return;
               setBasicElectivesCount(nextCount);
               clearGeneratedSchedules();
             }}
             min={0}
-            max={6}
+            max={8}
             radius={0}
           />
 
