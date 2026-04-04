@@ -124,7 +124,7 @@ export const createSchedulesSlice: StateCreator<
       }
     }
 
-    let virtualOnlyForNewCourse = false;
+    let virtualOnlyForNewCourse: boolean;
     if (wizardMode === "basic") {
       // Basic mode only swaps electives; pinned "required" courses are excluded
       // from swap candidates, and schedule-generation uses per-course virtual filtering.

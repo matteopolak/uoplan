@@ -79,9 +79,8 @@ function foldIcsLine(line: string): string[] {
   const MAX = 75;
   if (line.length <= MAX) return [line];
   const out: string[] = [];
-  let i = 0;
   out.push(line.slice(0, MAX));
-  i = MAX;
+  let i = MAX;
   while (i < line.length) {
     out.push(` ${line.slice(i, i + MAX)}`);
     i += MAX;

@@ -1258,8 +1258,6 @@ export async function generateSchedulesAction(
   
   shuffleInPlace(optionalPool, rng);
 
-  let finalSchedules: GeneratedSchedule[] = [];
-  
   const batch = generateSchedulesWithPinned(
     pinned,
     optionalPool,
@@ -1268,7 +1266,7 @@ export async function generateSchedulesAction(
     constraints,
   );
   
-  finalSchedules = batch.filter((s) => s.enrollments.length >= targetCount);
+  const finalSchedules = batch.filter((s) => s.enrollments.length >= targetCount);
 
   const swapPool = [...new Set([...pinned, ...optionalPool])];
   const limit = appendFirstOnly ? 1 : 25;

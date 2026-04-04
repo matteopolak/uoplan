@@ -757,7 +757,7 @@ async function fetchHtml(url: string, retries = 3): Promise<string> {
     } catch (err: unknown) {
       // Don't retry 404s
       if (err instanceof NotFoundError) throw err;
-      if (i === retries - 1) throw new Error(`Failed to fetch ${url}: ${getErrorMessage(err)}`);
+      if (i === retries - 1) throw new Error(`Failed to fetch ${url}: ${getErrorMessage(err)}`, { cause: err });
       await new Promise(r => setTimeout(r, 1000 * (i + 1)));
     }
   }
