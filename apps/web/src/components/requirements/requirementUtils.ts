@@ -131,35 +131,6 @@ export function hasMissingOptionSelections(
 }
 
 /**
- * Recursively collects all `or_group` / `options_group` nodes that need user
- * selection (have a requirementId and are not already complete).
- *
- * Does NOT recurse into matched nodes — nested options within branches are
- * surfaced only after the user has selected the parent branch.
- */
-export function collectOptionGroups(
-  nodes: RequirementWithStatus[],
-  breadcrumb = "",
-): Array<{ node: RequirementWithStatus; breadcrumb: string }> {
-  const result: Array<{ node: RequirementWithStatus; breadcrumb: string }> = [];
-  for (const node of nodes) {
-    const isOptionType =
-      node.type === "or_group" || node.type === "options_group";
-    if (isOptionType && node.requirementId != null && !node.complete) {
-      result.push({ node, breadcrumb });
-    } else if (node.options?.length) {
-      const childBreadcrumb = node.title
-        ? breadcrumb
-          ? `${breadcrumb} › ${node.title}`
-          : node.title
-        : breadcrumb;
-      result.push(...collectOptionGroups(node.options, childBreadcrumb));
-    }
-  }
-  return result;
-}
-
-/**
  * Resolves which branch index applies for an `or_group` / `options_group`
  * (user pick in the Options step, else {@link RequirementWithStatus.satisfiedOptionIndex}).
  */
@@ -258,22 +229,6 @@ export function applyOptionSelections(
   selectedOptions: Record<string, number>,
 ): RequirementWithStatus[] {
   return mapOptionSelectionList(tree, selectedOptions);
-}
-
-/**
- * Counts every node that carries a `requirementId` in the given tree (for
- * diagnostics or slot totals). Not used for the completed-requirements badge;
- * that uses {@link countSatisfiedTopLevelRoots} / root count instead.
- */
-export function countRequirementIdSlots(
-  nodes: RequirementWithStatus[],
-): number {
-  let n = 0;
-  for (const node of nodes) {
-    if (node.requirementId != null) n++;
-    if (node.options?.length) n += countRequirementIdSlots(node.options);
-  }
-  return n;
 }
 
 /**
@@ -517,7 +472,6 @@ export function getConstrainMultiSelectOptions(
  */
 export function subtreeHasOnlyEmptyConstrainDropdowns(
   node: RequirementWithStatus,
-  selectedOptionsPerRequirement: Record<string, number>,
   constrainedPerRequirement: Record<string, string[]>,
   ctx: ConstrainMultiSelectContext,
 ): boolean {
@@ -527,16 +481,12 @@ export function subtreeHasOnlyEmptyConstrainDropdowns(
   const isOptionType =
     node.type === "or_group" || node.type === "options_group";
   if (isOptionType && node.requirementId != null) {
-    const idx = selectedBranchIndexForOptionGroup(
-      node,
-      selectedOptionsPerRequirement,
-    );
+    const idx = node.satisfiedOptionIndex;
     const nOpts = node.options?.length ?? 0;
     if (idx == null || nOpts === 0 || idx < 0 || idx >= nOpts) return false;
     const child = node.options![idx];
     return subtreeHasOnlyEmptyConstrainDropdowns(
       child,
-      selectedOptionsPerRequirement,
       constrainedPerRequirement,
       ctx,
     );
@@ -552,7 +502,6 @@ export function subtreeHasOnlyEmptyConstrainDropdowns(
       const childrenAllEmpty = node.options.every((child) =>
         subtreeHasOnlyEmptyConstrainDropdowns(
           child,
-          selectedOptionsPerRequirement,
           constrainedPerRequirement,
           ctx,
         ),
@@ -597,7 +546,6 @@ export interface PartitionedConstrainRoot {
 /** Splits roots by whether every constrain MultiSelect would show an empty dropdown. */
 export function partitionIncompleteConstrainRoots(
   incompleteRoots: RequirementWithStatus[],
-  selectedOptionsPerRequirement: Record<string, number>,
   constrainedPerRequirement: Record<string, string[]>,
   ctx: ConstrainMultiSelectContext,
 ): { primary: PartitionedConstrainRoot[]; collapsed: PartitionedConstrainRoot[] } {
@@ -609,7 +557,6 @@ export function partitionIncompleteConstrainRoots(
     if (
       subtreeHasOnlyEmptyConstrainDropdowns(
         root,
-        selectedOptionsPerRequirement,
         constrainedPerRequirement,
         ctx,
       )

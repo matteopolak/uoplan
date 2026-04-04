@@ -174,7 +174,6 @@ export function AssignStep({
                   selectedPerRequirement={selectedPerRequirement}
                   constrainedPerRequirement={constrainedPerRequirement}
                   onSelect={onSelect}
-                  selectedOptionsPerRequirement={selectedOptionsPerRequirement}
                   activeBranch
                   prereqEligible={prereqEligible}
                   levelBuckets={["undergrad", "grad"]}

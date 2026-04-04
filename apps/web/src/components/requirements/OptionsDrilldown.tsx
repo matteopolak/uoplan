@@ -57,8 +57,6 @@ export function OptionsDrilldown({
     completedCourses,
     selectedPerRequirement: EMPTY_RECORD,
     onSelect: () => {},
-    selectedOptionsPerRequirement,
-    onSelectOption,
     prereqEligible: EMPTY_SET,
     levelBuckets: ["undergrad", "grad"] as ("undergrad" | "grad")[],
     languageBuckets: ["en", "fr", "other"] as ("en" | "fr" | "other")[],

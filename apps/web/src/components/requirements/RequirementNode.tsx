@@ -97,10 +97,6 @@ export interface RequirementNodeProps {
   /** Constrain-step selections, used to exempt explicit courses from virtual-only filtering. */
   constrainedPerRequirement?: Record<string, string[]>;
   onSelect: (requirementId: string, courses: string[]) => void;
-  selectedOptionsPerRequirement: Record<string, number>;
-  onSelectOption?: (requirementId: string, optionIndex: number) => void;
-  /** When selecting this node's option, also set these parent options so the full path is selected. */
-  ancestorSelections?: AncestorSelection[];
   activeBranch: boolean;
   depth?: number;
   radio?: {
@@ -222,9 +218,6 @@ export const RequirementNode = memo(function RequirementNode({
   selectedPerRequirement,
   constrainedPerRequirement,
   onSelect,
-  selectedOptionsPerRequirement,
-  onSelectOption,
-  ancestorSelections,
   activeBranch,
   depth = 0,
   radio,
@@ -508,10 +501,7 @@ export const RequirementNode = memo(function RequirementNode({
   }
 
   if (isOrGroup && hasOptions) {
-    const selectedOptionIndex =
-      node.requirementId != null
-        ? selectedOptionsPerRequirement[node.requirementId]
-        : undefined;
+    const selectedOptionIndex = node.satisfiedOptionIndex;
     const showError =
       activeBranch &&
       node.requirementId != null &&
@@ -557,18 +547,11 @@ export const RequirementNode = memo(function RequirementNode({
             {node.options!.map((opt, idx) => {
               const isSatisfiedOption =
                 node.satisfiedOptionIndex === idx && opt.complete;
-              const isSelected = selectedOptionIndex === idx;
               const childActiveBranch =
                 activeBranch &&
                 (!node.requirementId ||
                   selectedOptionIndex == null ||
                   selectedOptionIndex === idx);
-              const childAncestors: AncestorSelection[] = [
-                ...(ancestorSelections ?? []),
-                ...(node.requirementId != null
-                  ? [{ requirementId: node.requirementId, optionIndex: idx }]
-                  : []),
-              ];
               const childKey = getStableNodeKey(
                 opt,
                 `${getStableNodeKey(node, "parent")}:opt:${idx}`,
@@ -590,11 +573,6 @@ export const RequirementNode = memo(function RequirementNode({
                     completedCourses={completedCourses}
                     selectedPerRequirement={selectedPerRequirement}
                     onSelect={onSelect}
-                    selectedOptionsPerRequirement={
-                      selectedOptionsPerRequirement
-                    }
-                    onSelectOption={onSelectOption}
-                    ancestorSelections={childAncestors}
                     activeBranch={childActiveBranch}
                     depth={depth + 1}
                     prereqEligible={prereqEligible}
@@ -611,22 +589,6 @@ export const RequirementNode = memo(function RequirementNode({
                     completedOnly={completedOnly}
                     hideSelection={hideSelection}
                     optionsStepHideCardTitle={optionsStepHideCardTitle}
-                    radio={
-                      node.requirementId != null && !node.complete
-                        ? {
-                            checked: isSelected,
-                            onChange: () => {
-                              ancestorSelections?.forEach(
-                                ({ requirementId, optionIndex }) =>
-                                  onSelectOption?.(requirementId, optionIndex),
-                              );
-                              onSelectOption?.(node.requirementId!, idx);
-                            },
-                            name: node.requirementId,
-                            value: String(idx),
-                          }
-                        : undefined
-                    }
                   />
                   {isSatisfiedOption && opt.satisfiedBy.length > 0 && (
                     <Box pl="sm" mt={4}>
@@ -733,10 +695,7 @@ export const RequirementNode = memo(function RequirementNode({
   }
 
   if (isOptionsGroup && hasOptions) {
-    const selectedOptionIndex =
-      node.requirementId != null
-        ? selectedOptionsPerRequirement[node.requirementId]
-        : undefined;
+    const selectedOptionIndex = node.satisfiedOptionIndex;
     const showError =
       activeBranch &&
       node.requirementId != null &&
@@ -775,20 +734,11 @@ export const RequirementNode = memo(function RequirementNode({
         <Collapse in={collapseIn}>
           <Stack gap="xs">
             {node.options!.map((opt, idx) => {
-              const isSelected =
-                node.requirementId != null &&
-                selectedOptionsPerRequirement[node.requirementId] === idx;
               const childActiveBranch =
                 activeBranch &&
                 (!node.requirementId ||
                   selectedOptionIndex == null ||
                   selectedOptionIndex === idx);
-              const childAncestors: AncestorSelection[] = [
-                ...(ancestorSelections ?? []),
-                ...(node.requirementId != null
-                  ? [{ requirementId: node.requirementId, optionIndex: idx }]
-                  : []),
-              ];
               const childKey = getStableNodeKey(
                 opt,
                 `${getStableNodeKey(node, "parent")}:opt:${idx}`,
@@ -810,11 +760,6 @@ export const RequirementNode = memo(function RequirementNode({
                     completedCourses={completedCourses}
                     selectedPerRequirement={selectedPerRequirement}
                     onSelect={onSelect}
-                    selectedOptionsPerRequirement={
-                      selectedOptionsPerRequirement
-                    }
-                    onSelectOption={onSelectOption}
-                    ancestorSelections={childAncestors}
                     activeBranch={childActiveBranch}
                     depth={depth + 1}
                     prereqEligible={prereqEligible}
@@ -831,22 +776,6 @@ export const RequirementNode = memo(function RequirementNode({
                     completedOnly={completedOnly}
                     hideSelection={hideSelection}
                     optionsStepHideCardTitle={optionsStepHideCardTitle}
-                    radio={
-                      node.requirementId != null && !node.complete
-                        ? {
-                            checked: isSelected,
-                            onChange: () => {
-                              ancestorSelections?.forEach(
-                                ({ requirementId, optionIndex }) =>
-                                  onSelectOption?.(requirementId, optionIndex),
-                              );
-                              onSelectOption?.(node.requirementId!, idx);
-                            },
-                            name: node.requirementId,
-                            value: String(idx),
-                          }
-                        : undefined
-                    }
                   />
                 </Box>
               );
@@ -957,9 +886,6 @@ export const RequirementNode = memo(function RequirementNode({
                 completedCourses={completedCourses}
                 selectedPerRequirement={selectedPerRequirement}
                 onSelect={onSelect}
-                selectedOptionsPerRequirement={selectedOptionsPerRequirement}
-                onSelectOption={onSelectOption}
-                ancestorSelections={ancestorSelections}
                 activeBranch={activeBranch}
                 depth={depth + 1}
                 prereqEligible={prereqEligible}
@@ -1106,11 +1032,6 @@ export const RequirementNode = memo(function RequirementNode({
                 completedCourses={completedCourses}
                 selectedPerRequirement={selectedPerRequirement}
                 onSelect={onSelect}
-                selectedOptionsPerRequirement={
-                  selectedOptionsPerRequirement
-                }
-                onSelectOption={onSelectOption}
-                ancestorSelections={ancestorSelections}
                 activeBranch={activeBranch}
                 depth={depth + 1}
                 prereqEligible={prereqEligible}
@@ -1291,12 +1212,11 @@ export const RequirementNode = memo(function RequirementNode({
 
   // We can optimize global map checks by seeing if this specific node's requirementId changed.
   // We check subtree reqIds in the tree.
-  const reqId = nextProps.node.requirementId;
+    const reqId = nextProps.node.requirementId;
   
   if (reqId) {
     if (prevProps.selectedPerRequirement[reqId] !== nextProps.selectedPerRequirement[reqId]) return false;
     if (prevProps.constrainedPerRequirement?.[reqId] !== nextProps.constrainedPerRequirement?.[reqId]) return false;
-    if (prevProps.selectedOptionsPerRequirement[reqId] !== nextProps.selectedOptionsPerRequirement[reqId]) return false;
   }
 
   // Check object references that don't change very often
@@ -1308,7 +1228,6 @@ export const RequirementNode = memo(function RequirementNode({
   if (prevProps.levelBuckets !== nextProps.levelBuckets) return false;
   if (prevProps.languageBuckets !== nextProps.languageBuckets) return false;
   if (prevProps.electiveLevelBuckets !== nextProps.electiveLevelBuckets) return false;
-  if (prevProps.ancestorSelections !== nextProps.ancestorSelections) return false;
 
   // If this node is NOT a leaf, we MUST ensure we re-render if any of its descendants' requirementIds
   // have changed in the Maps. A simple trick: if it's a leaf, we can return true! 
@@ -1323,7 +1242,6 @@ export const RequirementNode = memo(function RequirementNode({
   const hasChildren = nextProps.node.options && nextProps.node.options.length > 0;
   if (hasChildren) {
     if (prevProps.selectedPerRequirement !== nextProps.selectedPerRequirement) return false;
-    if (prevProps.selectedOptionsPerRequirement !== nextProps.selectedOptionsPerRequirement) return false;
     if (prevProps.constrainedPerRequirement !== nextProps.constrainedPerRequirement) return false;
   }
 

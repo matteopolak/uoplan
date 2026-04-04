@@ -3,7 +3,6 @@ import type { DataCache } from "schedule";
 import type { RequirementWithStatus } from "schedule";
 import {
   applyOptionSelections,
-  countRequirementIdSlots,
   countSatisfiedTopLevelRoots,
   getConstrainMultiSelectOptions,
   getOptionSecondarySummaryLine,
@@ -37,53 +36,6 @@ const defaultConstrainCtx = {
   virtualSectionsOnly: false,
   completedOnly: false,
 };
-
-describe("countRequirementIdSlots", () => {
-  it("counts nested requirement ids once each (no flat-list + extra double count)", () => {
-    const tree: RequirementWithStatus[] = [
-      {
-        type: "options_group",
-        title: "Choose",
-        complete: false,
-        satisfiedBy: [],
-        requirementId: "req-0",
-        options: [
-          {
-            type: "and",
-            title: "A",
-            complete: false,
-            satisfiedBy: [],
-            options: [
-              {
-                type: "discipline_elective",
-                title: "Narrow",
-                complete: false,
-                satisfiedBy: [],
-                requirementId: "req-0-0-0",
-                candidateCourses: ["SEG 3100"],
-                creditsNeeded: 3,
-              },
-            ],
-          },
-        ],
-      },
-      {
-        type: "free_elective",
-        title: "Free",
-        complete: false,
-        satisfiedBy: [],
-        requirementId: "req-1",
-        candidateCourses: ["SEG 3100"],
-        creditsNeeded: 3,
-      },
-    ];
-
-    expect(countRequirementIdSlots(tree)).toBe(3);
-
-    const flattened = applyOptionSelections(tree, { "req-0": 0 });
-    expect(countRequirementIdSlots(flattened)).toBe(2);
-  });
-});
 
 describe("pruneOptionSelectionsForClear", () => {
   it("removes the requirement id and descendant req-path keys only", () => {
@@ -472,7 +424,6 @@ describe("partitionIncompleteConstrainRoots", () => {
     const { primary, collapsed } = partitionIncompleteConstrainRoots(
       tree,
       {},
-      {},
       defaultConstrainCtx,
     );
     expect(primary).toHaveLength(1);
@@ -515,7 +466,6 @@ describe("partitionIncompleteConstrainRoots", () => {
     const { primary, collapsed } = partitionIncompleteConstrainRoots(
       tree,
       {},
-      {},
       ctx,
     );
     expect(primary).toHaveLength(0);
@@ -557,7 +507,6 @@ describe("partitionIncompleteConstrainRoots", () => {
     const { primary, collapsed } = partitionIncompleteConstrainRoots(
       tree,
       {},
-      {},
       ctx,
     );
     expect(primary).toHaveLength(0);
@@ -590,7 +539,6 @@ describe("partitionIncompleteConstrainRoots", () => {
     };
     const { primary, collapsed } = partitionIncompleteConstrainRoots(
       tree,
-      {},
       {},
       ctx,
     );

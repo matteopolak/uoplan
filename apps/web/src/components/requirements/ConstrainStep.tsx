@@ -139,15 +139,13 @@ export function ConstrainStep({
 
   const { primary: primaryRoots, collapsed: collapsedRoots } = useMemo(
     () =>
-      partitionIncompleteConstrainRoots(
+        partitionIncompleteConstrainRoots(
         incompleteNodes,
-        selectedOptionsPerRequirement,
         constrainedPerRequirement,
         constrainCtx,
       ),
     [
       incompleteNodes,
-      selectedOptionsPerRequirement,
       constrainedPerRequirement,
       constrainCtx,
     ],
@@ -249,9 +247,6 @@ export function ConstrainStep({
                   selectedPerRequirement={constrainedPerRequirement}
                   constrainedPerRequirement={constrainedPerRequirement}
                   onSelect={onConstrain}
-                  selectedOptionsPerRequirement={
-                    selectedOptionsPerRequirement
-                  }
                   activeBranch
                   prereqEligible={prereqEligible}
                   levelBuckets={levelBuckets}
@@ -320,9 +315,6 @@ export function ConstrainStep({
                           selectedPerRequirement={constrainedPerRequirement}
                           constrainedPerRequirement={constrainedPerRequirement}
                           onSelect={onConstrain}
-                          selectedOptionsPerRequirement={
-                            selectedOptionsPerRequirement
-                          }
                           activeBranch
                           prereqEligible={prereqEligible}
                           levelBuckets={levelBuckets}
