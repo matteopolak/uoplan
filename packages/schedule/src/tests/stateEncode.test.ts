@@ -254,16 +254,16 @@ describe('peekTermAndYear', () => {
     expect(peeked!.firstYear).toBeNull();
   });
 
-  it('returns null on empty buffer', () => {
-    expect(peekTermAndYear(new Uint8Array(0))).toBeNull();
+  it('returns default on empty buffer', () => {
+    expect(peekTermAndYear(new Uint8Array(0))).toEqual({ termId: null, firstYear: null });
   });
 
-  it('returns null on version mismatch', () => {
-    const bytes = encodeState(makeInput(), catalogue, indices)!;
-    const bad = new Uint8Array(bytes);
-    bad[0] = 99; // wrong version
-    expect(peekTermAndYear(bad)).toBeNull();
-  });
+  // it('returns null on version mismatch', () => {
+  //   const bytes = encodeState(makeInput(), catalogue, indices)!;
+  //   const bad = new Uint8Array(bytes);
+  //   bad[0] = 99; // wrong version
+  //   expect(peekTermAndYear(bad)).toBeNull();
+  // });
 });
 
 // ── peekTermAndYearFromBase64 ─────────────────────────────────────────────────
@@ -284,16 +284,12 @@ describe('peekTermAndYearFromBase64', () => {
 // ── Error cases ───────────────────────────────────────────────────────────────
 
 describe('decodeState errors', () => {
-  it('returns error on version mismatch', () => {
-    const bytes = encodeState(makeInput(), catalogue, indices)!;
-    const bad = new Uint8Array(bytes);
-    bad[0] = 99;
+  // Protobuf has no "version mismatch" or "too short buffer" like custom binary encoders, 
+  // since an empty buffer is a valid default state, and unknown bytes are skipped.
+  // We can test actual invalid protobuf payloads instead.
+  it('returns error on garbage protobuf', () => {
+    const bad = new Uint8Array([255, 255, 255, 255]); // Invalid tag/wire types
     const result = decodeState(bad, catalogue, indices);
-    expect('error' in result).toBe(true);
-  });
-
-  it('returns error on too-short buffer', () => {
-    const result = decodeState(new Uint8Array(0), catalogue, indices);
     expect('error' in result).toBe(true);
   });
 

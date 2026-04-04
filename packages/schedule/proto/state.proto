@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package schedule;
+
+enum WizardMode {
+  WIZARD_MODE_UNSPECIFIED = 0;
+  WIZARD_MODE_BASIC = 1;
+  WIZARD_MODE_ADVANCED = 2;
+}
+
+enum CourseLevelBucket {
+  COURSE_LEVEL_UNDERGRAD = 0;
+  COURSE_LEVEL_GRAD = 1;
+}
+
+enum CourseLanguageBucket {
+  COURSE_LANGUAGE_EN = 0;
+  COURSE_LANGUAGE_FR = 1;
+  COURSE_LANGUAGE_OTHER = 2;
+}
+
+enum DayOfWeek {
+  DAY_MONDAY = 0;
+  DAY_TUESDAY = 1;
+  DAY_WEDNESDAY = 2;
+  DAY_THURSDAY = 3;
+  DAY_FRIDAY = 4;
+  DAY_SATURDAY = 5;
+  DAY_SUNDAY = 6;
+}
+
+message RequirementOptionSelection {
+  uint32 req_index = 1;
+  uint32 option_index = 2;
+}
+
+message RequirementCourseSelection {
+  uint32 req_index = 1;
+  repeated uint32 course_indices = 2;
+}
+
+message ShareableState {
+  WizardMode wizard_mode = 1;
+  repeated uint32 basic_pinned_courses = 2;
+  uint32 basic_electives_count = 3;
+  repeated string basic_excluded_categories = 4;
+
+  optional string selected_term_id = 5;
+  optional uint32 first_year = 6;
+  
+  optional uint32 program_index = 7;
+  optional uint32 minor_program_index = 8;
+  repeated string student_programs = 9;
+
+  repeated uint32 completed_courses = 10;
+  repeated CourseLevelBucket level_buckets = 11;
+  repeated CourseLanguageBucket language_buckets = 12;
+  repeated uint32 elective_level_buckets = 13;
+
+  uint32 courses_this_semester = 14;
+  uint32 selected_schedule_index = 15;
+  uint32 generation_seed = 16;
+
+  repeated RequirementOptionSelection option_selections = 17;
+  repeated RequirementCourseSelection course_selections = 18;
+  repeated RequirementCourseSelection constrained_selections = 19;
+  repeated uint32 touched_req_indices = 20;
+
+  bool include_closed_components = 21;
+  bool virtual_sections_only = 22;
+
+  uint32 generation_min_start_minutes = 23;
+  uint32 generation_max_end_minutes = 24;
+  repeated DayOfWeek generation_allowed_days = 25;
+  optional uint32 generation_min_professor_rating = 26;
+  bool generation_limit_first_year_credits = 27;
+  bool generation_compressed_schedule = 28;
+}
