@@ -29,7 +29,10 @@ import {
   adjustNodeForAssignments,
   countSatisfiedTopLevelRoots,
   partitionIncompleteConstrainRoots,
+  findMissingSelections,
+  findFirstMissingPath,
 } from "./requirementUtils";
+
 import { CourseFiltersCard } from "./CourseFiltersCard";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -56,96 +59,6 @@ export interface ConstrainStepProps {
   onIncludeClosedComponentsChange: (value: boolean) => void;
   virtualSectionsOnly: boolean;
   onVirtualSectionsOnlyChange: (value: boolean) => void;
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function findMissingSelections(
-  nodes: RequirementWithStatus[],
-  selectedOptionsPerRequirement: Record<string, number>,
-  activeBranch: boolean = true,
-): RequirementWithStatus[] {
-  const result: RequirementWithStatus[] = [];
-  for (const node of nodes) {
-    if (!activeBranch || node.complete) continue;
-    const isOrGroup = node.type === "or_group";
-    const isOptionsGroup = node.type === "options_group";
-    if (
-      (isOrGroup || isOptionsGroup) &&
-      node.options &&
-      node.requirementId != null
-    ) {
-      const selectedIdx = selectedOptionsPerRequirement[node.requirementId];
-      if (selectedIdx == null) {
-        result.push(node);
-      } else {
-        const selectedChild = node.options[selectedIdx];
-        if (selectedChild) {
-          result.push(
-            ...findMissingSelections(
-              [selectedChild],
-              selectedOptionsPerRequirement,
-              true,
-            ),
-          );
-        }
-      }
-    } else if (node.options) {
-      result.push(
-        ...findMissingSelections(
-          node.options,
-          selectedOptionsPerRequirement,
-          activeBranch,
-        ),
-      );
-    }
-  }
-  return result;
-}
-
-function findFirstMissingPath(
-  nodes: RequirementWithStatus[],
-  selectedOptionsPerRequirement: Record<string, number>,
-  makeNodeKey: (node: RequirementWithStatus, idx: number) => string,
-  ancestorKeys: string[] = [],
-): string[] | null {
-  for (let idx = 0; idx < nodes.length; idx++) {
-    const node = nodes[idx];
-    if (node.complete || !node.options?.length) continue;
-    const nodeKey = makeNodeKey(node, idx);
-    const pathSoFar = [...ancestorKeys, nodeKey];
-    const isOrGroup = node.type === "or_group";
-    const isOptionsGroup = node.type === "options_group";
-    if ((isOrGroup || isOptionsGroup) && node.requirementId != null) {
-      const selectedIdx = selectedOptionsPerRequirement[node.requirementId];
-      if (selectedIdx == null) return pathSoFar;
-      const selectedChild = node.options[selectedIdx];
-      if (selectedChild) {
-        const parentKey = getStableNodeKey(node, "parent");
-        const childKey = getStableNodeKey(
-          selectedChild,
-          `${parentKey}:opt:${selectedIdx}`,
-        );
-        const result = findFirstMissingPath(
-          [selectedChild],
-          selectedOptionsPerRequirement,
-          (_c, _i) => childKey,
-          pathSoFar,
-        );
-        if (result) return result;
-      }
-    } else {
-      const parentKey = getStableNodeKey(node, "parent");
-      const result = findFirstMissingPath(
-        node.options,
-        selectedOptionsPerRequirement,
-        (child, i) => getStableNodeKey(child, `${parentKey}:child:${i}`),
-        pathSoFar,
-      );
-      if (result) return result;
-    }
-  }
-  return null;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -263,16 +176,6 @@ export function ConstrainStep({
     ],
   );
 
-  const collapsedRootKeysSet = useMemo(
-    () =>
-      new Set(
-        collapsedRoots.map(({ node, rootIndex }) =>
-          getStableNodeKey(node, `root:${rootIndex}`),
-        ),
-      ),
-    [collapsedRoots],
-  );
-
   // Top-level tree nodes that were originally incomplete but became complete via adjustment.
   const newlyCompleteNodes = useMemo(() => {
     const originalCompleteIds = new Set(
@@ -372,29 +275,9 @@ export function ConstrainStep({
                   incompleteNodes,
                   selectedOptionsPerRequirement,
                   (node, idx) => getStableNodeKey(node, `root:${idx}`),
+                  getStableNodeKey,
                 );
-                if (path) {
-                  const firstKey = path[0];
-                  const expandCollapsed =
-                    !!firstKey && collapsedRootKeysSet.has(firstKey);
-                  if (expandCollapsed) {
-                    setCollapsedUnavailableOpen(true);
-                  }
-                  setTimeout(
-                    () => {
-                      openByKeys(path);
-                      setTimeout(() => {
-                        document
-                          .querySelector('[data-missing-selection="true"]')
-                          ?.scrollIntoView({
-                            behavior: "smooth",
-                            block: "center",
-                          });
-                      }, 250);
-                    },
-                    expandCollapsed ? 300 : 0,
-                  );
-                }
+                if (path) openByKeys(path);
               }}
             >
               Jump to first problem

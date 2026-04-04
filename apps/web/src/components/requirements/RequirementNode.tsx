@@ -1299,4 +1299,53 @@ export const RequirementNode = memo(function RequirementNode({
       </Stack>
     </Paper>
   );
+}, function areEqual(prevProps, nextProps) {
+  if (prevProps.nodeKey !== nextProps.nodeKey) return false;
+  if (prevProps.activeBranch !== nextProps.activeBranch) return false;
+  if (prevProps.depth !== nextProps.depth) return false;
+  if (prevProps.radio !== nextProps.radio) return false;
+  if (prevProps.includeClosedComponents !== nextProps.includeClosedComponents) return false;
+  if (prevProps.virtualSectionsOnly !== nextProps.virtualSectionsOnly) return false;
+  
+  if (prevProps.node !== nextProps.node) return false;
+
+  // We can optimize global map checks by seeing if this specific node's requirementId changed.
+  // We check subtree reqIds in the tree.
+  const reqId = nextProps.node.requirementId;
+  
+  if (reqId) {
+    if (prevProps.selectedPerRequirement[reqId] !== nextProps.selectedPerRequirement[reqId]) return false;
+    if (prevProps.constrainedPerRequirement?.[reqId] !== nextProps.constrainedPerRequirement?.[reqId]) return false;
+    if (prevProps.selectedOptionsPerRequirement[reqId] !== nextProps.selectedOptionsPerRequirement[reqId]) return false;
+  }
+
+  // Check object references that don't change very often
+  if (prevProps.completedCourses !== nextProps.completedCourses) return false;
+  if (prevProps.unassignedCompletedSet !== nextProps.unassignedCompletedSet) return false;
+  if (prevProps.unassignedCompletedSetNormalized !== nextProps.unassignedCompletedSetNormalized) return false;
+  if (prevProps.allAssignedCoursesNormalized !== nextProps.allAssignedCoursesNormalized) return false;
+  if (prevProps.prereqEligible !== nextProps.prereqEligible) return false;
+  if (prevProps.levelBuckets !== nextProps.levelBuckets) return false;
+  if (prevProps.languageBuckets !== nextProps.languageBuckets) return false;
+  if (prevProps.electiveLevelBuckets !== nextProps.electiveLevelBuckets) return false;
+  if (prevProps.ancestorSelections !== nextProps.ancestorSelections) return false;
+
+  // If this node is NOT a leaf, we MUST ensure we re-render if any of its descendants' requirementIds
+  // have changed in the Maps. A simple trick: if it's a leaf, we can return true! 
+  // If it's a parent, it's safer to just check Map reference equality, as the parent needs to 
+  // pass down the fresh maps. Actually, React will skip the parent but re-render the child 
+  // ONLY if the parent didn't re-render. But the child gets its props FROM the parent! 
+  // Wait, if parent is memo'd and skips render, children do NOT get new props.
+  // So we MUST re-render the parent if ANY child needs to re-render.
+  // To avoid this, we should NOT check subtree equality, but instead we just return false
+  // if the map reference changed and the node has children.
+  
+  const hasChildren = nextProps.node.options && nextProps.node.options.length > 0;
+  if (hasChildren) {
+    if (prevProps.selectedPerRequirement !== nextProps.selectedPerRequirement) return false;
+    if (prevProps.selectedOptionsPerRequirement !== nextProps.selectedOptionsPerRequirement) return false;
+    if (prevProps.constrainedPerRequirement !== nextProps.constrainedPerRequirement) return false;
+  }
+
+  return true;
 });
