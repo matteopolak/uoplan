@@ -33,7 +33,6 @@ import { CalendarPage } from "./components/calendar/CalendarPage";
 import { TermStep } from "./components/steps/TermStep";
 import { ModeStep } from "./components/steps/ModeStep";
 import { ProgramStep } from "./components/steps/ProgramStep";
-import { BasicCalendarPage } from "./components/calendar/BasicCalendarPage";
 import { CompletedCoursesStep } from "./components/steps/CompletedCoursesStep";
 import { AssignStep } from "./components/requirements/AssignStep";
 import { ConstrainStep } from "./components/requirements/ConstrainStep";
@@ -396,9 +395,9 @@ function App() {
 
   return (
     <AnimatePresence mode="wait">
-      {showAdvancedCalendar ? (
+      {(showAdvancedCalendar || showBasicCalendar) ? (
         <motion.div
-          key="advanced-calendar"
+          key={showAdvancedCalendar ? "advanced-calendar" : "basic-calendar"}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
@@ -407,22 +406,11 @@ function App() {
         >
           <CalendarPage
             onBack={() => {
-              setShowCalendar(false);
-            }}
-          />
-        </motion.div>
-      ) : showBasicCalendar ? (
-        <motion.div
-          key="basic-calendar"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.3 }}
-          style={{ width: "100%", minHeight: "100vh" }}
-        >
-          <BasicCalendarPage 
-            onBack={() => {
-              setActive(WizardStep.Mode);
+              if (wizardMode === 'basic') {
+                setActive(WizardStep.Mode);
+              } else {
+                setShowCalendar(false);
+              }
             }}
           />
         </motion.div>
