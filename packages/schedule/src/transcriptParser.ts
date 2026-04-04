@@ -284,24 +284,38 @@ function getLastSemesterSegment(transcriptText: string): string {
  * Example: "... 2026 Winter Term Honours Bachelor of Science in Computer Science  Course Description ..."
  * -> "Honours Bachelor of Science in Computer Science"
  */
-function extractProgramBetweenTermAndCourse(text: string): string | null {
+function extractProgramBetweenTermAndCourse(text: string): { main: string | null; minor: string | null } {
   const normalized = text.replace(/\s+/g, " ").trim();
   const match = normalized.match(/Term\s+(.+?)\s+(Course|Transfer)\b/i);
-  if (!match) return null;
-  const fragment = match[1]
-    .replace(/\s+/g, " ")
-    .trim()
-    // Only shorten "Bachelor(s) of X" when preceded by "Honours"
-    // Replace with "B" + first two letters after "of" (e.g. "Honours Bachelor of Science" -> "Honours BSc")
-    .replace(
-      /\b(Honours)\s+(?:Bachelor(?:'s)?|Bachelors)\s+of\s+([A-Za-z]{2})[A-Za-z]*\b/gi,
-      (_m, honours: string, two: string) =>
-        `${honours} B${two[0]?.toUpperCase() ?? ""}${two[1]?.toLowerCase() ?? ""}`,
-    )
-    .replace(/\bin\b/gi, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  return fragment.length >= 5 ? fragment : null;
+  if (!match) return { main: null, minor: null };
+  const fullFragment = match[1].replace(/\s+/g, " ").trim();
+
+  let mainPart = fullFragment;
+  let minorPart: string | null = null;
+
+  const withIndex = fullFragment.toLowerCase().indexOf(" with ");
+  if (withIndex !== -1) {
+    mainPart = fullFragment.substring(0, withIndex).trim();
+    minorPart = fullFragment.substring(withIndex + 6).trim();
+  }
+
+  const formatMain = (f: string) => {
+    const res = f
+      .replace(
+        /\b(Honours)\s+(?:Bachelor(?:'s)?|Bachelors)\s+of\s+([A-Za-z]{2})[A-Za-z]*\b/gi,
+        (_m, honours: string, two: string) =>
+          `${honours} B${two[0]?.toUpperCase() ?? ""}${two[1]?.toLowerCase() ?? ""}`,
+      )
+      .replace(/\bin\b/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    return res.length >= 5 ? res : null;
+  };
+
+  return {
+    main: formatMain(mainPart),
+    minor: minorPart && minorPart.length >= 5 ? minorPart : null,
+  };
 }
 
 /**
@@ -330,6 +344,11 @@ function buildMultilineCandidates(text: string): string[] {
   return [...new Set(candidates)];
 }
 
+export interface ProgramMatchResult<T> {
+  program: T | null;
+  minor: T | null;
+}
+
 /**
  * Find the program whose title best matches the transcript text (e.g. from PDF).
  * Uses the *last* semester segment only (most recent term). Builds multi-line candidates
@@ -339,17 +358,21 @@ function buildMultilineCandidates(text: string): string[] {
 export function findBestMatchingProgram<T extends { title: string }>(
   transcriptText: string,
   programs: T[],
-): T | null {
-  if (programs.length === 0 || !transcriptText.trim()) return null;
+  minors: T[] = [],
+): ProgramMatchResult<T> {
+  if (programs.length === 0 || !transcriptText.trim()) return { program: null, minor: null };
 
   const segment = getLastSemesterSegment(transcriptText);
   const searchText = segment.trim().length >= 20 ? segment : transcriptText;
 
+  let bestProgram: T | null = null;
+  let bestMinor: T | null = null;
+
   // 1) Try strict extraction between "Term" and "Course" in the last semester segment.
-  const fragment = extractProgramBetweenTermAndCourse(searchText);
-  if (fragment) {
-    const fragLower = fragment.toLowerCase().replace(/\s+/g, " ").trim();
-    let bestProgramFromFragment: T | null = null;
+  const { main: mainFragment, minor: minorFragment } = extractProgramBetweenTermAndCourse(searchText);
+  
+  if (mainFragment) {
+    const fragLower = mainFragment.toLowerCase().replace(/\s+/g, " ").trim();
     let bestFragmentScore = 0;
 
     for (const program of programs) {
@@ -360,50 +383,82 @@ export function findBestMatchingProgram<T extends { title: string }>(
 
       if (score > bestFragmentScore) {
         bestFragmentScore = score;
-        bestProgramFromFragment = program;
+        bestProgram = program;
       }
     }
 
-    if (bestProgramFromFragment && bestFragmentScore >= 0.6) {
-      return bestProgramFromFragment;
+    if (bestFragmentScore < 0.6) {
+      bestProgram = null;
+    }
+  }
+
+  if (minorFragment && minors.length > 0) {
+    const fragLower = minorFragment.toLowerCase().replace(/\s+/g, " ").trim();
+    let bestMinorScore = 0;
+
+    for (const minor of minors) {
+      const title = minor.title.trim();
+      if (!title) continue;
+      const titleLower = title.toLowerCase().replace(/\s+/g, " ").trim();
+      const score = normalizedSimilarity(titleLower, fragLower);
+
+      if (score > bestMinorScore) {
+        bestMinorScore = score;
+        bestMinor = minor;
+      }
+    }
+
+    if (bestMinorScore < 0.6) {
+      bestMinor = null;
     }
   }
 
   // 2) Fallback: multi-line and window-based fuzzy matching on the last segment.
-  const candidates = buildMultilineCandidates(searchText);
-
-  let bestProgram: T | null = null;
-  let bestScore = 0;
-
-  for (const program of programs) {
-    const title = program.title.trim();
-    if (!title) continue;
-
-    let score = 0;
-    const titleLower = title.toLowerCase();
-
-    for (const chunk of candidates) {
-      const sim = normalizedSimilarity(titleLower, chunk.toLowerCase());
-      if (sim > score) score = sim;
+  if (!bestProgram) {
+    let mainSearchText = searchText;
+    const withIndex = searchText.toLowerCase().indexOf(" with ");
+    if (withIndex !== -1) {
+      mainSearchText = searchText.substring(0, withIndex);
     }
 
-    if (score < 0.5) {
-      const windowLen = Math.min(title.length + 30, searchText.length);
-      for (let i = 0; i <= searchText.length - windowLen; i += 3) {
-        const raw = searchText.slice(i, i + windowLen);
-        const chunk = raw.replace(/\s+/g, " ").trim();
-        if (chunk.length >= 5) {
-          const sim = normalizedSimilarity(titleLower, chunk.toLowerCase());
-          if (sim > score) score = sim;
+    const candidates = buildMultilineCandidates(mainSearchText);
+
+    let bestScore = 0;
+
+    for (const program of programs) {
+      const title = program.title.trim();
+      if (!title) continue;
+
+      let score = 0;
+      const titleLower = title.toLowerCase();
+
+      for (const chunk of candidates) {
+        const sim = normalizedSimilarity(titleLower, chunk.toLowerCase());
+        if (sim > score) score = sim;
+      }
+
+      if (score < 0.5) {
+        const windowLen = Math.min(title.length + 30, mainSearchText.length);
+        for (let i = 0; i <= mainSearchText.length - windowLen; i += 3) {
+          const raw = mainSearchText.slice(i, i + windowLen);
+          const chunk = raw.replace(/\s+/g, " ").trim();
+          if (chunk.length >= 5) {
+            const sim = normalizedSimilarity(titleLower, chunk.toLowerCase());
+            if (sim > score) score = sim;
+          }
         }
       }
-    }
 
-    if (score > bestScore) {
-      bestScore = score;
-      bestProgram = program;
+      if (score > bestScore) {
+        bestScore = score;
+        bestProgram = program;
+      }
+    }
+    
+    if (bestScore < 0.5) {
+      bestProgram = null;
     }
   }
 
-  return bestScore >= 0.5 ? bestProgram : null;
+  return { program: bestProgram, minor: bestMinor };
 }

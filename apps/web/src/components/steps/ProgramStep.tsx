@@ -51,6 +51,7 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
     added: number;
     skippedCodes: string[];
     programMatched: Program | null;
+    minorMatched: Program | null;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -154,14 +155,18 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
           });
         }
       }
-      const programMatched = findBestMatchingProgram(fullText, programListToMatch);
+      const { program: programMatched, minor: minorMatched } = findBestMatchingProgram(fullText, programListToMatch, minors);
       if (programMatched) {
         onChange(programMatched);
+      }
+      if (minorMatched) {
+        setMinorProgram(minorMatched);
       }
       setTranscriptFeedback({
         added: inCatalogue.length,
         skippedCodes,
         programMatched: programMatched ?? null,
+        minorMatched: minorMatched ?? null,
       });
     } catch (err) {
       setTranscriptError(
@@ -306,6 +311,12 @@ export function ProgramStep({ programs: _programs, value, onChange }: ProgramSte
                 {tr("programStep.transcript.programSet", {
                   program: transcriptFeedback.programMatched.title,
                 })}
+              </>
+            )}
+            {transcriptFeedback.minorMatched && (
+              <>
+                {" "}
+                (with minor: {transcriptFeedback.minorMatched.title})
               </>
             )}
           </Alert>
