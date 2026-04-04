@@ -16,4 +16,3 @@ export {
   type SwapResult,
   type SwapCandidateOption,
 } from "./useSwapModal";
-export { useTour, markTourComplete, resetTour } from "./useTour";
