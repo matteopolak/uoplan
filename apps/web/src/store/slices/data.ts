@@ -306,7 +306,10 @@ export const createDataSlice: StateCreator<
             u.searchParams.delete("s");
             u.searchParams.delete("t");
             u.searchParams.delete("f");
-            window.history.replaceState({}, "", u.toString());
+            const step = decoded.activeStep ?? 0;
+            const navState = { step, furthestStep: step, showCalendar: false };
+            window.history.replaceState(navState, "", u.toString());
+            window.dispatchEvent(new PopStateEvent("popstate", { state: navState }));
           }
         } else {
           const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -318,6 +321,10 @@ export const createDataSlice: StateCreator<
             );
             if (!("error" in decoded)) {
               get().loadEncodedState(decoded);
+              const step = decoded.activeStep ?? 0;
+              const navState = { step, furthestStep: step, showCalendar: false };
+              window.history.replaceState(navState, "");
+              window.dispatchEvent(new PopStateEvent("popstate", { state: navState }));
             } else {
               get().resetToDefault();
             }

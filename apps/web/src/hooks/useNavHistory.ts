@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { WizardStep } from "../lib/wizardSteps";
+import { useAppStore } from "../store/appStore";
 
 type NavHistoryState = {
   step: WizardStep;
@@ -29,6 +30,10 @@ function getInitialNavState(): NavHistoryState {
 export function useNavHistory() {
   const [state, setStateInternal] =
     useState<NavHistoryState>(getInitialNavState);
+
+  useEffect(() => {
+    useAppStore.setState({ activeStep: state.step });
+  }, [state.step]);
 
   // Keep the current history entry synchronized with our state shape so a
   // popstate fired back to any entry can still be handled.
