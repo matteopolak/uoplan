@@ -1,6 +1,6 @@
 import type { DataCache } from './dataCache';
-import type { GenerationConstraints } from './scheduleGenerator';
-import { getValidSectionCombos } from './scheduleGenerator';
+import type { GenerationConstraints } from './generation';
+import { getValidSectionCombos } from './generation';
 import { isHonoursProject, normalizeCourseCode } from './utils/courseUtils';
 
 export type TimetableFailureKind =
