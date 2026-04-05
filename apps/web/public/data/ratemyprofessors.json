@@ -2732,15 +2732,15 @@
       "numRatings": 1
     },
     {
-      "id": "VGVhY2hlci0zMDczNzk0",
-      "legacyId": 3073794,
+      "id": "VGVhY2hlci0zMDczNzky",
+      "legacyId": 3073792,
       "name": "Anne-Marie Parent",
       "rating": 0,
       "numRatings": 0
     },
     {
-      "id": "VGVhY2hlci0zMDczNzky",
-      "legacyId": 3073792,
+      "id": "VGVhY2hlci0zMDczNzk0",
+      "legacyId": 3073794,
       "name": "Anne-Marie Parent",
       "rating": 0,
       "numRatings": 0
@@ -7804,7 +7804,7 @@
       "legacyId": 1622135,
       "name": "Derek Pratt",
       "rating": 3.4,
-      "numRatings": 40
+      "numRatings": 41
     },
     {
       "id": "VGVhY2hlci0xMDYzNTE5",
@@ -11415,8 +11415,8 @@
       "id": "VGVhY2hlci0zMDIxOTg5",
       "legacyId": 3021989,
       "name": "Hadi Khalil",
-      "rating": 4.5,
-      "numRatings": 17
+      "rating": 4.4,
+      "numRatings": 18
     },
     {
       "id": "VGVhY2hlci0xNDI1Nzc5",
@@ -13467,7 +13467,7 @@
       "legacyId": 926841,
       "name": "Jean-Francois Aubert",
       "rating": 4.2,
-      "numRatings": 249
+      "numRatings": 250
     },
     {
       "id": "VGVhY2hlci0xMTcxMDc1",
@@ -22595,7 +22595,7 @@
       "legacyId": 2056413,
       "name": "Mohammed Yandouzi",
       "rating": 3.6,
-      "numRatings": 107
+      "numRatings": 108
     },
     {
       "id": "VGVhY2hlci0yNDEwMTEz",
@@ -27103,7 +27103,7 @@
       "legacyId": 256544,
       "name": "Robert Hart",
       "rating": 4.9,
-      "numRatings": 172
+      "numRatings": 173
     },
     {
       "id": "VGVhY2hlci0xODgzNDE4",
@@ -28362,8 +28362,8 @@
       "id": "VGVhY2hlci0zMTU3NDY5",
       "legacyId": 3157469,
       "name": "Sarah-Jane Mathieu",
-      "rating": 3,
-      "numRatings": 2
+      "rating": 3.7,
+      "numRatings": 3
     },
     {
       "id": "VGVhY2hlci0xOTczMzU3",
@@ -28691,8 +28691,8 @@
       "id": "VGVhY2hlci0yODMwNzc2",
       "legacyId": 2830776,
       "name": "Serge Lajoie",
-      "rating": 2.5,
-      "numRatings": 21
+      "rating": 2.4,
+      "numRatings": 22
     },
     {
       "id": "VGVhY2hlci0xMDQ2NDcy",
