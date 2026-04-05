@@ -161,6 +161,9 @@ importers:
         specifier: workspace:*
         version: link:../schemas
     devDependencies:
+      '@types/node':
+        specifier: ^25.5.0
+        version: 25.5.0
       protoc:
         specifier: ^34.0.0
         version: 34.0.0

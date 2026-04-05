@@ -20,13 +20,13 @@ export async function generateSchedules(
 ): Promise<GeneratedSchedule[]> {
   const schedules: GeneratedSchedule[] = [];
   const coursesWithCombos: { code: string; combos: PrecomputedCombo[] }[] = [];
-  let lastYield = Date.now();
+  let operationsSinceYield = 0;
 
   async function yieldToMainIfNeeded() {
-    const now = Date.now();
-    if (now - lastYield > 15) {
+    operationsSinceYield++;
+    if (operationsSinceYield > 2000) {
       await new Promise((resolve) => setTimeout(resolve, 0));
-      lastYield = Date.now();
+      operationsSinceYield = 0;
     }
   }
 
@@ -59,24 +59,28 @@ export async function generateSchedules(
     return [];
   }
 
+  const nonFyRemainingAtIdx = new Array(coursesWithCombos.length + 1).fill(0) as number[];
+  if (constraints?.maxFirstYearCredits != null) {
+    let count = 0;
+    for (let i = coursesWithCombos.length - 1; i >= 0; i--) {
+      const code = coursesWithCombos[i].code;
+      const m = code.match(/\d{4}/);
+      if (!m || Number(m[0]) >= 2000) count++;
+      nonFyRemainingAtIdx[i] = count;
+    }
+  }
+
   async function solve(
     courseIdx: number,
     selected: { code: string; combo: PrecomputedCombo }[],
-    selectedCount: number
+    selectedCount: number,
+    currentFyCredits: number
   ): Promise<boolean> {
     await yieldToMainIfNeeded();
 
     if (constraints?.deadline && Date.now() > constraints.deadline) return true;
 
     if (selectedCount === targetCount) {
-      if (constraints?.maxFirstYearCredits != null) {
-        const fyCredits = selected.reduce((sum, item) => {
-          const m = item.code.match(/\d{4}/);
-          if (!m || Number(m[0]) >= 2000) return sum;
-          return sum + (cache.getCourse(item.code)?.credits ?? 3);
-        }, 0);
-        if (fyCredits > constraints.maxFirstYearCredits) return false;
-      }
       const enrollments: CourseEnrollment[] = selected.map(({ combo }) => combo.enrollment);
       if (constraints?.compressedSchedule && !satisfiesCompressedConstraint(enrollments)) {
         return false;
@@ -90,30 +94,48 @@ export async function generateSchedules(
 
     if (courseIdx === coursesWithCombos.length) return false;
 
-    if (coursesWithCombos.length - courseIdx < targetCount - selectedCount) {
+    const remainingToPick = targetCount - selectedCount;
+    if (coursesWithCombos.length - courseIdx < remainingToPick) {
       return false;
     }
 
+    if (constraints?.maxFirstYearCredits != null) {
+      const nonFyRemaining = nonFyRemainingAtIdx[courseIdx];
+      const minFyCoursesForced = Math.max(0, remainingToPick - nonFyRemaining);
+      if (currentFyCredits + (minFyCoursesForced * 3) > constraints.maxFirstYearCredits) {
+        return false;
+      }
+    }
+
     const { code, combos } = coursesWithCombos[courseIdx];
+    let courseFyCredits = 0;
+    if (constraints?.maxFirstYearCredits != null) {
+      const m = code.match(/\d{4}/);
+      if (m && Number(m[0]) < 2000) {
+        courseFyCredits = cache.getCourse(code)?.credits ?? 3;
+      }
+      if (currentFyCredits + courseFyCredits > constraints.maxFirstYearCredits) {
+        if (await solve(courseIdx + 1, selected, selectedCount, currentFyCredits)) return true;
+        return false;
+      }
+    }
 
     for (const precomputed of combos) {
       const candidate = precomputed.enrollment;
-      const conflicts = selected.some(({ combo: co }) => {
-        return enrollmentsOverlap(co.enrollment, candidate);
-      });
+      const conflicts = selected.some(({ combo: co }) => enrollmentsOverlap(co.enrollment, candidate));
       if (conflicts) continue;
 
       selected.push({ code, combo: precomputed });
-      if (await solve(courseIdx + 1, selected, selectedCount + 1)) return true;
+      if (await solve(courseIdx + 1, selected, selectedCount + 1, currentFyCredits + courseFyCredits)) return true;
       selected.pop();
     }
 
-    if (await solve(courseIdx + 1, selected, selectedCount)) return true;
+    if (await solve(courseIdx + 1, selected, selectedCount, currentFyCredits)) return true;
 
     return false;
   }
 
-  await solve(0, [], 0);
+  await solve(0, [], 0, 0);
 
   return schedules;
 }
@@ -129,13 +151,13 @@ export async function generateSchedulesWithPinned(
     return [];
   }
 
-  let lastYield = Date.now();
+  let operationsSinceYield = 0;
 
   async function yieldToMainIfNeeded() {
-    const now = Date.now();
-    if (now - lastYield > 15) {
+    operationsSinceYield++;
+    if (operationsSinceYield > 2000) {
       await new Promise((resolve) => setTimeout(resolve, 0));
-      lastYield = Date.now();
+      operationsSinceYield = 0;
     }
   }
 
@@ -195,7 +217,8 @@ export async function generateSchedulesWithPinned(
   async function findOptionalForPinned(
     optionalItems: { code: string; combos: PrecomputedCombo[] }[],
     chosenPinned: { code: string; combo: PrecomputedCombo }[],
-    startIdx: number
+    startIdx: number,
+    initialFyCredits: number
   ): Promise<void> {
     const remainingSlots = targetCount - chosenPinned.length;
     if (remainingSlots <= 0) {
@@ -207,10 +230,22 @@ export async function generateSchedulesWithPinned(
       return;
     }
 
+    const nonFyRemainingAtIdx = new Array(optionalItems.length + 1).fill(0) as number[];
+    if (constraints?.maxFirstYearCredits != null) {
+      let count = 0;
+      for (let i = optionalItems.length - 1; i >= 0; i--) {
+        const code = optionalItems[i].code;
+        const m = code.match(/\d{4}/);
+        if (!m || Number(m[0]) >= 2000) count++;
+        nonFyRemainingAtIdx[i] = count;
+      }
+    }
+
     async function dfsOptional(
       idx: number,
       selected: { code: string; combo: PrecomputedCombo }[],
-      selectedCount: number
+      selectedCount: number,
+      currentFyCredits: number
     ): Promise<boolean> {
       await yieldToMainIfNeeded();
 
@@ -218,14 +253,6 @@ export async function generateSchedulesWithPinned(
 
       if (selectedCount === remainingSlots) {
         const all = [...chosenPinned, ...selected];
-        if (constraints?.maxFirstYearCredits != null) {
-          const fyCredits = all.reduce((sum, item) => {
-            const m = item.code.match(/\d{4}/);
-            if (!m || Number(m[0]) >= 2000) return sum;
-            return sum + (cache.getCourse(item.code)?.credits ?? 3);
-          }, 0);
-          if (fyCredits > constraints.maxFirstYearCredits) return false;
-        }
         const enrollments: CourseEnrollment[] = all.map(({ combo }) => combo.enrollment);
         if (constraints?.compressedSchedule && !satisfiesCompressedConstraint(enrollments)) {
           return false;
@@ -236,61 +263,84 @@ export async function generateSchedulesWithPinned(
 
       if (idx === optionalItems.length) return false;
 
-      if (optionalItems.length - idx < remainingSlots - selectedCount) {
-        return false;
+      const remainingToPick = remainingSlots - selectedCount;
+      if (optionalItems.length - idx < remainingToPick) return false;
+
+      if (constraints?.maxFirstYearCredits != null) {
+        const nonFyRemaining = nonFyRemainingAtIdx[idx];
+        const minFyCoursesForced = Math.max(0, remainingToPick - nonFyRemaining);
+        if (currentFyCredits + (minFyCoursesForced * 3) > constraints.maxFirstYearCredits) {
+          return false;
+        }
       }
 
       const { code, combos } = optionalItems[idx];
+      let courseFyCredits = 0;
+      if (constraints?.maxFirstYearCredits != null) {
+        const m = code.match(/\d{4}/);
+        if (m && Number(m[0]) < 2000) {
+          courseFyCredits = cache.getCourse(code)?.credits ?? 3;
+        }
+        if (currentFyCredits + courseFyCredits > constraints.maxFirstYearCredits) {
+          if (await dfsOptional(idx + 1, selected, selectedCount, currentFyCredits)) return true;
+          return false;
+        }
+      }
 
       for (const precomputed of combos) {
         const candidate = precomputed.enrollment;
-        const conflictsPinned = chosenPinned.some(({ combo: co }) => {
-          return enrollmentsOverlap(co.enrollment, candidate);
-        });
+        const conflictsPinned = chosenPinned.some(({ combo: co }) => enrollmentsOverlap(co.enrollment, candidate));
         if (conflictsPinned) continue;
 
-        const conflictsOpt = selected.some(({ combo: co }) => {
-          return enrollmentsOverlap(co.enrollment, candidate);
-        });
+        const conflictsOpt = selected.some(({ combo: co }) => enrollmentsOverlap(co.enrollment, candidate));
         if (conflictsOpt) continue;
 
         selected.push({ code, combo: precomputed });
-        if (await dfsOptional(idx + 1, selected, selectedCount + 1)) return true;
+        if (await dfsOptional(idx + 1, selected, selectedCount + 1, currentFyCredits + courseFyCredits)) return true;
         selected.pop();
       }
 
-      if (await dfsOptional(idx + 1, selected, selectedCount)) return true;
+      if (await dfsOptional(idx + 1, selected, selectedCount, currentFyCredits)) return true;
       return false;
     }
 
-    await dfsOptional(startIdx, [], 0);
+    await dfsOptional(startIdx, [], 0, initialFyCredits);
   }
 
   async function dfsPinned(
     items: { code: string; combos: PrecomputedCombo[] }[],
     selected: { code: string; combo: PrecomputedCombo }[],
-    idx: number
+    idx: number,
+    currentFyCredits: number
   ): Promise<boolean> {
     await yieldToMainIfNeeded();
 
     if (idx === items.length) {
-      await findOptionalForPinned(optional, selected, 0);
+      await findOptionalForPinned(optional, selected, 0, currentFyCredits);
       return schedules.length >= MAX_SCHEDULES || (constraints?.deadline != null && Date.now() > constraints.deadline);
     }
     
     if (constraints?.deadline && Date.now() > constraints.deadline) return true;
 
     const { code, combos } = items[idx];
+    let courseFyCredits = 0;
+    if (constraints?.maxFirstYearCredits != null) {
+      const m = code.match(/\d{4}/);
+      if (m && Number(m[0]) < 2000) {
+        courseFyCredits = cache.getCourse(code)?.credits ?? 3;
+      }
+      if (currentFyCredits + courseFyCredits > constraints.maxFirstYearCredits) {
+        return false;
+      }
+    }
 
     for (const precomputed of combos) {
       const candidate = precomputed.enrollment;
-      const conflicts = selected.some(({ combo: co }) => {
-        return enrollmentsOverlap(co.enrollment, candidate);
-      });
+      const conflicts = selected.some(({ combo: co }) => enrollmentsOverlap(co.enrollment, candidate));
       if (conflicts) continue;
 
       selected.push({ code, combo: precomputed });
-      if (await dfsPinned(items, selected, idx + 1)) return true;
+      if (await dfsPinned(items, selected, idx + 1, currentFyCredits + courseFyCredits)) return true;
       selected.pop();
     }
 
@@ -301,7 +351,7 @@ export async function generateSchedulesWithPinned(
     return await generateSchedules(optionalCourseCodes, targetCount, cache, constraints);
   }
 
-  await dfsPinned(pinned, [], 0);
+  await dfsPinned(pinned, [], 0, 0);
 
   return schedules;
 }

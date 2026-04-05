@@ -53,11 +53,25 @@ export function getValidSectionCombos(
     return sections.filter((section) => {
       if (!sectionHasTimes(section)) return false;
       if (!constraints) return true;
-      return isSectionAllowedByMinRating({
+      if (!isSectionAllowedByMinRating({
         instructors: section.instructors,
         minRating: constraints.minProfessorRating,
         professorRatings: constraints.professorRatings,
-      });
+      })) {
+        return false;
+      }
+      
+      const times = section.times.filter(t => t.startMinutes < t.endMinutes).map(t => ({
+        day: t.day,
+        startMinutes: t.startMinutes,
+        endMinutes: t.endMinutes,
+      }));
+      
+      if (!times.every((t) => timeSlotSatisfiesConstraints(t, constraints))) {
+        return false;
+      }
+      
+      return true;
     });
   });
 
@@ -71,12 +85,6 @@ export function getValidSectionCombos(
   for (const combo of allCombos) {
     const sections = combo;
     const times = collectTimes(sections);
-    if (
-      constraints &&
-      !times.every((t) => timeSlotSatisfiesConstraints(t, constraints))
-    ) {
-      continue;
-    }
     let hasOverlap = false;
     for (let i = 0; i < times.length; i++) {
       for (let j = i + 1; j < times.length; j++) {
