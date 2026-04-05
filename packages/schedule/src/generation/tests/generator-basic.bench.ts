@@ -41,7 +41,7 @@ optionalPool = optionalPool.sort();
 console.log('Setup complete, pool size:', optionalPool.length);
 
 describe('basic mode generator benchmarks with real data', () => {
-    bench('basic mode: ADM 1100 pinned + 4 electives (target=5) w/ compressed constraints', async () => {
+    bench('basic mode: ADM 1100 pinned + 4 electives (target=5) w/ compressed constraints', () => {
         const constraints = {
             minStartMinutes: 480,
             maxEndMinutes: 1320,
@@ -50,7 +50,7 @@ describe('basic mode generator benchmarks with real data', () => {
             maxFirstYearCredits: 12 // restrict it to prune paths early
         };
         
-        await generateSchedulesWithPinned(
+        generateSchedulesWithPinned(
             ['ADM 1100'],
             optionalPool,
             5,

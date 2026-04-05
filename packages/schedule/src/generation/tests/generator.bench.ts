@@ -4,7 +4,7 @@ import { buildDataCache } from '../../dataCache';
 import type { Catalogue, SchedulesData, CourseSchedule, Course } from 'schemas';
 
 describe('scheduleGenerator benchmarks', () => {
-    bench('dummy bench', async () => {
+    bench('dummy bench', () => {
         const dummyCourses: Course[] = Array.from({ length: 10 }, (_, i) => ({
             code: `DUMM${1000 + i}`,
             title: 'Dummy Course',
@@ -48,10 +48,10 @@ describe('scheduleGenerator benchmarks', () => {
 
         const cache = buildDataCache(catalogue, schedulesData);
         
-        await generateSchedules(dummyCourses.map(c => c.code), 5, cache);
+        generateSchedules(dummyCourses.map(c => c.code), 5, cache);
     });
 
-    bench('hang test: 20 optional courses, pick 5, many conflicts', async () => {
+    bench('hang test: 20 optional courses, pick 5, many conflicts', () => {
         const dummyCourses: Course[] = Array.from({ length: 20 }, (_, i) => ({
             code: `CONF${1000 + i}`,
             title: 'Conflicting Course',
@@ -94,6 +94,6 @@ describe('scheduleGenerator benchmarks', () => {
         };
 
         const cache = buildDataCache(catalogue, schedulesData);
-        await generateSchedules(dummyCourses.map(c => c.code), 5, cache);
+        generateSchedules(dummyCourses.map(c => c.code), 5, cache);
     });
 });

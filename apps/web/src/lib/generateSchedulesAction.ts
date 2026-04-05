@@ -290,7 +290,6 @@ export async function generateSchedulesAction(
     return sum + (course?.credits ?? 3);
   }, 0);
 
-  const deadline = Date.now() + 2000;
   const constraints: GenerationConstraints = {
     minStartMinutes: generationMinStartMinutes,
     maxEndMinutes: generationMaxEndMinutes,
@@ -301,7 +300,6 @@ export async function generateSchedulesAction(
       ? 48 - (completedFirstYearCredits ?? 0)
       : undefined,
     compressedSchedule: generationCompressedSchedule,
-    deadline,
   };
 
   const completedSet = new Set(completedCourses.map(normalizeCourseCode));
@@ -526,8 +524,8 @@ export async function generateSchedulesAction(
     return true;
   }
 
-  const yieldToMain = (): Promise<void> =>
-    new Promise((resolve) => setTimeout(resolve, 0));
+  
+  let hasMore = false;
 
   if (remainingNeeded > 0) {
     const allPools = buildRequirementPools(effectiveRemainingRequirements);
@@ -881,12 +879,9 @@ export async function generateSchedulesAction(
     }
 
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    if (Date.now() > deadline) {
-      break;
-    }
+    
     if (collectedSchedules.length >= targetUniqueSchedules) break;
-      if (attempt > 0 && attempt % 5 === 0) await yieldToMain();
-
+      
       for (const list of candidatesByRequirement.values()) {
         shuffleInPlace(list, rng);
       }
@@ -963,25 +958,25 @@ export async function generateSchedulesAction(
         },
       );
 
-      const batch =
-        pinned.length === 0
-          ? await genSchedules(
-              lastFilteredPool,
-              coursesThisSemester,
-              attemptCache,
-              constraints,
-            )
-          : await generateSchedulesWithPinned(
-              pinned,
-              lastFilteredPool,
-              coursesThisSemester,
-              attemptCache,
-              constraints,
-            );
+      const limit = 1;
+      const batch = pinned.length === 0
+        ? genSchedules(
+            lastFilteredPool,
+            coursesThisSemester,
+            attemptCache,
+            constraints,
+            limit
+          )
+        : generateSchedulesWithPinned(
+            pinned,
+            lastFilteredPool,
+            coursesThisSemester,
+            attemptCache,
+            constraints,
+            limit
+          );
 
-      const fullBatch = batch.filter(
-        (s) => s.enrollments.length >= coursesThisSemester,
-      );
+      const fullBatch = batch;
       if (fullBatch.length === 0) {
         continue;
       }
@@ -998,6 +993,7 @@ export async function generateSchedulesAction(
 
     finalSchedules = collectedSchedules;
     finalPoolMaps = collectedPoolMaps;
+    hasMore = collectedSchedules.length === targetUniqueSchedules;
     lastChosenFromPool = collectedPoolMaps[0] ?? {};
 
     filteredOptionalPool = lastFilteredPool;
@@ -1016,16 +1012,17 @@ export async function generateSchedulesAction(
 
   if (remainingNeeded <= 0) {
     filteredOptionalPool = [];
-    finalSchedules =
-      pinned.length === 0
-        ? await genSchedules([], coursesThisSemester, effectiveCache, constraints)
-        : await generateSchedulesWithPinned(
-            pinned,
-            [],
-            coursesThisSemester,
-            effectiveCache,
-            constraints,
-          );
+    const limit = appendFirstOnly ? 1 : 25;
+    finalSchedules = pinned.length === 0
+      ? genSchedules([], coursesThisSemester, effectiveCache, constraints, limit)
+      : generateSchedulesWithPinned(
+          pinned,
+          [],
+          coursesThisSemester,
+          effectiveCache,
+          constraints,
+          limit
+        );
     finalPoolMaps = finalSchedules.map(() => ({}));
   }
 
@@ -1065,9 +1062,8 @@ export async function generateSchedulesAction(
   }
 
   const swapPool = [...new Set([...pinned, ...filteredOptionalPool])];
-  const limit = appendFirstOnly ? 1 : 25;
-  const limitedSchedules = finalSchedules.slice(0, limit);
-  const limitedPoolMaps = finalPoolMaps.slice(0, limit);
+  const limitedSchedules = finalSchedules;
+  const limitedPoolMaps = finalPoolMaps;
 
   if (appendFirstOnly && limitedSchedules.length > 0) {
     const newSchedules = [...state.generatedSchedules, limitedSchedules[0]];
@@ -1088,7 +1084,7 @@ export async function generateSchedulesAction(
       scheduleColorMaps: newColorMaps,
       selectedScheduleIndex: newSchedules.length - 1,
       swapHistory: [],
-      hasMoreSchedules: Date.now() <= deadline,
+      hasMoreSchedules: hasMore,
       generationError: null,
     };
   }
@@ -1164,7 +1160,7 @@ export async function generateSchedulesAction(
     scheduleColorMaps: buildColorMaps(limitedSchedules),
     selectedScheduleIndex: 0,
     swapHistory: [],
-    hasMoreSchedules: Date.now() <= deadline,
+    hasMoreSchedules: hasMore,
     generationError: null,
   };
 }
@@ -1211,14 +1207,12 @@ async function handleBasicGeneration(
   const existingScheduleCount = appendFirstOnly ? state.generatedSchedules.length : 0;
   const rng = createSeededRng(((generationSeed >>> 0) + existingScheduleCount) >>> 0);
 
-  const deadline = Date.now() + 2000;
   const constraints: GenerationConstraints = {
     minStartMinutes: generationMinStartMinutes,
     maxEndMinutes: generationMaxEndMinutes,
     allowedDays: generationAllowedDays,
     minProfessorRating: generationMinProfessorRating ?? undefined,
     professorRatings: professorRatings ?? undefined,
-    deadline,
   };
 
   const targetCount = pinned.length + basicElectivesCount;
@@ -1229,12 +1223,9 @@ async function handleBasicGeneration(
   
   const prereqCtx = buildPrereqContext(completedCourses, baseCache, studentPrograms);
 
-  const yieldToMain = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
-  let loops = 0;
-
+  
   for (const course of cache.getAllCourses()) {
-    if (++loops % 50 === 0) await yieldToMain();
-
+    
     const code = course.code;
     if (!courseMatchesFilters(code, filters)) continue;
     if (!isWithinElectiveLevelBuckets(code, electiveLevelBuckets)) continue;
@@ -1265,25 +1256,21 @@ async function handleBasicGeneration(
   
   shuffleInPlace(optionalPool, rng);
 
-  constraints.deadline = Date.now() + 2000;
-
-  const batch = await generateSchedulesWithPinned(
+  
+  const limit = appendFirstOnly ? 1 : 25;
+  const batch = generateSchedulesWithPinned(
     pinned,
     optionalPool,
     targetCount,
     effectiveCache,
     constraints,
+    limit
   );
   
-  if (state.generatedSchedules.length === 0 && batch.length === 0) {
-    // If no initial schedules could be generated, we will handle that below.
-  }
-  
-  const finalSchedules = batch.filter((s) => s.enrollments.length >= targetCount);
-
+  const finalSchedules = batch;
   const swapPool = [...new Set([...pinned, ...optionalPool])];
-  const limit = appendFirstOnly ? 1 : 25;
-  const limitedSchedules = finalSchedules.slice(0, limit);
+  const limitedSchedules = finalSchedules;
+  const hasMore = limitedSchedules.length === limit;
 
   if (appendFirstOnly && limitedSchedules.length > 0) {
     const newSchedules = [...state.generatedSchedules, limitedSchedules[0]];
@@ -1303,7 +1290,7 @@ async function handleBasicGeneration(
       scheduleColorMaps: newColorMaps,
       selectedScheduleIndex: newSchedules.length - 1,
       swapHistory: [],
-      hasMoreSchedules: Date.now() <= deadline,
+      hasMoreSchedules: hasMore,
       generationError: null,
     };
   }
@@ -1346,7 +1333,7 @@ async function handleBasicGeneration(
     scheduleColorMaps: buildColorMaps(limitedSchedules),
     selectedScheduleIndex: 0,
     swapHistory: [],
-    hasMoreSchedules: Date.now() <= deadline,
+    hasMoreSchedules: hasMore,
     generationError: null,
   };
 }
