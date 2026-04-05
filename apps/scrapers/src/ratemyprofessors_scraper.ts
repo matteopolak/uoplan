@@ -163,7 +163,7 @@ async function main(): Promise<void> {
   await fs.mkdir(outDir, { recursive: true });
   const outPath = path.join(outDir, 'ratemyprofessors.json');
 
-  allTeachers.sort((a, b) => a.name.localeCompare(b.name));
+  allTeachers.sort((a, b) => a.name.localeCompare(b.name) || a.legacyId - b.legacyId);
 
   const output = {
     resultCount: allTeachers.length,
