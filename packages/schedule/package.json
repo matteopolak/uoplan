@@ -19,6 +19,7 @@
     "schemas": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^25.5.0",
     "protoc": "^34.0.0",
     "ts-proto": "^2.11.6",
     "vitest": "^4.1.0"
