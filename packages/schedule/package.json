@@ -10,7 +10,7 @@
     "typecheck": "tsc -b tsconfig.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "vitest run"
+    "test": "vitest run src/**/*.test.ts"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.11.0",
