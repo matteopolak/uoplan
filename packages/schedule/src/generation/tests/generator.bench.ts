@@ -52,7 +52,6 @@ describe('scheduleGenerator benchmarks', () => {
     });
 
     bench('hang test: 20 optional courses, pick 5, many conflicts', async () => {
-        // Create 20 courses that all share exactly the same time slot (so none can be combined)
         const dummyCourses: Course[] = Array.from({ length: 20 }, (_, i) => ({
             code: `CONF${1000 + i}`,
             title: 'Conflicting Course',
@@ -75,7 +74,7 @@ describe('scheduleGenerator benchmarks', () => {
                         component: 'LEC',
                         session: 'Regular',
                         times: [
-                            { day: 'Mo', startMinutes: 600, endMinutes: 700, virtual: false } // All at the exact same time
+                            { day: 'Mo', startMinutes: 600, endMinutes: 700, virtual: false }
                         ],
                         instructors: [],
                         meetingDates: []
@@ -95,11 +94,6 @@ describe('scheduleGenerator benchmarks', () => {
         };
 
         const cache = buildDataCache(catalogue, schedulesData);
-        
-        // This used to hang because it would generate 15,504 combinations
-        // and check each one. Now it should finish in less than a millisecond
-        // because the moment it picks two courses, it realizes they conflict
-        // and prunes the entire branch of remaining combinations.
         await generateSchedules(dummyCourses.map(c => c.code), 5, cache);
     });
 });

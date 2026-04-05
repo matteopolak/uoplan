@@ -26,8 +26,12 @@ export function buildColorMap(
   let nextIndex = 0;
   for (const { courseCode } of schedule.enrollments) {
     if (map[courseCode] !== undefined) continue;
-    while (usedIndices.has(nextIndex % 8)) nextIndex++;
-    const idx = nextIndex % 8;
+    let attempts = 0;
+    while (usedIndices.has(nextIndex % 15) && attempts < 15) {
+      nextIndex++;
+      attempts++;
+    }
+    const idx = nextIndex % 15;
     map[courseCode] = idx;
     usedIndices.add(idx);
     nextIndex++;

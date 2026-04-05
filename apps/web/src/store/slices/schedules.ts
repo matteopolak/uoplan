@@ -159,6 +159,7 @@ export const createSchedulesSlice: StateCreator<
       allowedDays: generationAllowedDays,
       minProfessorRating: generationMinProfessorRating ?? undefined,
       professorRatings: professorRatings ?? undefined,
+      deadline: Date.now() + 2000,
     };
 
     if (wizardMode === "basic") {
