@@ -14,6 +14,13 @@ export const COURSE_COLORS = [
   "grape",
   "indigo",
   "orange",
+  "red",
+  "green",
+  "yellow",
+  "lime",
+  "plum",
+  "fuschia",
+  "sky",
 ] as const;
 
 export type CourseColor = (typeof COURSE_COLORS)[number];
@@ -30,6 +37,13 @@ export const COURSE_COLOR_HEX: Record<CourseColor, string> = {
   grape: "#be4bdb",
   indigo: "#4c6ef5",
   orange: "#fd7e14",
+  red: "#fa5252",
+  green: "#40c057",
+  yellow: "#fab005",
+  lime: "#82c91e",
+  plum: "#845ef7",
+  fuschia: "#f06595",
+  sky: "#339af0",
 };
 
 /**

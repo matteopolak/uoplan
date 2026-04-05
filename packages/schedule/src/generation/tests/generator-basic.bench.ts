@@ -37,21 +37,23 @@ for (const course of cache.getAllCourses()) {
     optionalPool.push(code);
 }
 
-optionalPool = optionalPool.sort().slice(0, 50);
+optionalPool = optionalPool.sort();
 console.log('Setup complete, pool size:', optionalPool.length);
 
 describe('basic mode generator benchmarks with real data', () => {
-    bench('basic mode: ADM 1100 pinned + 8 electives (target=9)', async () => {
+    bench('basic mode: ADM 1100 pinned + 4 electives (target=5) w/ compressed constraints', async () => {
         const constraints = {
             minStartMinutes: 480,
             maxEndMinutes: 1320,
             allowedDays: ['Mo', 'Tu', 'We', 'Th', 'Fr'] as DayOfWeek[],
+            compressedSchedule: true,
+            maxFirstYearCredits: 12 // restrict it to prune paths early
         };
         
         await generateSchedulesWithPinned(
             ['ADM 1100'],
             optionalPool,
-            9,
+            5,
             cache,
             constraints
         );

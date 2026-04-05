@@ -1167,7 +1167,9 @@ export async function generateSchedulesAction(
     hasMoreSchedules: Date.now() <= deadline,
     generationError: null,
   };
-}async function handleBasicGeneration(
+}
+
+async function handleBasicGeneration(
   state: AppState,
   options?: { appendFirstOnly?: boolean }
 ): Promise<GenerateSchedulesResult | null> {
@@ -1227,7 +1229,12 @@ export async function generateSchedulesAction(
   
   const prereqCtx = buildPrereqContext(completedCourses, baseCache, studentPrograms);
 
+  const yieldToMain = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
+  let loops = 0;
+
   for (const course of cache.getAllCourses()) {
+    if (++loops % 50 === 0) await yieldToMain();
+
     const code = course.code;
     if (!courseMatchesFilters(code, filters)) continue;
     if (!isWithinElectiveLevelBuckets(code, electiveLevelBuckets)) continue;
@@ -1258,6 +1265,8 @@ export async function generateSchedulesAction(
   
   shuffleInPlace(optionalPool, rng);
 
+  constraints.deadline = Date.now() + 2000;
+
   const batch = await generateSchedulesWithPinned(
     pinned,
     optionalPool,
@@ -1265,6 +1274,10 @@ export async function generateSchedulesAction(
     effectiveCache,
     constraints,
   );
+  
+  if (state.generatedSchedules.length === 0 && batch.length === 0) {
+    // If no initial schedules could be generated, we will handle that below.
+  }
   
   const finalSchedules = batch.filter((s) => s.enrollments.length >= targetCount);
 
