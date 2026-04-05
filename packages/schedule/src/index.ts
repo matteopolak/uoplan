@@ -1,4 +1,4 @@
-export * from './scheduleGenerator';
+export * from './generation';
 export * from './generationDiagnostics';
 export * from './scheduleCandidates/kUserKGeneral';
 export * from './scheduleCandidates/explicitPoolPicks';

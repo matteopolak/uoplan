@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildScheduleIcs } from '../ics';
-import type { GeneratedSchedule } from '../scheduleGenerator';
+import type { GeneratedSchedule } from '../generation';
 import type { DataCache } from '../dataCache';
 
 describe('buildScheduleIcs', () => {
