@@ -93,21 +93,6 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
 
   const isMobile = useMediaQuery("(max-width: 768px)");
 
-  const initialGenerationFired = useRef(false);
-
-  useEffect(() => {
-    if (isBasic && generatedSchedules.length === 0 && !generationError && !initialGenerationFired.current) {
-      initialGenerationFired.current = true;
-      // Use setTimeout to avoid synchronous state update in effect
-      setTimeout(() => {
-        setGeneratingOneMore(true);
-        void generateBasicSchedules().then(() => {
-          setGeneratingOneMore(false);
-        });
-      }, 0);
-    }
-  }, [isBasic, generatedSchedules.length, generationError, generateBasicSchedules]);
-
   useTimetableDateRangeFromSchedule(
     generatedSchedules,
     selectedScheduleIndex,
