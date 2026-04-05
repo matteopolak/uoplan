@@ -159,7 +159,6 @@ export const createSchedulesSlice: StateCreator<
       allowedDays: generationAllowedDays,
       minProfessorRating: generationMinProfessorRating ?? undefined,
       professorRatings: professorRatings ?? undefined,
-      deadline: Date.now() + 2000,
     };
 
     if (wizardMode === "basic") {
@@ -177,7 +176,7 @@ export const createSchedulesSlice: StateCreator<
           !pinnedNormalized.has(normalizeCourseCode(code)),
       );
       
-      const batch = await generateSchedulesWithPinned(
+      const batch = generateSchedulesWithPinned(
         allCodes,
         [],
         allCodes.length,

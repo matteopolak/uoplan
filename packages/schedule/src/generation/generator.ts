@@ -10,25 +10,15 @@ import type {
   PrecomputedCombo,
 } from './types';
 
-const MAX_SCHEDULES = 150;
-
-export async function generateSchedules(
+export function generateSchedules(
   courseCodes: string[],
   targetCount: number,
   cache: DataCache,
-  constraints?: GenerationConstraints
-): Promise<GeneratedSchedule[]> {
+  constraints?: GenerationConstraints,
+  limit: number = 150
+): GeneratedSchedule[] {
   const schedules: GeneratedSchedule[] = [];
   const coursesWithCombos: { code: string; combos: PrecomputedCombo[] }[] = [];
-  let operationsSinceYield = 0;
-
-  async function yieldToMainIfNeeded() {
-    operationsSinceYield++;
-    if (operationsSinceYield > 2000) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      operationsSinceYield = 0;
-    }
-  }
 
   for (const code of courseCodes) {
     if (isHonoursProject(code, cache)) {
@@ -70,26 +60,19 @@ export async function generateSchedules(
     }
   }
 
-  async function solve(
+  function solve(
     courseIdx: number,
     selected: { code: string; combo: PrecomputedCombo }[],
     selectedCount: number,
     currentFyCredits: number
-  ): Promise<boolean> {
-    await yieldToMainIfNeeded();
-
-    if (constraints?.deadline && Date.now() > constraints.deadline) return true;
-
+  ): boolean {
     if (selectedCount === targetCount) {
       const enrollments: CourseEnrollment[] = selected.map(({ combo }) => combo.enrollment);
       if (constraints?.compressedSchedule && !satisfiesCompressedConstraint(enrollments)) {
         return false;
       }
       schedules.push({ enrollments });
-      return (
-        schedules.length >= MAX_SCHEDULES ||
-        (constraints?.deadline != null && Date.now() > constraints.deadline)
-      );
+      return schedules.length >= limit;
     }
 
     if (courseIdx === coursesWithCombos.length) return false;
@@ -115,7 +98,7 @@ export async function generateSchedules(
         courseFyCredits = cache.getCourse(code)?.credits ?? 3;
       }
       if (currentFyCredits + courseFyCredits > constraints.maxFirstYearCredits) {
-        if (await solve(courseIdx + 1, selected, selectedCount, currentFyCredits)) return true;
+        if (solve(courseIdx + 1, selected, selectedCount, currentFyCredits)) return true;
         return false;
       }
     }
@@ -126,39 +109,30 @@ export async function generateSchedules(
       if (conflicts) continue;
 
       selected.push({ code, combo: precomputed });
-      if (await solve(courseIdx + 1, selected, selectedCount + 1, currentFyCredits + courseFyCredits)) return true;
+      if (solve(courseIdx + 1, selected, selectedCount + 1, currentFyCredits + courseFyCredits)) return true;
       selected.pop();
     }
 
-    if (await solve(courseIdx + 1, selected, selectedCount, currentFyCredits)) return true;
+    if (solve(courseIdx + 1, selected, selectedCount, currentFyCredits)) return true;
 
     return false;
   }
 
-  await solve(0, [], 0, 0);
+  solve(0, [], 0, 0);
 
   return schedules;
 }
 
-export async function generateSchedulesWithPinned(
+export function generateSchedulesWithPinned(
   pinnedCourseCodes: string[],
   optionalCourseCodes: string[],
   targetCount: number,
   cache: DataCache,
-  constraints?: GenerationConstraints
-): Promise<GeneratedSchedule[]> {
+  constraints?: GenerationConstraints,
+  limit: number = 150
+): GeneratedSchedule[] {
   if (pinnedCourseCodes.length > targetCount) {
     return [];
-  }
-
-  let operationsSinceYield = 0;
-
-  async function yieldToMainIfNeeded() {
-    operationsSinceYield++;
-    if (operationsSinceYield > 2000) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      operationsSinceYield = 0;
-    }
   }
 
   const pinned: { code: string; combos: PrecomputedCombo[] }[] = [];
@@ -214,12 +188,12 @@ export async function generateSchedulesWithPinned(
 
   const schedules: GeneratedSchedule[] = [];
 
-  async function findOptionalForPinned(
+  function findOptionalForPinned(
     optionalItems: { code: string; combos: PrecomputedCombo[] }[],
     chosenPinned: { code: string; combo: PrecomputedCombo }[],
     startIdx: number,
     initialFyCredits: number
-  ): Promise<void> {
+  ): void {
     const remainingSlots = targetCount - chosenPinned.length;
     if (remainingSlots <= 0) {
       const enrollments: CourseEnrollment[] = chosenPinned.map(({ combo }) => combo.enrollment);
@@ -241,16 +215,12 @@ export async function generateSchedulesWithPinned(
       }
     }
 
-    async function dfsOptional(
+    function dfsOptional(
       idx: number,
       selected: { code: string; combo: PrecomputedCombo }[],
       selectedCount: number,
       currentFyCredits: number
-    ): Promise<boolean> {
-      await yieldToMainIfNeeded();
-
-      if (constraints?.deadline && Date.now() > constraints.deadline) return true;
-
+    ): boolean {
       if (selectedCount === remainingSlots) {
         const all = [...chosenPinned, ...selected];
         const enrollments: CourseEnrollment[] = all.map(({ combo }) => combo.enrollment);
@@ -258,7 +228,7 @@ export async function generateSchedulesWithPinned(
           return false;
         }
         schedules.push({ enrollments });
-        return schedules.length >= MAX_SCHEDULES || (constraints?.deadline != null && Date.now() > constraints.deadline);
+        return schedules.length >= limit;
       }
 
       if (idx === optionalItems.length) return false;
@@ -282,7 +252,7 @@ export async function generateSchedulesWithPinned(
           courseFyCredits = cache.getCourse(code)?.credits ?? 3;
         }
         if (currentFyCredits + courseFyCredits > constraints.maxFirstYearCredits) {
-          if (await dfsOptional(idx + 1, selected, selectedCount, currentFyCredits)) return true;
+          if (dfsOptional(idx + 1, selected, selectedCount, currentFyCredits)) return true;
           return false;
         }
       }
@@ -296,32 +266,28 @@ export async function generateSchedulesWithPinned(
         if (conflictsOpt) continue;
 
         selected.push({ code, combo: precomputed });
-        if (await dfsOptional(idx + 1, selected, selectedCount + 1, currentFyCredits + courseFyCredits)) return true;
+        if (dfsOptional(idx + 1, selected, selectedCount + 1, currentFyCredits + courseFyCredits)) return true;
         selected.pop();
       }
 
-      if (await dfsOptional(idx + 1, selected, selectedCount, currentFyCredits)) return true;
+      if (dfsOptional(idx + 1, selected, selectedCount, currentFyCredits)) return true;
       return false;
     }
 
-    await dfsOptional(startIdx, [], 0, initialFyCredits);
+    dfsOptional(startIdx, [], 0, initialFyCredits);
   }
 
-  async function dfsPinned(
+  function dfsPinned(
     items: { code: string; combos: PrecomputedCombo[] }[],
     selected: { code: string; combo: PrecomputedCombo }[],
     idx: number,
     currentFyCredits: number
-  ): Promise<boolean> {
-    await yieldToMainIfNeeded();
-
+  ): boolean {
     if (idx === items.length) {
-      await findOptionalForPinned(optional, selected, 0, currentFyCredits);
-      return schedules.length >= MAX_SCHEDULES || (constraints?.deadline != null && Date.now() > constraints.deadline);
+      findOptionalForPinned(optional, selected, 0, currentFyCredits);
+      return schedules.length >= limit;
     }
     
-    if (constraints?.deadline && Date.now() > constraints.deadline) return true;
-
     const { code, combos } = items[idx];
     let courseFyCredits = 0;
     if (constraints?.maxFirstYearCredits != null) {
@@ -340,7 +306,7 @@ export async function generateSchedulesWithPinned(
       if (conflicts) continue;
 
       selected.push({ code, combo: precomputed });
-      if (await dfsPinned(items, selected, idx + 1, currentFyCredits + courseFyCredits)) return true;
+      if (dfsPinned(items, selected, idx + 1, currentFyCredits + courseFyCredits)) return true;
       selected.pop();
     }
 
@@ -348,10 +314,10 @@ export async function generateSchedulesWithPinned(
   }
 
   if (pinned.length === 0) {
-    return await generateSchedules(optionalCourseCodes, targetCount, cache, constraints);
+    return generateSchedules(optionalCourseCodes, targetCount, cache, constraints, limit);
   }
 
-  await dfsPinned(pinned, [], 0, 0);
+  dfsPinned(pinned, [], 0, 0);
 
   return schedules;
 }

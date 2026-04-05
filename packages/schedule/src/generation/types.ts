@@ -31,8 +31,6 @@ export interface GenerationConstraints {
   maxFirstYearCredits?: number;
   /** If true, each day may have at most one gap between classes, and that gap must be ≤ 90 minutes. */
   compressedSchedule?: boolean;
-  /** Unix timestamp (ms) deadline to stop searching for schedules. */
-  deadline?: number;
 }
 
 export interface PrecomputedCombo {
