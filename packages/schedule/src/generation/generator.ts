@@ -12,18 +12,6 @@ import type {
 
 const MAX_SCHEDULES = 150;
 
-function* combinations<T>(arr: T[], k: number): Generator<T[]> {
-  if (k === 0) {
-    yield [];
-    return;
-  }
-  for (let i = 0; i <= arr.length - k; i++) {
-    for (const rest of combinations(arr.slice(i + 1), k - 1)) {
-      yield [arr[i], ...rest];
-    }
-  }
-}
-
 export async function generateSchedules(
   courseCodes: string[],
   targetCount: number,
@@ -65,18 +53,30 @@ export async function generateSchedules(
     }
   }
 
+  coursesWithCombos.sort((a, b) => a.combos.length - b.combos.length);
+
   if (coursesWithCombos.length < targetCount) {
     return [];
   }
 
-  async function findNonOverlappingCombos(
-    items: { code: string; combos: PrecomputedCombo[] }[],
+  async function solve(
+    courseIdx: number,
     selected: { code: string; combo: PrecomputedCombo }[],
-    idx: number
+    selectedCount: number
   ): Promise<boolean> {
     await yieldToMainIfNeeded();
 
-    if (idx === items.length) {
+    if (constraints?.deadline && Date.now() > constraints.deadline) return true;
+
+    if (selectedCount === targetCount) {
+      if (constraints?.maxFirstYearCredits != null) {
+        const fyCredits = selected.reduce((sum, item) => {
+          const m = item.code.match(/\d{4}/);
+          if (!m || Number(m[0]) >= 2000) return sum;
+          return sum + (cache.getCourse(item.code)?.credits ?? 3);
+        }, 0);
+        if (fyCredits > constraints.maxFirstYearCredits) return false;
+      }
       const enrollments: CourseEnrollment[] = selected.map(({ combo }) => combo.enrollment);
       if (constraints?.compressedSchedule && !satisfiesCompressedConstraint(enrollments)) {
         return false;
@@ -88,9 +88,13 @@ export async function generateSchedules(
       );
     }
 
-    if (constraints?.deadline && Date.now() > constraints.deadline) return true;
+    if (courseIdx === coursesWithCombos.length) return false;
 
-    const { code, combos } = items[idx];
+    if (coursesWithCombos.length - courseIdx < targetCount - selectedCount) {
+      return false;
+    }
+
+    const { code, combos } = coursesWithCombos[courseIdx];
 
     for (const precomputed of combos) {
       const candidate = precomputed.enrollment;
@@ -100,24 +104,16 @@ export async function generateSchedules(
       if (conflicts) continue;
 
       selected.push({ code, combo: precomputed });
-      if (await findNonOverlappingCombos(items, selected, idx + 1)) return true;
+      if (await solve(courseIdx + 1, selected, selectedCount + 1)) return true;
       selected.pop();
     }
+
+    if (await solve(courseIdx + 1, selected, selectedCount)) return true;
+
     return false;
   }
 
-  for (const combo of combinations(coursesWithCombos, targetCount)) {
-    if (constraints?.deadline && Date.now() > constraints.deadline) break;
-    if (constraints?.maxFirstYearCredits != null) {
-      const fyCredits = combo.reduce((sum, item) => {
-        const m = item.code.match(/\d{4}/);
-        if (!m || Number(m[0]) >= 2000) return sum;
-        return sum + (cache.getCourse(item.code)?.credits ?? 3);
-      }, 0);
-      if (fyCredits > constraints.maxFirstYearCredits) continue;
-    }
-    if (await findNonOverlappingCombos(combo, [], 0)) break;
-  }
+  await solve(0, [], 0);
 
   return schedules;
 }
@@ -191,6 +187,9 @@ export async function generateSchedulesWithPinned(
     }
   }
 
+  optional.sort((a, b) => a.combos.length - b.combos.length);
+  pinned.sort((a, b) => a.combos.length - b.combos.length);
+
   const schedules: GeneratedSchedule[] = [];
 
   async function findOptionalForPinned(
@@ -209,15 +208,15 @@ export async function generateSchedulesWithPinned(
     }
 
     async function dfsOptional(
-      items: { code: string; combos: PrecomputedCombo[] }[],
+      idx: number,
       selected: { code: string; combo: PrecomputedCombo }[],
-      idx: number
+      selectedCount: number
     ): Promise<boolean> {
       await yieldToMainIfNeeded();
 
       if (constraints?.deadline && Date.now() > constraints.deadline) return true;
-      // Only accept full schedules: we need exactly remainingSlots optional courses.
-      if (selected.length === remainingSlots) {
+
+      if (selectedCount === remainingSlots) {
         const all = [...chosenPinned, ...selected];
         if (constraints?.maxFirstYearCredits != null) {
           const fyCredits = all.reduce((sum, item) => {
@@ -234,9 +233,14 @@ export async function generateSchedulesWithPinned(
         schedules.push({ enrollments });
         return schedules.length >= MAX_SCHEDULES || (constraints?.deadline != null && Date.now() > constraints.deadline);
       }
-      if (idx === items.length) return false;
 
-      const { code, combos } = items[idx];
+      if (idx === optionalItems.length) return false;
+
+      if (optionalItems.length - idx < remainingSlots - selectedCount) {
+        return false;
+      }
+
+      const { code, combos } = optionalItems[idx];
 
       for (const precomputed of combos) {
         const candidate = precomputed.enrollment;
@@ -251,15 +255,15 @@ export async function generateSchedulesWithPinned(
         if (conflictsOpt) continue;
 
         selected.push({ code, combo: precomputed });
-        if (await dfsOptional(items, selected, idx + 1)) return true;
+        if (await dfsOptional(idx + 1, selected, selectedCount + 1)) return true;
         selected.pop();
       }
 
-      if (await dfsOptional(items, selected, idx + 1)) return true;
+      if (await dfsOptional(idx + 1, selected, selectedCount)) return true;
       return false;
     }
 
-    await dfsOptional(optionalItems.slice(startIdx), [], 0);
+    await dfsOptional(startIdx, [], 0);
   }
 
   async function dfsPinned(
