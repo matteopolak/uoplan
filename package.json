@@ -10,6 +10,7 @@
     "lint": "pnpm -r lint",
     "lint:fix": "pnpm -r lint:fix",
     "test": "pnpm run -r test",
+    "bench": "pnpm --filter schedule bench",
     "test:watch": "pnpm --filter web test:watch",
     "prepare": "lefthook install",
     "hooks:install": "lefthook install",
