@@ -24,14 +24,23 @@ function* combinations<T>(arr: T[], k: number): Generator<T[]> {
   }
 }
 
-export function generateSchedules(
+export async function generateSchedules(
   courseCodes: string[],
   targetCount: number,
   cache: DataCache,
   constraints?: GenerationConstraints
-): GeneratedSchedule[] {
+): Promise<GeneratedSchedule[]> {
   const schedules: GeneratedSchedule[] = [];
   const coursesWithCombos: { code: string; combos: PrecomputedCombo[] }[] = [];
+  let lastYield = Date.now();
+
+  async function yieldToMainIfNeeded() {
+    const now = Date.now();
+    if (now - lastYield > 15) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      lastYield = Date.now();
+    }
+  }
 
   for (const code of courseCodes) {
     if (isHonoursProject(code, cache)) {
@@ -60,11 +69,13 @@ export function generateSchedules(
     return [];
   }
 
-  function findNonOverlappingCombos(
+  async function findNonOverlappingCombos(
     items: { code: string; combos: PrecomputedCombo[] }[],
     selected: { code: string; combo: PrecomputedCombo }[],
     idx: number
-  ): boolean {
+  ): Promise<boolean> {
+    await yieldToMainIfNeeded();
+
     if (idx === items.length) {
       const enrollments: CourseEnrollment[] = selected.map(({ combo }) => combo.enrollment);
       if (constraints?.compressedSchedule && !satisfiesCompressedConstraint(enrollments)) {
@@ -89,7 +100,7 @@ export function generateSchedules(
       if (conflicts) continue;
 
       selected.push({ code, combo: precomputed });
-      if (findNonOverlappingCombos(items, selected, idx + 1)) return true;
+      if (await findNonOverlappingCombos(items, selected, idx + 1)) return true;
       selected.pop();
     }
     return false;
@@ -105,21 +116,31 @@ export function generateSchedules(
       }, 0);
       if (fyCredits > constraints.maxFirstYearCredits) continue;
     }
-    if (findNonOverlappingCombos(combo, [], 0)) break;
+    if (await findNonOverlappingCombos(combo, [], 0)) break;
   }
 
   return schedules;
 }
 
-export function generateSchedulesWithPinned(
+export async function generateSchedulesWithPinned(
   pinnedCourseCodes: string[],
   optionalCourseCodes: string[],
   targetCount: number,
   cache: DataCache,
   constraints?: GenerationConstraints
-): GeneratedSchedule[] {
+): Promise<GeneratedSchedule[]> {
   if (pinnedCourseCodes.length > targetCount) {
     return [];
+  }
+
+  let lastYield = Date.now();
+
+  async function yieldToMainIfNeeded() {
+    const now = Date.now();
+    if (now - lastYield > 15) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      lastYield = Date.now();
+    }
   }
 
   const pinned: { code: string; combos: PrecomputedCombo[] }[] = [];
@@ -172,11 +193,11 @@ export function generateSchedulesWithPinned(
 
   const schedules: GeneratedSchedule[] = [];
 
-  function findOptionalForPinned(
+  async function findOptionalForPinned(
     optionalItems: { code: string; combos: PrecomputedCombo[] }[],
     chosenPinned: { code: string; combo: PrecomputedCombo }[],
     startIdx: number
-  ): void {
+  ): Promise<void> {
     const remainingSlots = targetCount - chosenPinned.length;
     if (remainingSlots <= 0) {
       const enrollments: CourseEnrollment[] = chosenPinned.map(({ combo }) => combo.enrollment);
@@ -187,11 +208,13 @@ export function generateSchedulesWithPinned(
       return;
     }
 
-    function dfsOptional(
+    async function dfsOptional(
       items: { code: string; combos: PrecomputedCombo[] }[],
       selected: { code: string; combo: PrecomputedCombo }[],
       idx: number
-    ): boolean {
+    ): Promise<boolean> {
+      await yieldToMainIfNeeded();
+
       if (constraints?.deadline && Date.now() > constraints.deadline) return true;
       // Only accept full schedules: we need exactly remainingSlots optional courses.
       if (selected.length === remainingSlots) {
@@ -228,24 +251,26 @@ export function generateSchedulesWithPinned(
         if (conflictsOpt) continue;
 
         selected.push({ code, combo: precomputed });
-        if (dfsOptional(items, selected, idx + 1)) return true;
+        if (await dfsOptional(items, selected, idx + 1)) return true;
         selected.pop();
       }
 
-      if (dfsOptional(items, selected, idx + 1)) return true;
+      if (await dfsOptional(items, selected, idx + 1)) return true;
       return false;
     }
 
-    dfsOptional(optionalItems.slice(startIdx), [], 0);
+    await dfsOptional(optionalItems.slice(startIdx), [], 0);
   }
 
-  function dfsPinned(
+  async function dfsPinned(
     items: { code: string; combos: PrecomputedCombo[] }[],
     selected: { code: string; combo: PrecomputedCombo }[],
     idx: number
-  ): boolean {
+  ): Promise<boolean> {
+    await yieldToMainIfNeeded();
+
     if (idx === items.length) {
-      findOptionalForPinned(optional, selected, 0);
+      await findOptionalForPinned(optional, selected, 0);
       return schedules.length >= MAX_SCHEDULES || (constraints?.deadline != null && Date.now() > constraints.deadline);
     }
     
@@ -261,7 +286,7 @@ export function generateSchedulesWithPinned(
       if (conflicts) continue;
 
       selected.push({ code, combo: precomputed });
-      if (dfsPinned(items, selected, idx + 1)) return true;
+      if (await dfsPinned(items, selected, idx + 1)) return true;
       selected.pop();
     }
 
@@ -269,10 +294,10 @@ export function generateSchedulesWithPinned(
   }
 
   if (pinned.length === 0) {
-    return generateSchedules(optionalCourseCodes, targetCount, cache, constraints);
+    return await generateSchedules(optionalCourseCodes, targetCount, cache, constraints);
   }
 
-  dfsPinned(pinned, [], 0);
+  await dfsPinned(pinned, [], 0);
 
   return schedules;
 }

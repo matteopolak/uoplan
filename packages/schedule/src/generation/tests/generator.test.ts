@@ -59,8 +59,8 @@ describe('generator', () => {
   } as unknown as DataCache;
 
   describe('generateSchedules', () => {
-    it('generates valid schedules without overlaps', () => {
-      const schedules = generateSchedules(['CSI2110', 'SEG2105'], 2, mockCache);
+    it('generates valid schedules without overlaps', async () => {
+      const schedules = await generateSchedules(['CSI2110', 'SEG2105'], 2, mockCache);
       
       // Combinations:
       // CSI2110 A (LEC Mo/We 600-690) + DGD A01
@@ -85,20 +85,20 @@ describe('generator', () => {
       }
     });
 
-    it('returns empty if target count cannot be reached', () => {
+    it('returns empty if target count cannot be reached', async () => {
       // We only provide 2 courses, but ask for 3
-      const schedules = generateSchedules(['CSI2110', 'SEG2105'], 3, mockCache);
+      const schedules = await generateSchedules(['CSI2110', 'SEG2105'], 3, mockCache);
       expect(schedules.length).toBe(0);
     });
 
-    it('supports constraints (e.g. time filters)', () => {
+    it('supports constraints (e.g. time filters)', async () => {
       const constraints: GenerationConstraints = {
         minStartMinutes: 0,
         maxEndMinutes: 1000, // Excludes SEG2105 B (ends 1110)
         allowedDays: ['Mo', 'Tu', 'We', 'Th', 'Fr']
       };
       
-      const schedules = generateSchedules(['CSI2110', 'SEG2105'], 2, mockCache, constraints);
+      const schedules = await generateSchedules(['CSI2110', 'SEG2105'], 2, mockCache, constraints);
       
       // With maxEndMinutes = 1000, SEG2105 B is filtered out.
       // We are left with SEG2105 A.
@@ -109,8 +109,8 @@ describe('generator', () => {
       expect(schedules[0].enrollments.find(e => e.courseCode === 'SEG2105')?.sectionCombo['LEC']?.section.section).toBe('A');
     });
 
-    it('handles honours projects as stub combinations', () => {
-      const schedules = generateSchedules(['CSI2110', 'SEG4910'], 2, mockCache);
+    it('handles honours projects as stub combinations', async () => {
+      const schedules = await generateSchedules(['CSI2110', 'SEG4910'], 2, mockCache);
       
       // CSI2110 has 4 combinations.
       // SEG4910 has 1 stub combination since it's an honours project (no schedule data).
@@ -122,11 +122,11 @@ describe('generator', () => {
   });
 
   describe('generateSchedulesWithPinned', () => {
-    it('forces inclusion of pinned courses', () => {
+    it('forces inclusion of pinned courses', async () => {
       const pinned = ['SEG2105'];
       const optional = ['CSI2110', 'MAT1341'];
       // Request target of 2 courses total (1 pinned + 1 optional)
-      const schedules = generateSchedulesWithPinned(pinned, optional, 2, mockCache);
+      const schedules = await generateSchedulesWithPinned(pinned, optional, 2, mockCache);
       
       // Pinned must be in all schedules
       for (const s of schedules) {
@@ -134,25 +134,25 @@ describe('generator', () => {
       }
     });
 
-    it('returns empty if pinned courses already exceed target', () => {
-      const schedules = generateSchedulesWithPinned(['CSI2110', 'SEG2105'], ['MAT1341'], 1, mockCache);
+    it('returns empty if pinned courses already exceed target', async () => {
+      const schedules = await generateSchedulesWithPinned(['CSI2110', 'SEG2105'], ['MAT1341'], 1, mockCache);
       expect(schedules.length).toBe(0);
     });
 
-    it('returns empty if pinned course has no valid sections', () => {
+    it('returns empty if pinned course has no valid sections', async () => {
       // Adding a fake pinned course not in cache
-      const schedules = generateSchedulesWithPinned(['FAKE1000'], ['MAT1341'], 1, mockCache);
+      const schedules = await generateSchedulesWithPinned(['FAKE1000'], ['MAT1341'], 1, mockCache);
       expect(schedules.length).toBe(0);
     });
 
-    it('finds combinations properly when pinned overlaps some optional', () => {
+    it('finds combinations properly when pinned overlaps some optional', async () => {
       // Pinned: SEG2105 A (with time constraints limiting it to A only)
       const constraints: GenerationConstraints = {
         minStartMinutes: 0,
         maxEndMinutes: 1000,
         allowedDays: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
       };
-      const schedules = generateSchedulesWithPinned(['SEG2105'], ['CSI2110'], 2, mockCache, constraints);
+      const schedules = await generateSchedulesWithPinned(['SEG2105'], ['CSI2110'], 2, mockCache, constraints);
       
       // Only SEG2105 A is valid due to constraints.
       // CSI2110 A overlaps. So only CSI2110 B (with 2 DGDs) works.
@@ -162,9 +162,9 @@ describe('generator', () => {
       expect(schedules[0].enrollments.find((e: CourseEnrollment) => e.courseCode === 'SEG2105')?.sectionCombo['LEC']?.section.section).toBe('A');
     });
 
-    it('falls back to standard generateSchedules if pinned is empty', () => {
-      const schedulesWithPinnedEmpty = generateSchedulesWithPinned([], ['CSI2110', 'SEG2105'], 2, mockCache);
-      const standardSchedules = generateSchedules(['CSI2110', 'SEG2105'], 2, mockCache);
+    it('falls back to standard generateSchedules if pinned is empty', async () => {
+      const schedulesWithPinnedEmpty = await generateSchedulesWithPinned([], ['CSI2110', 'SEG2105'], 2, mockCache);
+      const standardSchedules = await generateSchedules(['CSI2110', 'SEG2105'], 2, mockCache);
       expect(schedulesWithPinnedEmpty.length).toBe(standardSchedules.length);
     });
   });

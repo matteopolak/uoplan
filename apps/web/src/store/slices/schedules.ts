@@ -81,7 +81,7 @@ export const createSchedulesSlice: StateCreator<
 
   setSelectedScheduleIndex: (idx) => set({ selectedScheduleIndex: idx }),
 
-  swapCourseInSchedule: (
+  swapCourseInSchedule: async (
     scheduleIndex,
     enrollmentIndex,
     newCourseCode,
@@ -176,7 +176,7 @@ export const createSchedulesSlice: StateCreator<
           !pinnedNormalized.has(normalizeCourseCode(code)),
       );
       
-      const batch = generateSchedulesWithPinned(
+      const batch = await generateSchedulesWithPinned(
         allCodes,
         [],
         allCodes.length,
@@ -282,7 +282,7 @@ export const createSchedulesSlice: StateCreator<
     const last = swapHistory[swapHistory.length - 1];
     const { scheduleIndex, enrollmentIndex, previousCourseCode } = last;
     set({ swapHistory: swapHistory.slice(0, -1) });
-    get().swapCourseInSchedule(
+    void get().swapCourseInSchedule(
       scheduleIndex,
       enrollmentIndex,
       previousCourseCode,

@@ -182,7 +182,7 @@ export async function generateSchedulesAction(
   options?: { appendFirstOnly?: boolean }
 ): Promise<GenerateSchedulesResult | null> {
   if (state.wizardMode === "basic") {
-    return handleBasicGeneration(state, options);
+    return await handleBasicGeneration(state, options);
   }
   const appendFirstOnly = options?.appendFirstOnly ?? false;
   const {
@@ -965,13 +965,13 @@ export async function generateSchedulesAction(
 
       const batch =
         pinned.length === 0
-          ? genSchedules(
+          ? await genSchedules(
               lastFilteredPool,
               coursesThisSemester,
               attemptCache,
               constraints,
             )
-          : generateSchedulesWithPinned(
+          : await generateSchedulesWithPinned(
               pinned,
               lastFilteredPool,
               coursesThisSemester,
@@ -1018,8 +1018,8 @@ export async function generateSchedulesAction(
     filteredOptionalPool = [];
     finalSchedules =
       pinned.length === 0
-        ? genSchedules([], coursesThisSemester, effectiveCache, constraints)
-        : generateSchedulesWithPinned(
+        ? await genSchedules([], coursesThisSemester, effectiveCache, constraints)
+        : await generateSchedulesWithPinned(
             pinned,
             [],
             coursesThisSemester,
@@ -1167,10 +1167,10 @@ export async function generateSchedulesAction(
     hasMoreSchedules: Date.now() <= deadline,
     generationError: null,
   };
-}function handleBasicGeneration(
+}async function handleBasicGeneration(
   state: AppState,
   options?: { appendFirstOnly?: boolean }
-): GenerateSchedulesResult | null {
+): Promise<GenerateSchedulesResult | null> {
   const appendFirstOnly = options?.appendFirstOnly ?? false;
   const {
     cache,
@@ -1258,7 +1258,7 @@ export async function generateSchedulesAction(
   
   shuffleInPlace(optionalPool, rng);
 
-  const batch = generateSchedulesWithPinned(
+  const batch = await generateSchedulesWithPinned(
     pinned,
     optionalPool,
     targetCount,

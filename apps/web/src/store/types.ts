@@ -133,7 +133,7 @@ export interface AppActions {
     enrollmentIndex: number,
     newCourseCode: string,
     isUndo?: boolean,
-  ) => void;
+  ) => Promise<void>;
   undoLastSwap: () => void;
   getSwapCandidates: (
     scheduleIndex: number,
