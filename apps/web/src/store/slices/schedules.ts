@@ -31,6 +31,7 @@ interface SchedulesSlice {
   generateSchedules: AppStore["generateSchedules"];
   generateBasicSchedules: AppStore["generateBasicSchedules"];
   clearGeneratedSchedules: AppStore["clearGeneratedSchedules"];
+  markBasicSettingsChanged: AppStore["markBasicSettingsChanged"];
   setSelectedScheduleIndex: AppStore["setSelectedScheduleIndex"];
   swapCourseInSchedule: AppStore["swapCourseInSchedule"];
   undoLastSwap: AppStore["undoLastSwap"];
@@ -77,6 +78,12 @@ export const createSchedulesSlice: StateCreator<
         selectedScheduleIndex: 0,
         generationError: null,
       };
+    }),
+
+  markBasicSettingsChanged: () =>
+    set({
+      hasMoreSchedules: true,
+      generationError: null,
     }),
 
   setSelectedScheduleIndex: (idx) => set({ selectedScheduleIndex: idx }),

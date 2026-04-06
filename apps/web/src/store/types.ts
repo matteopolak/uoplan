@@ -127,6 +127,7 @@ export interface AppActions {
   setVirtualSectionsOnly: (value: boolean) => void;
   generateSchedules: (options?: { appendFirstOnly?: boolean }) => Promise<void>;
   clearGeneratedSchedules: () => void;
+  markBasicSettingsChanged: () => void;
   setSelectedScheduleIndex: (idx: number) => void;
   swapCourseInSchedule: (
     scheduleIndex: number,
