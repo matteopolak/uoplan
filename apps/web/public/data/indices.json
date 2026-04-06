@@ -13129,7 +13129,9 @@
     "MED 5911",
     "MED 5912",
     "MED 7910",
-    "MED 7911"
+    "MED 7911",
+    "ADM 8888",
+    "HIS 3791"
   ],
   "programs": [
     "undergrad/ba-specialise-bidisciplinaire-communication-lettres-francaises",
