@@ -47,7 +47,7 @@ export function BasicCalendarSidebarControls({
   const setBasicPinnedCourses = useAppStore((s) => s.setBasicPinnedCourses);
   const setBasicElectivesCount = useAppStore((s) => s.setBasicElectivesCount);
   const setBasicExcludedCategories = useAppStore((s) => s.setBasicExcludedCategories);
-  const clearGeneratedSchedules = useAppStore((s) => s.clearGeneratedSchedules);
+  const markBasicSettingsChanged = useAppStore((s) => s.markBasicSettingsChanged);
   const setLevelBuckets = useAppStore((s) => s.setLevelBuckets);
   const setLanguageBuckets = useAppStore((s) => s.setLanguageBuckets);
   const setElectiveLevelBuckets = useAppStore((s) => s.setElectiveLevelBuckets);
@@ -80,7 +80,7 @@ export function BasicCalendarSidebarControls({
 
       if (merged.length > completedCourses.length) {
         setCompletedCourses(merged);
-        clearGeneratedSchedules();
+        markBasicSettingsChanged();
       } else {
         setTranscriptError(tr("basicCalendar.transcript.error.noneAdded"));
       }
@@ -156,7 +156,7 @@ export function BasicCalendarSidebarControls({
           value={basicPinnedCourses}
           onChange={(v) => {
             setBasicPinnedCourses(v);
-            clearGeneratedSchedules();
+            markBasicSettingsChanged();
           }}
           filter={requiredCoursesFilter}
           radius={0}
@@ -170,7 +170,7 @@ export function BasicCalendarSidebarControls({
             const nextCount = Math.max(0, Math.min(8, Math.trunc(v)));
             if (nextCount === basicElectivesCount) return;
             setBasicElectivesCount(nextCount);
-            clearGeneratedSchedules();
+            markBasicSettingsChanged();
           }}
           min={0}
           max={8}
@@ -190,28 +190,28 @@ export function BasicCalendarSidebarControls({
             value: basicExcludedCategories,
             onChange: (v) => {
               setBasicExcludedCategories(v);
-              clearGeneratedSchedules();
+              markBasicSettingsChanged();
             },
           }}
           onChangeLevelBuckets={(buckets) => {
             setLevelBuckets(buckets);
-            clearGeneratedSchedules();
+            markBasicSettingsChanged();
           }}
           onChangeLanguageBuckets={(buckets) => {
             setLanguageBuckets(buckets);
-            clearGeneratedSchedules();
+            markBasicSettingsChanged();
           }}
           onChangeElectiveLevelBuckets={(buckets) => {
             setElectiveLevelBuckets(buckets);
-            clearGeneratedSchedules();
+            markBasicSettingsChanged();
           }}
           onIncludeClosedComponentsChange={(checked) => {
             setIncludeClosedComponents(checked);
-            clearGeneratedSchedules();
+            markBasicSettingsChanged();
           }}
           onVirtualSectionsOnlyChange={(checked) => {
             setVirtualSectionsOnly(checked);
-            clearGeneratedSchedules();
+            markBasicSettingsChanged();
           }}
         />
 
@@ -242,7 +242,7 @@ export function BasicCalendarSidebarControls({
             value={completedCourses}
             onChange={(v) => {
               setCompletedCourses(v);
-              clearGeneratedSchedules();
+              markBasicSettingsChanged();
             }}
             searchable
             clearable
