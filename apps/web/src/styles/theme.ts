@@ -128,6 +128,9 @@ export const theme = createTheme({
       }),
     },
     Modal: {
+      defaultProps: {
+        removeScrollProps: { removeScrollBar: false },
+      },
       styles: () => ({
         content: {
           border: '2px solid #1A1A1A',
