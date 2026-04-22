@@ -2,7 +2,6 @@ import { Badge, Group, Select, Stack, Text } from "@mantine/core";
 import type { SwapCandidateOption, SwapModalState, SwapResult } from "../../hooks/useSwapModal";
 
 export function SwapCourseDropdown({
-  scheduleIndex,
   modalState,
   loading,
   result,
@@ -12,7 +11,6 @@ export function SwapCourseDropdown({
   closeModal,
   onSwap,
 }: {
-  scheduleIndex: number;
   modalState: SwapModalState | null;
   loading: boolean;
   result: SwapResult;
@@ -20,7 +18,7 @@ export function SwapCourseDropdown({
   query: string;
   setQuery: (q: string) => void;
   closeModal: () => void;
-  onSwap: (scheduleIndex: number, enrollmentIndex: number, newCourseCode: string) => void;
+  onSwap: (enrollmentIndex: number, newCourseCode: string) => void;
 }) {
   if (loading) {
     return (
@@ -65,9 +63,10 @@ export function SwapCourseDropdown({
       onSearchChange={setQuery}
       nothingFoundMessage="No matches"
       maxDropdownHeight={260}
-      onChange={(v: string | null) => {
-        if (!v || v.startsWith("__rejected:") || !modalState) return;
-        onSwap(scheduleIndex, modalState.enrollmentIndex, v);
+      onChange={(val) => {
+        if (!val) return;
+        const original = modalState!.enrollmentIndex;
+        onSwap(original, val);
         closeModal();
       }}
       renderOption={({ option }) => {

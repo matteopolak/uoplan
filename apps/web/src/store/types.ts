@@ -63,27 +63,23 @@ export interface AppState {
   levelBuckets: CourseLevelBucket[];
   languageBuckets: CourseLanguageBucket[];
   electiveLevelBuckets: number[];
-  hasMoreSchedules: boolean;
-  generatedSchedules: GeneratedSchedule[];
+  currentSchedule: GeneratedSchedule | null;
   swapPool: string[];
   chosenCourseToRequirementId: Record<string, string>;
-  schedulePoolMaps: Record<string, string>[];
-  /** Per-schedule map of courseCode → colorIndex (0–7). */
-  scheduleColorMaps: Record<string, number>[];
-  selectedScheduleIndex: number;
+  currentPoolMap: Record<string, string>;
+  /** Map of courseCode → colorIndex (0–7) for current schedule. */
+  currentColorMap: Record<string, number>;
   generationError: GenerationErrorState | null;
   unassignedCompletedCourses: string[];
-  swapHistory: Array<{
-    scheduleIndex: number;
-    enrollmentIndex: number;
-    previousCourseCode: string;
-  }>;
+  /** Swaps applied to current schedule, indexed by enrollment position. */
+  currentSwaps: Array<{ enrollmentIndex: number; courseCode: string }>;
+  firstSeed: number;
+  currentSeed: number;
   generationMinStartMinutes: number;
   generationMaxEndMinutes: number;
   generationAllowedDays: DayOfWeek[];
   generationMinProfessorRating: number | null;
   professorRatings: ProfessorRatingsMap | null;
-  generationSeed: number;
   includeClosedComponents: boolean;
   /** When true, only virtual meeting times are kept per section for scheduling. */
   virtualSectionsOnly: boolean;
@@ -97,7 +93,7 @@ export interface AppActions {
   setBasicPinnedCourses: (courses: string[]) => void;
   setBasicElectivesCount: (count: number) => void;
   setBasicExcludedCategories: (categories: string[]) => void;
-  generateBasicSchedules: (options?: { appendFirstOnly?: boolean }) => Promise<void>;
+  generateBasicSchedules: () => Promise<void>;
   
   loadData: () => Promise<void>;
   setSelectedTermId: (termId: string) => Promise<void>;
@@ -125,19 +121,18 @@ export interface AppActions {
   setGenerationMinProfessorRating: (rating: number | null) => void;
   setIncludeClosedComponents: (value: boolean) => void;
   setVirtualSectionsOnly: (value: boolean) => void;
-  generateSchedules: (options?: { appendFirstOnly?: boolean }) => Promise<void>;
-  clearGeneratedSchedules: () => void;
+  generateSchedules: () => Promise<void>;
+  clearSchedule: () => void;
   markBasicSettingsChanged: () => void;
-  setSelectedScheduleIndex: (idx: number) => void;
+  goToPreviousSeed: () => Promise<void>;
+  goToNextSeed: () => Promise<void>;
+  randomizeSeed: () => Promise<void>;
   swapCourseInSchedule: (
-    scheduleIndex: number,
     enrollmentIndex: number,
     newCourseCode: string,
-    isUndo?: boolean,
   ) => Promise<void>;
   undoLastSwap: () => void;
   getSwapCandidates: (
-    scheduleIndex: number,
     enrollmentIndex: number,
   ) => {
     candidates: string[];

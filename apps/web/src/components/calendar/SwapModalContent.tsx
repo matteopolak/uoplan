@@ -6,7 +6,6 @@ import { SwapCourseDropdown } from "./SwapCourseDropdown";
 
 export function SwapModalContent({
   schedule,
-  scheduleIndex,
   modalState,
   result,
   loading,
@@ -19,7 +18,6 @@ export function SwapModalContent({
   onSwap,
 }: {
   schedule: GeneratedSchedule | null;
-  scheduleIndex: number;
   modalState: SwapModalState;
   result: SwapResult;
   loading: boolean;
@@ -29,7 +27,7 @@ export function SwapModalContent({
   closeModal: () => void;
   cache: DataCache | null;
   professorRatings: ProfessorRatingsMap | null;
-  onSwap: (scheduleIndex: number, enrollmentIndex: number, newCourseCode: string) => void;
+  onSwap: (enrollmentIndex: number, newCourseCode: string) => void;
 }) {
   const enrollment = schedule?.enrollments[modalState.enrollmentIndex];
 
@@ -84,7 +82,6 @@ export function SwapModalContent({
           Choose a course to replace it:
         </Text>
         <SwapCourseDropdown
-          scheduleIndex={scheduleIndex}
           modalState={modalState}
           loading={loading}
           result={result}

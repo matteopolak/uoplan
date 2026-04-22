@@ -61,8 +61,9 @@ function makeInput(overrides: Partial<EncodeInput> = {}): EncodeInput {
     languageBuckets: ['en', 'other'],
     electiveLevelBuckets: [1000, 2000],
     coursesThisSemester: 5,
-    selectedScheduleIndex: 2,
-    generationSeed: 0xdeadbeef,
+    firstSeed: 0xdeadbeef,
+    currentSeed: 0xdeadbef0,
+    swaps: [],
     selectedPerRequirement: {},
     selectedOptionsPerRequirement: {},
     constrainedPerRequirement: {},
@@ -127,8 +128,9 @@ describe('encodeState / decodeState roundtrip', () => {
     expect(decoded.languageBuckets).toEqual(['en', 'other']);
     expect(decoded.electiveLevelBuckets).toEqual([1000, 2000]);
     expect(decoded.coursesThisSemester).toBe(5);
-    expect(decoded.selectedScheduleIndex).toBe(2);
-    expect(decoded.generationSeed).toBe(0xdeadbeef >>> 0);
+    expect(decoded.firstSeed).toBe(0xdeadbeef >>> 0);
+    expect(decoded.currentSeed).toBe(0xdeadbef0 >>> 0);
+    expect(decoded.swaps).toEqual([]);
     expect(decoded.includeClosedComponents).toBe(false);
     expect(decoded.virtualSectionsOnly).toBe(false);
     expect(decoded.studentPrograms).toEqual(['CSI', 'MAT']);

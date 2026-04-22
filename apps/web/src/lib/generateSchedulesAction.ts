@@ -3,7 +3,6 @@ import type { GenerationErrorDetails, GenerationErrorState } from "../store/type
 import type { DataCache } from "schedule";
 import { createSeededRng } from "schedule";
 import {
-  generateSchedules as genSchedules,
   generateSchedulesWithPinned,
   getValidSectionCombos,
   type GeneratedSchedule,
@@ -39,7 +38,7 @@ import {
 } from "schedule";
 import { collectImplicitHonoursForSchedule } from "./implicitHonours";
 import { diagnoseTimetableFailure, type TimetableFailureDiagnostics } from "schedule";
-import { buildColorMap, buildColorMaps } from "./colorMap";
+import { buildColorMap } from "./colorMap";
 import {
   isElectiveRequirementType,
   isWithinElectiveLevelCap,
@@ -68,12 +67,6 @@ function candidateWeight(level: number, hasNonCoursePrereq: boolean): number {
   return w;
 }
 
-/**
- * Walks the requirement tree following the user's option selections and
- * collects requirements (with candidateCourses) that are inside selected
- * option branches but NOT yet in remainingRequirements (because they were
- * processed with dryRun:true and never added to the flat list).
- */
 function collectRequirementsFromSelectedBranches(
   nodes: RequirementWithStatus[],
   selectedOptions: Record<string, number>,
@@ -84,7 +77,6 @@ function collectRequirementsFromSelectedBranches(
     if (node.complete) continue;
     const isOrLike = node.type === "or_group" || node.type === "options_group";
     if (isOrLike && node.requirementId != null) {
-      // Follow only the selected branch; skip if no selection yet.
       const sel = selectedOptions[node.requirementId];
       if (sel != null && node.options?.[sel]) {
         result.push(
@@ -96,7 +88,6 @@ function collectRequirementsFromSelectedBranches(
         );
       }
     } else {
-      // Add this node if it is a trackable leaf requirement.
       if (
         node.requirementId != null &&
         !existingIds.has(node.requirementId) &&
@@ -113,7 +104,6 @@ function collectRequirementsFromSelectedBranches(
           satisfiedBy: node.satisfiedBy ?? [],
         });
       }
-      // Always recurse into children of container nodes (e.g. and_group).
       if (node.options?.length) {
         result.push(
           ...collectRequirementsFromSelectedBranches(
@@ -166,25 +156,21 @@ function generationErrorState(
 }
 
 interface GenerateSchedulesResult {
-  generatedSchedules: GeneratedSchedule[];
+  currentSchedule: GeneratedSchedule | null;
   swapPool: string[];
   chosenCourseToRequirementId: Record<string, string>;
-  schedulePoolMaps: Record<string, string>[];
-  scheduleColorMaps: Record<string, number>[];
-  selectedScheduleIndex: number;
-  swapHistory: never[];
+  currentPoolMap: Record<string, string>;
+  currentColorMap: Record<string, number>;
   generationError: GenerationErrorState | null;
-  hasMoreSchedules: boolean;
 }
 
 export async function generateSchedulesAction(
   state: AppState,
-  options?: { appendFirstOnly?: boolean }
 ): Promise<GenerateSchedulesResult | null> {
   if (state.wizardMode === "basic") {
-    return await handleBasicGeneration(state, options);
+    return await handleBasicGeneration(state);
   }
-  const appendFirstOnly = options?.appendFirstOnly ?? false;
+
   const {
     cache,
     remainingRequirements,
@@ -204,12 +190,12 @@ export async function generateSchedulesAction(
     generationAllowedDays,
     generationMinProfessorRating,
     professorRatings,
-    generationSeed,
+    currentSeed,
+    firstSeed,
     includeClosedComponents,
     virtualSectionsOnly,
     generationLimitFirstYearCredits,
     generationCompressedSchedule,
-    scheduleColorMaps: existingColorMaps,
   } = state;
 
   if (!cache) {
@@ -217,8 +203,9 @@ export async function generateSchedulesAction(
   }
   const cacheVal = cache;
 
-  // Supplement remainingRequirements with any branch slots still missing from the
-  // flat list (defensive; computeRequirementsState usually includes selected branches).
+  // Ensure we have a valid seed
+  const effectiveSeed = currentSeed || firstSeed;
+
   const existingReqIds = new Set(
     remainingRequirements
       .map((r) => r.requirementId)
@@ -244,8 +231,6 @@ export async function generateSchedulesAction(
     if (req.requirementId) requirementTypeById.set(req.requirementId, req.type);
   }
 
-  // Closed-only: virtual filtering is applied per course (depending on pool type
-  // and explicit exemptions) when selecting candidates / generating timetables.
   const effectiveCache = cacheWithClosedFilter(
     cacheVal,
     includeClosedComponents,
@@ -261,14 +246,11 @@ export async function generateSchedulesAction(
         ? ` (+${unassigned.length - previewLimit} more)`
         : "";
     return {
-      generatedSchedules: state.generatedSchedules,
-      swapPool: state.swapPool,
-      chosenCourseToRequirementId: state.chosenCourseToRequirementId,
-      schedulePoolMaps: state.schedulePoolMaps,
-      scheduleColorMaps: existingColorMaps,
-      selectedScheduleIndex: state.selectedScheduleIndex,
-      swapHistory: [],
-      hasMoreSchedules: state.hasMoreSchedules,
+      currentSchedule: null,
+      swapPool: [],
+      chosenCourseToRequirementId: {},
+      currentPoolMap: {},
+      currentColorMap: {},
       generationError: generationErrorState(
         `You have ${unassigned.length} completed course${
           unassigned.length === 1 ? "" : "s"
@@ -280,8 +262,8 @@ export async function generateSchedulesAction(
     };
   }
 
-  const existingScheduleCount = appendFirstOnly ? state.generatedSchedules.length : 0;
-  const rng = createSeededRng(((generationSeed >>> 0) + existingScheduleCount) >>> 0);
+  // Use currentSeed directly for deterministic generation
+  const rng = createSeededRng(effectiveSeed >>> 0);
 
   const completedFirstYearCredits = completedCourses.reduce((sum, code) => {
     const m = code.match(/\d{4}/);
@@ -305,9 +287,6 @@ export async function generateSchedulesAction(
   const completedSet = new Set(completedCourses.map(normalizeCourseCode));
   const prereqEligibleSet = new Set(prereqEligibleCourses);
 
-  // Honours projects: count toward semester load and are pinned (no timetable).
-  // Include both Constrain-step picks and Assign-step selections — users often
-  // only assign the thesis on the requirements tree without re-picking Constrain.
   const allConstrained = Object.values(constrainedPerRequirement).flat();
   const uniqueConstrained = [...new Set(allConstrained)];
   const honoursSelected: string[] = [];
@@ -353,7 +332,6 @@ export async function generateSchedulesAction(
   const honoursCount = honoursSelected.length;
   const effectiveTarget = Math.max(0, coursesThisSemester - honoursCount);
 
-  /** Schedulable non-honours constrained courses (union E). */
   const explicitUnion: string[] = [];
   const explicitSet = new Set<string>();
   for (const code of uniqueConstrained) {
@@ -396,7 +374,6 @@ export async function generateSchedulesAction(
     return undefined;
   }
 
-  /** Requirement a pinned course is tied to (Constrain first, else Assign, else implicit honours). */
   function requirementIdForPinnedCourse(code: string): string | undefined {
     const fromConstrain = requirementIdForConstrainedCode(code);
     if (fromConstrain != null) return fromConstrain;
@@ -461,14 +438,11 @@ export async function generateSchedulesAction(
 
   if (missingOptionGroups.length > 0) {
     return {
-      generatedSchedules: state.generatedSchedules,
-      swapPool: state.swapPool,
-      chosenCourseToRequirementId: state.chosenCourseToRequirementId,
-      schedulePoolMaps: state.schedulePoolMaps,
-      scheduleColorMaps: state.scheduleColorMaps,
-      selectedScheduleIndex: state.selectedScheduleIndex,
-      swapHistory: [],
-      hasMoreSchedules: state.hasMoreSchedules,
+      currentSchedule: null,
+      swapPool: [],
+      chosenCourseToRequirementId: {},
+      currentPoolMap: {},
+      currentColorMap: {},
       generationError: generationErrorState(
         "Complete Assign requirements before generating schedules.",
       ),
@@ -485,9 +459,8 @@ export async function generateSchedulesAction(
   ).length;
   const remainingNeeded = Math.max(0, effectiveTarget - nonHonoursPinnedCount);
   let filteredOptionalPool: string[] = [];
-  let finalSchedules: GeneratedSchedule[] = [];
-  let lastChosenFromPool: Record<string, string> = {};
-  let finalPoolMaps: Record<string, string>[] = [];
+  let finalPoolMap: Record<string, string> = {};
+  let foundSchedule: GeneratedSchedule | null = null;
   let poolDiagnostics: {
     emptyPools: Array<{ label: string; requirementId?: string; candidateCourses?: string[] }>;
     totalAvailable: number;
@@ -524,9 +497,6 @@ export async function generateSchedulesAction(
     return true;
   }
 
-  
-  let hasMore = false;
-
   if (remainingNeeded > 0) {
     const allPools = buildRequirementPools(effectiveRemainingRequirements);
 
@@ -538,9 +508,6 @@ export async function generateSchedulesAction(
           selectedPerRequirement[pool.requirementId] ?? [];
         let pinnedCredits = 0;
         for (const code of pinned) {
-          // Count each pinned course toward at most one requirement: the one it is
-          // constrained to in Constrain. Otherwise the same code (e.g. honours thesis)
-          // often appears in many pools' candidate lists and would zero out every pool.
           const primaryReqId = requirementIdForPinnedCourse(code);
           if (primaryReqId != null) {
             if (pool.requirementId !== primaryReqId) continue;
@@ -659,10 +626,6 @@ export async function generateSchedulesAction(
       poolCaps,
     );
 
-    // Redistribution alternatives that specifically defer a higher-level required
-    // course (all its eligible candidates are 2000+) in favour of more electives.
-    // These are tried randomly on every attempt, not just on failure, so generated
-    // schedules sometimes omit the high-level requirement instead of always including it.
     const highLevelPoolIds = new Set<string>();
     for (const pool of pools) {
       if (isBroadElectivePoolType(pool.type)) continue;
@@ -678,12 +641,9 @@ export async function generateSchedulesAction(
       ),
     );
 
-    const maxAttempts = appendFirstOnly ? 100 : 300;
-    const targetUniqueSchedules = appendFirstOnly ? 1 : 5;
+    const maxAttempts = 300;
     const seenCourseSets = new Set<string>();
-    const collectedSchedules: GeneratedSchedule[] = [];
-    const collectedPoolMaps: Record<string, string>[] = [];
-    let lastFilteredPool: string[] = [];
+    let chosenFromPool: Record<string, string> = {};
 
     type PoolPickFailureDetail = {
       poolRequirementId: string;
@@ -724,11 +684,6 @@ export async function generateSchedulesAction(
       };
     }
 
-    /**
-     * Picks courses across pools in level passes: exhaust 1000-level options
-     * first, then allow up to 2000, etc., then a final unrestricted pass
-     * (unparseable codes only match the last pass).
-     */
     function runPoolPickPass(
       perPoolNeed: Map<string, number>,
     ): PoolPickPassResult {
@@ -752,6 +707,7 @@ export async function generateSchedulesAction(
       for (const pool of pools) {
         const r = remaining.get(pool.requirementId) ?? 0;
         if (r <= 0) continue;
+
         const constrainedForPool =
           constrainedPerRequirement[pool.requirementId] ?? [];
         const S = constrainedForPool.filter((code) =>
@@ -761,11 +717,13 @@ export async function generateSchedulesAction(
         const candidates =
           candidatesByRequirement.get(pool.requirementId) ?? [];
         const G = candidates.filter((code) => !sSet.has(code));
+
         const SAvail = S.filter((code) => !chosenCodes.has(code));
         let GAvail = G.filter((code) => !chosenCodes.has(code));
         if (explicitOnly) {
           GAvail = GAvail.filter((code) => explicitSet.has(code));
         }
+
         const needS = Math.min(r, SAvail.length);
         const needG = r - needS;
         if (needG > GAvail.length) {
@@ -811,11 +769,6 @@ export async function generateSchedulesAction(
           const pickFromS = needS > 0;
           const list = pickFromS ? SAvail : GAvail;
 
-          // Count how many courses share each level bucket in this pool's list,
-          // so that the total weight per bucket is fixed regardless of how many
-          // courses exist at that level. Without this, a pool with 50 × 2000-level
-          // courses would dominate over 5 × 1000-level ones even with per-course
-          // level weights.
           const levelCounts = new Map<number, number>();
           for (const code of list) {
             const lv = levelSortKey(code);
@@ -878,17 +831,15 @@ export async function generateSchedulesAction(
       return { ok: true, chosenFromPool };
     }
 
+    let lastFilteredPool: string[] = [];
+
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    
-    if (collectedSchedules.length >= targetUniqueSchedules) break;
-      
+      if (foundSchedule) break;
+
       for (const list of candidatesByRequirement.values()) {
         shuffleInPlace(list, rng);
       }
 
-      // Randomly choose whether to defer a high-level required course to a later
-      // semester and instead take an extra elective. Each attempt picks uniformly
-      // from: [base allocation, ...high-level redistribution alternatives].
       const allocationPool =
         highLevelRedistAlts.length > 0
           ? [coursesPerPool, ...highLevelRedistAlts]
@@ -899,11 +850,9 @@ export async function generateSchedulesAction(
       let pickPass: PoolPickPassResult = runPoolPickPass(firstAlloc);
 
       if (!pickPass.ok) {
-        // Try base allocation if we started with a redistribution
         if (firstAlloc !== coursesPerPool) {
           pickPass = runPoolPickPass(coursesPerPool);
         }
-        // Try remaining redistribution alternatives
         if (!pickPass.ok) {
           for (const alt of redistributionAlts) {
             if (alt === firstAlloc) continue;
@@ -919,7 +868,7 @@ export async function generateSchedulesAction(
         continue;
       }
 
-      const chosenFromPool = pickPass.chosenFromPool;
+      chosenFromPool = pickPass.chosenFromPool;
       const chosenCodes = new Set<string>(pinned);
       for (const code of Object.keys(chosenFromPool)) {
         chosenCodes.add(code);
@@ -931,12 +880,10 @@ export async function generateSchedulesAction(
 
       const slotsFromOptional = coursesThisSemester - pinned.length;
       if (optionalPool.length < slotsFromOptional) {
-        // Keep the best partial pick so diagnostics and swapPool reflect optional
-        // courses we could schedule, not an empty list after `break`.
         if (optionalPool.length > lastFilteredPool.length) {
           lastFilteredPool = optionalPool;
         }
-        break;
+        continue;
       }
 
       lastFilteredPool = optionalPool;
@@ -958,14 +905,14 @@ export async function generateSchedulesAction(
         },
       );
 
-      const limit = 1;
       const batch = pinned.length === 0
-        ? genSchedules(
+        ? generateSchedulesWithPinned(
             lastFilteredPool,
+            [],
             coursesThisSemester,
             attemptCache,
             constraints,
-            limit
+            1
           )
         : generateSchedulesWithPinned(
             pinned,
@@ -973,28 +920,20 @@ export async function generateSchedulesAction(
             coursesThisSemester,
             attemptCache,
             constraints,
-            limit
+            1
           );
 
-      const fullBatch = batch;
-      if (fullBatch.length === 0) {
-        continue;
+      if (batch.length > 0) {
+        const fingerprint = batch[0].enrollments
+          .map((e) => e.courseCode)
+          .sort()
+          .join(",");
+        if (!seenCourseSets.has(fingerprint)) {
+          seenCourseSets.add(fingerprint);
+          foundSchedule = batch[0];
+        }
       }
-
-      const fingerprint = fullBatch[0].enrollments
-        .map((e) => e.courseCode)
-        .sort()
-        .join(",");
-      if (seenCourseSets.has(fingerprint)) continue;
-      seenCourseSets.add(fingerprint);
-      collectedSchedules.push(fullBatch[0]);
-      collectedPoolMaps.push(chosenFromPool);
     }
-
-    finalSchedules = collectedSchedules;
-    finalPoolMaps = collectedPoolMaps;
-    hasMore = collectedSchedules.length === targetUniqueSchedules;
-    lastChosenFromPool = collectedPoolMaps[0] ?? {};
 
     filteredOptionalPool = lastFilteredPool;
 
@@ -1012,48 +951,31 @@ export async function generateSchedulesAction(
 
   if (remainingNeeded <= 0) {
     filteredOptionalPool = [];
-    const limit = appendFirstOnly ? 1 : 25;
-    finalSchedules = pinned.length === 0
-      ? genSchedules([], coursesThisSemester, effectiveCache, constraints, limit)
+    const batch = pinned.length === 0
+      ? generateSchedulesWithPinned([], [], coursesThisSemester, effectiveCache, constraints, 1)
       : generateSchedulesWithPinned(
           pinned,
           [],
           coursesThisSemester,
           effectiveCache,
           constraints,
-          limit
+          1
         );
-    finalPoolMaps = finalSchedules.map(() => ({}));
+    if (batch.length > 0) {
+      finalPoolMap = {};
+      foundSchedule = batch[0];
+    }
   }
 
   const optionalSlotsNeeded = coursesThisSemester - pinned.length;
   if (filteredOptionalPool.length < optionalSlotsNeeded) {
-    if (appendFirstOnly) {
-      return {
-        generatedSchedules: state.generatedSchedules,
-        swapPool: state.swapPool,
-        chosenCourseToRequirementId: state.chosenCourseToRequirementId,
-        schedulePoolMaps: state.schedulePoolMaps,
-        scheduleColorMaps: existingColorMaps,
-        selectedScheduleIndex: state.selectedScheduleIndex,
-        swapHistory: [],
-        hasMoreSchedules: false,
-        generationError: generationErrorState(
-          "Not enough courses for another schedule.",
-          poolDiagnostics,
-        ),
-      };
-    }
     const swapPool = [...new Set([...pinned, ...filteredOptionalPool])];
     return {
-      generatedSchedules: [],
+      currentSchedule: null,
       swapPool,
-      chosenCourseToRequirementId: {},
-      schedulePoolMaps: [],
-      scheduleColorMaps: existingColorMaps,
-      selectedScheduleIndex: 0,
-      swapHistory: [],
-      hasMoreSchedules: false,
+      chosenCourseToRequirementId: finalPoolMap,
+      currentPoolMap: finalPoolMap,
+      currentColorMap: {},
       generationError: generationErrorState(
         "Not enough courses match your filters.",
         poolDiagnostics,
@@ -1061,115 +983,53 @@ export async function generateSchedulesAction(
     };
   }
 
-  const swapPool = [...new Set([...pinned, ...filteredOptionalPool])];
-  const limitedSchedules = finalSchedules;
-  const limitedPoolMaps = finalPoolMaps;
-
-  if (appendFirstOnly && limitedSchedules.length > 0) {
-    const newSchedules = [...state.generatedSchedules, limitedSchedules[0]];
-    const newPoolMaps = [...state.schedulePoolMaps, limitedPoolMaps[0]];
-    const newSwapPool = [
-      ...new Set([
-        ...state.swapPool,
-        ...limitedSchedules[0].enrollments.map((e) => e.courseCode),
-      ]),
-    ];
-    const prevColorMap = existingColorMaps[existingColorMaps.length - 1] ?? {};
-    const newColorMaps = [...existingColorMaps, buildColorMap(limitedSchedules[0], prevColorMap)];
-    return {
-      generatedSchedules: newSchedules,
-      swapPool: newSwapPool,
-      chosenCourseToRequirementId: state.chosenCourseToRequirementId,
-      schedulePoolMaps: newPoolMaps,
-      scheduleColorMaps: newColorMaps,
-      selectedScheduleIndex: newSchedules.length - 1,
-      swapHistory: [],
-      hasMoreSchedules: hasMore,
-      generationError: null,
-    };
-  }
-
-  const diagnosticsCache = cacheWithPerCourseVirtualFilter(
-    cacheVal,
-    includeClosedComponents,
-    (code) => {
-      const reqId =
-        lastChosenFromPool[code] ?? requirementIdForPinnedCourse(code);
-      const reqType = reqId ? requirementTypeById.get(reqId) : undefined;
-      return virtualScheduleFilterApplies(
-        virtualSectionsOnly,
-        reqType,
-        code,
-        explicitExemptNormalized,
-      );
-    },
-  );
-
-  if (appendFirstOnly && limitedSchedules.length === 0) {
+  if (!foundSchedule) {
     const { details, timetableFailure } = buildTimetableFailureDiagnostics(
       poolDiagnostics,
       pinned,
       filteredOptionalPool,
       coursesThisSemester,
-      diagnosticsCache,
-      constraints,
-    );
-    return {
-      generatedSchedules: state.generatedSchedules,
-      swapPool: state.swapPool,
-      chosenCourseToRequirementId: state.chosenCourseToRequirementId,
-      schedulePoolMaps: state.schedulePoolMaps,
-      scheduleColorMaps: existingColorMaps,
-      selectedScheduleIndex: state.selectedScheduleIndex,
-      swapHistory: [],
-      hasMoreSchedules: false,
-      generationError: generationErrorState(
-        `${timetableFailure.leadMessage} Couldn't find another combination.`,
-        details,
+      cacheWithPerCourseVirtualFilter(
+        cacheVal,
+        includeClosedComponents,
+        (code) => {
+          const reqId = finalPoolMap[code] ?? requirementIdForPinnedCourse(code);
+          const reqType = reqId ? requirementTypeById.get(reqId) : undefined;
+          return virtualScheduleFilterApplies(
+            virtualSectionsOnly,
+            reqType,
+            code,
+            explicitExemptNormalized,
+          );
+        },
       ),
-    };
-  }
-
-  if (limitedSchedules.length === 0) {
-    const { details, timetableFailure } = buildTimetableFailureDiagnostics(
-      poolDiagnostics,
-      pinned,
-      filteredOptionalPool,
-      coursesThisSemester,
-      diagnosticsCache,
       constraints,
     );
+    const swapPool = [...new Set([...pinned, ...filteredOptionalPool])];
     return {
-      generatedSchedules: limitedSchedules,
+      currentSchedule: null,
       swapPool,
-      chosenCourseToRequirementId: lastChosenFromPool,
-      schedulePoolMaps: limitedPoolMaps,
-      scheduleColorMaps: [],
-      selectedScheduleIndex: 0,
-      swapHistory: [],
-      hasMoreSchedules: false,
+      chosenCourseToRequirementId: finalPoolMap,
+      currentPoolMap: finalPoolMap,
+      currentColorMap: {},
       generationError: generationErrorState(timetableFailure.leadMessage, details),
     };
   }
 
+  const swapPool = [...new Set([...pinned, ...filteredOptionalPool])];
   return {
-    generatedSchedules: limitedSchedules,
+    currentSchedule: foundSchedule,
     swapPool,
-    chosenCourseToRequirementId: lastChosenFromPool,
-    schedulePoolMaps: limitedPoolMaps,
-    scheduleColorMaps: buildColorMaps(limitedSchedules),
-    selectedScheduleIndex: 0,
-    swapHistory: [],
-    hasMoreSchedules: hasMore,
+    chosenCourseToRequirementId: finalPoolMap,
+    currentPoolMap: finalPoolMap,
+    currentColorMap: buildColorMap(foundSchedule, {}),
     generationError: null,
   };
 }
 
 async function handleBasicGeneration(
   state: AppState,
-  options?: { appendFirstOnly?: boolean }
 ): Promise<GenerateSchedulesResult | null> {
-  const appendFirstOnly = options?.appendFirstOnly ?? false;
   const {
     cache,
     basicPinnedCourses,
@@ -1183,10 +1043,10 @@ async function handleBasicGeneration(
     generationAllowedDays,
     generationMinProfessorRating,
     professorRatings,
-    generationSeed,
+    currentSeed,
+    firstSeed,
     includeClosedComponents,
     virtualSectionsOnly,
-    scheduleColorMaps: existingColorMaps,
     completedCourses,
     studentPrograms,
   } = state;
@@ -1204,8 +1064,8 @@ async function handleBasicGeneration(
     (code) => virtualSectionsOnly && !pinnedNormalized.has(normalizeCourseCode(code)),
   );
 
-  const existingScheduleCount = appendFirstOnly ? state.generatedSchedules.length : 0;
-  const rng = createSeededRng(((generationSeed >>> 0) + existingScheduleCount) >>> 0);
+  const effectiveSeed = currentSeed || firstSeed;
+  const rng = createSeededRng(effectiveSeed >>> 0);
 
   const constraints: GenerationConstraints = {
     minStartMinutes: generationMinStartMinutes,
@@ -1216,20 +1076,18 @@ async function handleBasicGeneration(
   };
 
   const targetCount = pinned.length + basicElectivesCount;
-  
+
   const optionalPool: string[] = [];
   const excludedPrefixes = basicExcludedCategories.map((c) => c.toLowerCase());
   const filters = { levels: levelBuckets, languageBuckets };
-  
+
   const prereqCtx = buildPrereqContext(completedCourses, baseCache, studentPrograms);
 
-  
   for (const course of cache.getAllCourses()) {
-    
     const code = course.code;
     if (!courseMatchesFilters(code, filters)) continue;
     if (!isWithinElectiveLevelBuckets(code, electiveLevelBuckets)) continue;
-    
+
     const prefixMatch = code.match(/^([A-Z]{3,4})/i);
     const prefix = prefixMatch ? prefixMatch[1].toLowerCase() : "";
     if (excludedPrefixes.includes(prefix)) continue;
@@ -1243,59 +1101,29 @@ async function handleBasicGeneration(
     } else {
       if (course.prerequisites || course.prereqText) continue;
     }
-    
+
     if (pinned.includes(code)) continue;
-    
+
     const sched = effectiveCache.getSchedule(code);
     if (!sched) continue;
-    
+
     if (getValidSectionCombos(sched, constraints).length === 0) continue;
-    
+
     optionalPool.push(code);
   }
-  
+
   shuffleInPlace(optionalPool, rng);
 
-  
-  const limit = appendFirstOnly ? 1 : 25;
   const batch = generateSchedulesWithPinned(
     pinned,
     optionalPool,
     targetCount,
     effectiveCache,
     constraints,
-    limit
+    1,
   );
-  
-  const finalSchedules = batch;
-  const swapPool = [...new Set([...pinned, ...optionalPool])];
-  const limitedSchedules = finalSchedules;
-  const hasMore = limitedSchedules.length === limit;
 
-  if (appendFirstOnly && limitedSchedules.length > 0) {
-    const newSchedules = [...state.generatedSchedules, limitedSchedules[0]];
-    const newSwapPool = [
-      ...new Set([
-        ...state.swapPool,
-        ...limitedSchedules[0].enrollments.map((e) => e.courseCode),
-      ]),
-    ];
-    const prevColorMap = existingColorMaps[existingColorMaps.length - 1] ?? {};
-    const newColorMaps = [...existingColorMaps, buildColorMap(limitedSchedules[0], prevColorMap)];
-    return {
-      generatedSchedules: newSchedules,
-      swapPool: newSwapPool,
-      chosenCourseToRequirementId: {},
-      schedulePoolMaps: [],
-      scheduleColorMaps: newColorMaps,
-      selectedScheduleIndex: newSchedules.length - 1,
-      swapHistory: [],
-      hasMoreSchedules: hasMore,
-      generationError: null,
-    };
-  }
-
-  if (limitedSchedules.length === 0) {
+  if (batch.length === 0) {
     const timetableFailure = diagnoseTimetableFailure({
       pinnedCourseCodes: pinned,
       optionalCourseCodes: optionalPool,
@@ -1303,37 +1131,32 @@ async function handleBasicGeneration(
       cache: effectiveCache,
       constraints,
     });
-    
+
     return {
-      generatedSchedules: limitedSchedules,
-      swapPool,
+      currentSchedule: null,
+      swapPool: [...new Set([...pinned, ...optionalPool])],
       chosenCourseToRequirementId: {},
-      schedulePoolMaps: [],
-      scheduleColorMaps: [],
-      selectedScheduleIndex: 0,
-      swapHistory: [],
-      hasMoreSchedules: false,
+      currentPoolMap: {},
+      currentColorMap: {},
       generationError: {
         message: timetableFailure.leadMessage,
         details: {
           emptyPools: [],
           totalAvailable: pinned.length + optionalPool.length,
           totalNeeded: targetCount,
-          timetableFailure
-        }
+          timetableFailure,
+        },
       },
     };
   }
 
+  const swapPool = [...new Set([...pinned, ...optionalPool])];
   return {
-    generatedSchedules: limitedSchedules,
+    currentSchedule: batch[0],
     swapPool,
     chosenCourseToRequirementId: {},
-    schedulePoolMaps: [],
-    scheduleColorMaps: buildColorMaps(limitedSchedules),
-    selectedScheduleIndex: 0,
-    swapHistory: [],
-    hasMoreSchedules: hasMore,
+    currentPoolMap: {},
+    currentColorMap: buildColorMap(batch[0], {}),
     generationError: null,
   };
 }

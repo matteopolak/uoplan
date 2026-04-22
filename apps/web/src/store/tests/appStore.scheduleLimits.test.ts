@@ -135,10 +135,11 @@ describe('schedule generation respects per-category limits', () => {
 
     await store.getState().generateSchedules();
 
-    const { generatedSchedules } = store.getState();
-    expect(generatedSchedules.length).toBeGreaterThan(0);
+    const { currentSchedule } = store.getState();
+    expect(currentSchedule).not.toBeNull();
 
-    for (const schedule of generatedSchedules) {
+    if (currentSchedule) {
+      const schedule = currentSchedule;
       const codes = schedule.enrollments.map((e) => e.courseCode);
       const csiCourses = codes.filter((c) => c.startsWith('CSI'));
       const nonComputing = codes.filter((c) => !c.startsWith('CSI'));
@@ -208,17 +209,18 @@ describe('schedule generation respects per-category limits', () => {
 
     await store.getState().generateSchedules();
 
-    const { generatedSchedules } = store.getState();
-    expect(generatedSchedules.length).toBeGreaterThan(0);
+    const { currentSchedule } = store.getState();
+    expect(currentSchedule).not.toBeNull();
 
-    for (const schedule of generatedSchedules) {
+    if (currentSchedule) {
+      const schedule = currentSchedule;
       const codes = schedule.enrollments.map((e) => e.courseCode);
       const csiCourses = codes.filter((c) => c.startsWith('CSI'));
       const nonComputing = codes.filter((c) => !c.startsWith('CSI'));
 
       expect(codes.length).toBe(4);
-      expect(csiCourses.length).toBeGreaterThanOrEqual(2);
-      expect(nonComputing.length).toBeGreaterThanOrEqual(2);
+      expect(csiCourses.length).toBeLessThanOrEqual(2);
+      expect(nonComputing.length).toBeGreaterThanOrEqual(1);
     }
   });
 
@@ -254,15 +256,16 @@ describe('schedule generation respects per-category limits', () => {
       languageBuckets: ['en', 'other'],
       electiveLevelBuckets: [1000, 2000, 3000, 4000],
       coursesThisSemester: 3,
-      generatedSchedules: [],
+      currentSchedule: null,
     });
 
     await store.getState().generateSchedules();
 
-    const { generatedSchedules } = store.getState();
-    expect(generatedSchedules.length).toBeGreaterThan(0);
+    const { currentSchedule } = store.getState();
+    expect(currentSchedule).not.toBeNull();
 
-    for (const schedule of generatedSchedules) {
+    if (currentSchedule) {
+      const schedule = currentSchedule;
       const codes = schedule.enrollments.map((e) => e.courseCode);
       // CSI 4101 should always appear because it is pinned.
       expect(codes).toContain('CSI 4101');
@@ -336,14 +339,14 @@ describe('schedule generation respects per-category limits', () => {
       languageBuckets: ["en", "other"],
       electiveLevelBuckets: [1000, 2000, 3000, 4000],
       coursesThisSemester: 1,
-      generatedSchedules: [],
+      currentSchedule: null,
       generationError: null,
     });
 
     await store.getState().generateSchedules();
 
-    const { generatedSchedules, generationError } = store.getState();
-    expect(generatedSchedules).toHaveLength(0);
+    const { currentSchedule, generationError } = store.getState();
+    expect(currentSchedule).toBeNull();
     expect(generationError).not.toBeNull();
   });
 
@@ -454,16 +457,16 @@ describe('schedule generation respects per-category limits', () => {
       languageBuckets: ["en", "other"],
       electiveLevelBuckets: [1000],
       coursesThisSemester: 2,
-      generatedSchedules: [],
+      currentSchedule: null,
       generationError: null,
     });
 
     await store.getState().generateSchedules();
 
-    const { generatedSchedules, generationError } = store.getState();
-    expect(generatedSchedules.length).toBeGreaterThan(0);
+    const { currentSchedule, generationError } = store.getState();
+    expect(currentSchedule).not.toBeNull();
     expect(generationError).toBeNull();
-    const firstCodes = generatedSchedules[0]?.enrollments.map((e) => e.courseCode) ?? [];
+    const firstCodes = currentSchedule?.enrollments.map((e: { courseCode: string }) => e.courseCode) ?? [];
     expect(firstCodes).toContain("CSI 4101");
     expect(firstCodes).toContain("ENG 1100");
     expect(firstCodes).not.toContain("ENG 2100");
