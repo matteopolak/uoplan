@@ -53,8 +53,9 @@ export interface EncodeInput {
   languageBuckets: CourseLanguageBucket[];
   electiveLevelBuckets: number[];
   coursesThisSemester: number;
-  selectedScheduleIndex: number;
-  generationSeed: number;
+  firstSeed: number;
+  currentSeed: number;
+  swaps: Array<{ enrollmentIndex: number; courseCode: string }>;
   selectedPerRequirement: Record<string, string[]>;
   selectedOptionsPerRequirement: Record<string, number>;
   constrainedPerRequirement: Record<string, string[]>;
@@ -89,8 +90,9 @@ export interface DecodedState {
   languageBuckets: CourseLanguageBucket[];
   electiveLevelBuckets: number[];
   coursesThisSemester: number;
-  selectedScheduleIndex: number;
-  generationSeed: number;
+  firstSeed: number;
+  currentSeed: number;
+  swaps: Array<{ enrollmentIndex: number; courseCode: string }>;
   optionSelections: Array<{ reqIndex: number; optionIndex: number }>;
   courseSelections: Array<{ reqIndex: number; courseCodes: string[] }>;
   constrainedSelections: Array<{ reqIndex: number; courseCodes: string[] }>;
@@ -200,8 +202,12 @@ export function encodeState(
     electiveLevelBuckets: input.electiveLevelBuckets,
     
     coursesThisSemester: input.coursesThisSemester,
-    selectedScheduleIndex: input.selectedScheduleIndex,
-    generationSeed: input.generationSeed,
+    firstSeed: input.firstSeed,
+    currentSeed: input.currentSeed,
+    swaps: input.swaps.map(s => ({
+      enrollmentIndex: s.enrollmentIndex,
+      courseCodeIndex: courseCodeToIndex.get(s.courseCode) ?? 0,
+    })),
 
     optionSelections: [],
     courseSelections: [],
@@ -364,8 +370,12 @@ export function decodeState(
     electiveLevelBuckets: state.electiveLevelBuckets,
     
     coursesThisSemester: state.coursesThisSemester,
-    selectedScheduleIndex: state.selectedScheduleIndex,
-    generationSeed: state.generationSeed,
+    firstSeed: state.firstSeed,
+    currentSeed: state.currentSeed,
+    swaps: state.swaps.map(s => ({
+      enrollmentIndex: s.enrollmentIndex,
+      courseCode: indices.courses[s.courseCodeIndex] ?? '',
+    })),
     
     optionSelections: state.optionSelections.map(o => ({ reqIndex: o.reqIndex, optionIndex: o.optionIndex })),
     courseSelections,

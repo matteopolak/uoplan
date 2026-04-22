@@ -87,7 +87,7 @@ export function recomputeStateForProgram(
     }
   }
   const completedNormalized = new Set(
-    completedCourses.map(normalizeCourseCode),
+    completedCourses.map(c => cache.resolveToCanonical(c)),
   );
   const isWorkTerm = (normCode: string): boolean => {
     const course = cache.getCourse(normCode);

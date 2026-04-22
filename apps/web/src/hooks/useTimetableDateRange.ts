@@ -2,23 +2,19 @@ import { useEffect, type Dispatch, type SetStateAction } from "react";
 import type { GeneratedSchedule } from "schedule";
 
 export function useTimetableDateRangeFromSchedule(
-  generatedSchedules: GeneratedSchedule[],
-  selectedScheduleIndex: number,
+  schedule: GeneratedSchedule | null,
   timetableStartDate: string,
   timetableEndDate: string,
   setTimetableStartDate: Dispatch<SetStateAction<string>>,
   setTimetableEndDate: Dispatch<SetStateAction<string>>,
 ) {
   useEffect(() => {
-    if (generatedSchedules.length === 0) return;
-
-    const currentSchedule =
-      generatedSchedules[selectedScheduleIndex] ?? generatedSchedules[0];
+    if (!schedule) return;
 
     let minStart: string | null = null;
     let maxEnd: string | null = null;
 
-    for (const enrollment of currentSchedule.enrollments) {
+    for (const enrollment of schedule.enrollments) {
       for (const { section } of Object.values(enrollment.sectionCombo)) {
         const md = section.meetingDates;
         if (!md || md.length < 2) continue;
@@ -35,8 +31,7 @@ export function useTimetableDateRangeFromSchedule(
     if (!timetableStartDate && minStart) setTimetableStartDate(minStart);
     if (!timetableEndDate && maxEnd) setTimetableEndDate(maxEnd);
   }, [
-    generatedSchedules,
-    selectedScheduleIndex,
+    schedule,
     timetableStartDate,
     timetableEndDate,
     setTimetableStartDate,

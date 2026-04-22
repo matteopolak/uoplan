@@ -636,3 +636,27 @@ msgstr "No more schedules"
 msgid "basicCalendar.noMoreSchedules"
 msgstr "No more schedules"
 
+msgid "calendarPage.previous"
+msgstr "Previous"
+
+msgid "calendarPage.next"
+msgstr "Next"
+
+msgid "calendarPage.randomize"
+msgstr "Randomize"
+
+msgid "calendarPage.seedLabel"
+msgstr "Seed: {seed}"
+
+msgid "calendarPage.mobile.previous"
+msgstr "Prev"
+
+msgid "calendarPage.mobile.next"
+msgstr "Next"
+
+msgid "calendarPage.noSchedule"
+msgstr "No schedule generated yet."
+
+msgid "calendarPage.generate"
+msgstr "Generate"
+

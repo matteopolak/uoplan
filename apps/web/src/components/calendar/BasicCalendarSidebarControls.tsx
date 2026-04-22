@@ -7,15 +7,7 @@ import { BasicCourseFiltersCard } from "../requirements/CourseFiltersCard";
 import { tr } from "../../i18n";
 import { parseTranscriptPdf, isOptCourse, normalizeCourseCode } from "schedule";
 
-export function BasicCalendarSidebarControls({
-  generating,
-  hasMoreSchedules,
-  onGenerate,
-}: {
-  generating: boolean;
-  hasMoreSchedules: boolean;
-  onGenerate: () => void;
-}) {
+export function BasicCalendarSidebarControls() {
   const {
     cache,
     basicPinnedCourses,
@@ -47,6 +39,8 @@ export function BasicCalendarSidebarControls({
   const setBasicPinnedCourses = useAppStore((s) => s.setBasicPinnedCourses);
   const setBasicElectivesCount = useAppStore((s) => s.setBasicElectivesCount);
   const setBasicExcludedCategories = useAppStore((s) => s.setBasicExcludedCategories);
+  const goToPreviousSeed = useAppStore((s) => s.goToPreviousSeed);
+  const goToNextSeed = useAppStore((s) => s.goToNextSeed);
   const markBasicSettingsChanged = useAppStore((s) => s.markBasicSettingsChanged);
   const setLevelBuckets = useAppStore((s) => s.setLevelBuckets);
   const setLanguageBuckets = useAppStore((s) => s.setLanguageBuckets);
@@ -215,17 +209,27 @@ export function BasicCalendarSidebarControls({
           }}
         />
 
-        <Button
-          variant="light"
-          color="violet"
-          size="sm"
-          radius={0}
-          loading={generating}
-          disabled={generating || !hasMoreSchedules}
-          onClick={onGenerate}
-        >
-          {hasMoreSchedules ? tr("basicCalendar.generate") : tr("basicCalendar.noMoreSchedules")}
-        </Button>
+        {/* Seed Navigation for Basic Mode */}
+        <Button.Group>
+          <Button
+            variant="light"
+            color="violet"
+            size="sm"
+            radius={0}
+            onClick={() => goToPreviousSeed()}
+          >
+            {tr("calendarPage.previous")}
+          </Button>
+          <Button
+            variant="filled"
+            color="violet"
+            size="sm"
+            radius={0}
+            onClick={() => goToNextSeed()}
+          >
+            {tr("calendarPage.next")}
+          </Button>
+        </Button.Group>
       </Stack>
 
       <Box style={{ borderTop: "1px solid #2C2E33", paddingTop: 16, marginTop: 8 }}>

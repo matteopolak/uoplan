@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo, useImperativeHandle, forwardRef, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import { Box, Text, Modal } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import FullCalendar from '@fullcalendar/react';
@@ -11,78 +11,45 @@ import type { ProfessorRatingsMap } from 'schedule';
 import { CalendarEventContent } from './CalendarEventContent';
 import { SwapModalContent } from './SwapModalContent';
 import { useCalendarEvents, type CalendarEvent } from '../../hooks/useCalendarEvents';
-import { useSwapModal, type SwapCandidatesGetter } from '../../hooks/useSwapModal';
-import { useCalendarMorph } from '../../hooks/useCalendarMorph';
-import { ScheduleMorphOverlay } from './ScheduleMorphOverlay';
+import { useSwapModal } from '../../hooks/useSwapModal';
 import { tr } from '../../i18n';
 
 const EMPTY_COLOR_MAP: Record<string, number> = {};
 
-export interface CalendarViewHandle {
-  /** Trigger a morph animation to the given schedule index. */
-  animate: (newIndex: number) => void;
-}
-
 interface CalendarViewProps {
-  schedules: GeneratedSchedule[];
-  selectedIndex: number;
-  onSelectIndex: (idx: number) => void;
+  schedule: GeneratedSchedule | null;
   cache: DataCache | null;
   professorRatings: ProfessorRatingsMap | null;
-  getSwapCandidates: SwapCandidatesGetter;
-  onSwap: (scheduleIndex: number, enrollmentIndex: number, newCourseCode: string) => void;
-  /** Per-schedule courseCode → colorIndex maps for stable colouring. */
-  colorMaps?: Record<string, number>[];
+  getSwapCandidates: (enrollmentIndex: number) => {
+    candidates: string[];
+    poolCourses: string[];
+    requirementTitle?: string;
+    rejectedWithConflict: Array<{ code: string; conflictsWith: string }>;
+  };
+  onSwap: (enrollmentIndex: number, newCourseCode: string) => void;
+  /** courseCode → colorIndex map for stable colouring. */
+  colorMap?: Record<string, number>;
 }
 
-export const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
-  function CalendarView(
-    {
-      schedules,
-      selectedIndex,
-      onSelectIndex: _onSelectIndex,
-      cache,
-      professorRatings,
-      getSwapCandidates,
-      onSwap,
-      colorMaps = [],
-    },
-    ref,
-  ) {
+export function CalendarView({
+  schedule,
+  cache,
+  professorRatings,
+  getSwapCandidates,
+  onSwap,
+  colorMap = EMPTY_COLOR_MAP,
+}: CalendarViewProps) {
     const isMobile = useMediaQuery('(max-width: 768px)');
-    const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)') ?? false;
 
-    // Ref on the container that holds all .fc-uoplan-event nodes
-    const containerRef = useRef<HTMLDivElement>(null);
-
-    const morph = useCalendarMorph(selectedIndex, containerRef, prefersReducedMotion);
-
-    // Expose animate() to parent via ref
-    useImperativeHandle(ref, () => ({
-      animate: (newIndex: number) => {
-        morph.triggerTransition(newIndex);
-      },
-    }));
-
-    // When selectedIndex changes from the parent but we haven't triggered a
-    // transition yet (e.g. initial render, URL state restore), snap instantly.
-    useEffect(() => {
-      if (selectedIndex !== morph.displayedIndex && !morph.isHidingEvents) {
-        morph.triggerTransition(selectedIndex);
-      }
-    }, [selectedIndex, morph]);
-
-    const swap = useSwapModal(getSwapCandidates, morph.displayedIndex, cache);
-
-    const currentSchedule = schedules[morph.displayedIndex] ?? schedules[0] ?? null;
-    const colorMap = colorMaps[morph.displayedIndex] ?? EMPTY_COLOR_MAP;
+    // Expose animate() to parent - no-op for single schedule
+    const swap = useSwapModal(getSwapCandidates, cache);
 
     const referenceWeekStart = useMemo(
       () => startOfWeek(new Date(), { weekStartsOn: 0 }),
       []
     );
 
-    const events = useCalendarEvents(currentSchedule, professorRatings, referenceWeekStart);
+    const events = useCalendarEvents(schedule, professorRatings, referenceWeekStart);
 
     const hasWeekendCourses = useMemo(() => {
       return events.some(e => {
@@ -100,30 +67,28 @@ export const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
           <CalendarEventContent ext={ext} cache={cache} colorMap={colorMap} />
         );
       },
-      [cache, colorMap],
+      [cache, colorMap]
     );
 
-    const fcRef = useRef<FullCalendar>(null);
+    const handleEventClick = (info: { event: { extendedProps: unknown } }) => {
+      const ext = info.event.extendedProps as CalendarEvent;
+      if (ext.enrollmentIndex != null) {
+        swap.openModal(ext.enrollmentIndex, ext.courseCode);
+      }
+    };
 
-    if (schedules.length === 0) {
+    if (!schedule) {
       return (
         <Box
           style={{
-            width: '100%',
-            height: '100%',
-            minHeight: 0,
+            flex: 1,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            textAlign: 'center',
-            padding: 16,
+            color: '#868E96',
           }}
         >
-          <Text c="dimmed">
-            {tr(
-              'calendarView.empty',
-            )}
-          </Text>
+          <Text size="lg">{tr('calendarPage.noSchedule')}</Text>
         </Box>
       );
     }
@@ -131,112 +96,62 @@ export const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
     return (
       <Box
         style={{
-          width: '100%',
-          height: '100%',
-          minHeight: 0,
+          flex: 1,
           display: 'flex',
           flexDirection: 'column',
+          minHeight: 0,
+          overflow: 'hidden',
         }}
       >
-        <div
-          ref={containerRef}
-          className={morph.isHidingEvents ? 'fc-uoplan-morphing' : undefined}
-          style={{
-            flex: 1,
-            minHeight: 0,
-            width: '100%',
-            ...(isMobile
-              ? {
-                  border: 'none',
-                  outline: 'none',
-                  boxShadow: 'none',
-                  backgroundColor: 'transparent',
-                  padding: 0,
-                }
-              : {
-                  border: 'none',
-                  outline: 'none',
-                  boxShadow: 'none',
-                  backgroundColor: 'transparent',
-                  padding: 0,
-                }),
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-          }}
-        >
-          <style>{`
-            .fc-uoplan-morphing .fc-event { opacity: 0 !important; }
-          `}</style>
-          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-            <FullCalendar
-              ref={fcRef}
-              plugins={[timeGridPlugin, interactionPlugin]}
-              initialView="timeGridWeek"
-              headerToolbar={false}
-              firstDay={0}
-              weekends={showWeekends}
-              allDaySlot={false}
-              slotDuration="01:00:00"
-              slotMinTime="08:00:00"
-              slotMaxTime="22:00:00"
-              slotLabelFormat={{
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: false,
-              }}
-              expandRows={true}
-              dayHeaderFormat={{ weekday: 'short' }}
-              events={events.map((e) => ({
-                id: e.id,
-                title: e.courseCode,
-                start: e.start,
-                end: e.end,
-                extendedProps: e,
-              }))}
-              initialDate={referenceWeekStart}
-              height="100%"
-              eventContent={eventContent}
-              eventClick={(info) => {
-                const ext = info.event.extendedProps as CalendarEvent;
-                swap.openModal(ext.enrollmentIndex, ext.courseCode, {
-                  virtual: ext.virtual,
-                  componentSection: ext.componentSection,
-                });
-              }}
-            />
-          </div>
-        </div>
-
-        <ScheduleMorphOverlay
-          phantoms={morph.phantoms}
-          onComplete={morph.onAnimationComplete}
-        />
+        <Box style={{ flex: 1, minHeight: 0 }}>
+          <FullCalendar
+            plugins={[timeGridPlugin, interactionPlugin]}
+            initialView="timeGridWeek"
+            headerToolbar={false}
+            allDaySlot={false}
+            slotDuration="00:30:00"
+            slotMinTime="08:00:00"
+            slotMaxTime="23:00:00"
+            firstDay={0}
+            weekends={showWeekends}
+            height="100%"
+            events={events}
+            eventContent={eventContent}
+            eventClick={handleEventClick}
+            slotLabelFormat={{
+              hour: 'numeric',
+              minute: '2-digit',
+              omitZeroMinute: false,
+              hour12: false,
+            }}
+            dayHeaderFormat={{ weekday: 'short' }}
+            nowIndicator={false}
+            navLinks={false}
+            expandRows={true}
+          />
+        </Box>
 
         <Modal
           opened={swap.isOpen}
           onClose={swap.closeModal}
-          title="Swap course"
-          size="md"
+          title={swap.result?.requirementTitle}
+          size="lg"
+          centered
         >
-          {swap.modalState && (
-            <SwapModalContent
-              schedule={schedules[morph.displayedIndex] ?? schedules[0]}
-              scheduleIndex={morph.displayedIndex}
-              modalState={swap.modalState}
-              result={swap.result}
-              loading={swap.loading}
-              candidateOptions={swap.candidateOptions}
-              query={swap.query}
-              setQuery={swap.setQuery}
-              closeModal={swap.closeModal}
-              cache={cache}
-              professorRatings={professorRatings}
-              onSwap={onSwap}
-            />
-          )}
+          <SwapModalContent
+            schedule={schedule}
+            modalState={swap.modalState!}
+            result={swap.result}
+            loading={swap.loading}
+            candidateOptions={swap.candidateOptions}
+            query={swap.query}
+            setQuery={swap.setQuery}
+            closeModal={swap.closeModal}
+            cache={cache}
+            professorRatings={professorRatings}
+            onSwap={onSwap}
+          />
         </Modal>
       </Box>
     );
-  }
-);
+}

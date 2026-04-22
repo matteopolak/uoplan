@@ -39,6 +39,11 @@ message RequirementCourseSelection {
   repeated uint32 course_indices = 2;
 }
 
+message ScheduleSwap {
+  uint32 enrollment_index = 1;
+  uint32 course_code_index = 2;
+}
+
 message ShareableState {
   WizardMode wizard_mode = 1;
   repeated uint32 basic_pinned_courses = 2;
@@ -58,8 +63,9 @@ message ShareableState {
   repeated uint32 elective_level_buckets = 13;
 
   uint32 courses_this_semester = 14;
-  uint32 selected_schedule_index = 15;
-  uint32 generation_seed = 16;
+  // Obsolete: uint32 selected_schedule_index = 15;
+  uint32 first_seed = 16;
+  uint32 current_seed = 31;
 
   repeated RequirementOptionSelection option_selections = 17;
   repeated RequirementCourseSelection course_selections = 18;
@@ -77,4 +83,5 @@ message ShareableState {
   bool generation_compressed_schedule = 28;
   uint32 magic = 29;
   uint32 active_step = 30;
+  repeated ScheduleSwap swaps = 32;
 }

@@ -1,6 +1,5 @@
 import type { Program, ProgramRequirement } from 'schemas';
 import type { DataCache } from '../dataCache';
-import { normalizeCourseCode } from '../utils/courseUtils';
 import type { RemainingRequirement, RequirementWithStatus } from './types';
 
 export class RequirementContext {
@@ -13,7 +12,7 @@ export class RequirementContext {
     public cache: DataCache,
     public selectedOptionsPerRequirement: Record<string, number> = {}
   ) {
-    this.pool = new Set(completedCourses.map(normalizeCourseCode));
+    this.pool = new Set(completedCourses.map(c => cache.resolveToCanonical(c)));
   }
 
   reqId(path: string): string {
@@ -22,11 +21,11 @@ export class RequirementContext {
 
   takeFromPool(codes: string[], dryRun: boolean): { displayCode: string; norm: string } | null {
     for (const c of codes) {
-      const norm = normalizeCourseCode(c);
-      if (this.pool.has(norm)) {
-        if (!dryRun) this.pool.delete(norm);
-        const displayCode = this.cache.getCourse(norm)?.code ?? norm;
-        return { displayCode, norm };
+      const canonical = this.cache.resolveToCanonical(c);
+      if (this.pool.has(canonical)) {
+        if (!dryRun) this.pool.delete(canonical);
+        const displayCode = this.cache.getCourse(canonical)?.code ?? canonical;
+        return { displayCode, norm: canonical };
       }
     }
     return null;

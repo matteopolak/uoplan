@@ -2,14 +2,12 @@ import type { StateCreator } from "zustand";
 import type { AppStore } from "../types";
 import { recomputeStateForProgram, getDisciplineCodesForProgram } from "../requirementCompute";
 import {
-  applyLatestAliasesToMergedCourses,
   buildDataCache,
   normalizeCourseCode,
-  removeMergedCoursesSupersededByAliases,
   withExtraCourses,
   isOptCourse,
 } from "schedule";
-import type { Catalogue, Course } from "schemas";
+import { getMergedCatalogue } from "./catalogueUtils";
 import { pruneOptionSelectionsForClear } from "../../components/requirements/requirementUtils";
 import {
   DEFAULT_BASIC_ELECTIVE_LEVEL_BUCKETS,
@@ -17,37 +15,6 @@ import {
   DEFAULT_BASIC_LEVEL_BUCKETS,
 } from "../../lib/electiveEligibility";
 
-function getMergedCatalogue(
-  catalogue: Catalogue | null,
-  yearCatalogueCourses: Course[] | null,
-  completedCourses: string[],
-): Catalogue | null {
-  if (!catalogue) return null;
-  if (!yearCatalogueCourses) return catalogue;
-
-  const completedSet = new Set(completedCourses.map(normalizeCourseCode));
-  const yearMap = new Map(
-    yearCatalogueCourses.map((c) => [normalizeCourseCode(c.code), c]),
-  );
-
-  const merged = new Map<string, Course>();
-  for (const course of yearCatalogueCourses) {
-    merged.set(normalizeCourseCode(course.code), course);
-  }
-
-  for (const course of catalogue.courses) {
-    const key = normalizeCourseCode(course.code);
-    if (completedSet.has(key) && yearMap.has(key)) {
-      continue;
-    }
-    merged.set(key, course);
-  }
-
-  const mergedList = Array.from(merged.values());
-  const withAliases = applyLatestAliasesToMergedCourses(catalogue.courses, mergedList);
-  const courses = removeMergedCoursesSupersededByAliases(catalogue.courses, withAliases);
-  return { ...catalogue, courses };
-}
 
 interface SelectionSlice {
   setWizardMode: AppStore["setWizardMode"];
