@@ -5,7 +5,6 @@ import type { DataCache } from "schedule";
  * Type for the swap candidates getter function.
  */
 export type SwapCandidatesGetter = (
-  scheduleIndex: number,
   enrollmentIndex: number
 ) => {
   candidates: string[];
@@ -56,12 +55,10 @@ const EMPTY_SWAP_RESULT: SwapResult = {
  * Hook for managing swap modal state and loading candidates.
  * 
  * @param getSwapCandidates - Function to fetch swap candidates
- * @param selectedIndex - Currently selected schedule index
  * @param cache - Data cache for looking up course info
  */
 export function useSwapModal(
   getSwapCandidates: SwapCandidatesGetter,
-  selectedIndex: number,
   cache: DataCache | null
 ) {
   const [swapModal, setSwapModal] = useState<SwapModalState | null>(null);
@@ -78,13 +75,13 @@ export function useSwapModal(
       setLoading(true);
       setSwapResult(EMPTY_SWAP_RESULT);
       setQuery("");
-      const next = getSwapCandidates(selectedIndex, swapModal.enrollmentIndex);
+      const next = getSwapCandidates(swapModal.enrollmentIndex);
       setSwapResult(next);
       setLoading(false);
     }, 0);
 
     return () => window.clearTimeout(t);
-  }, [getSwapCandidates, selectedIndex, swapModal]);
+  }, [getSwapCandidates, swapModal]);
 
   // Build dropdown options from candidates
   const candidateOptions = useMemo<SwapCandidateOption[]>(() => {

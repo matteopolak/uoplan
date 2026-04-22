@@ -20,6 +20,46 @@ interface UrlSlice {
   getShareUrl: AppStore["getShareUrl"];
 }
 
+function buildEncodeInput(s: AppStore): EncodeInput {
+  const completedCourses = s.completedCourses.map(code =>
+    s.cache ? s.cache.resolveToCanonical(code) : code
+  );
+  return {
+    selectedTermId: s.selectedTermId,
+    firstYear: s.firstYear,
+    program: s.program,
+    minorProgram: s.minorProgram,
+    completedCourses,
+    levelBuckets: s.levelBuckets,
+    languageBuckets: s.languageBuckets,
+    electiveLevelBuckets: s.electiveLevelBuckets,
+    coursesThisSemester: s.coursesThisSemester,
+    firstSeed: s.firstSeed >>> 0,
+    currentSeed: s.currentSeed >>> 0,
+    swaps: s.currentSwaps,
+    selectedPerRequirement: s.selectedPerRequirement,
+    selectedOptionsPerRequirement: s.selectedOptionsPerRequirement,
+    constrainedPerRequirement: s.constrainedPerRequirement,
+    requirementTreeWithStatus: s.requirementTreeWithStatus,
+    remainingRequirements: s.remainingRequirements,
+    includeClosedComponents: s.includeClosedComponents,
+    virtualSectionsOnly: s.virtualSectionsOnly,
+    studentPrograms: s.studentPrograms,
+    wizardMode: s.wizardMode,
+    basicPinnedCourses: s.basicPinnedCourses,
+    basicElectivesCount: s.basicElectivesCount,
+    basicExcludedCategories: s.basicExcludedCategories,
+    requirementSlotsUserTouched: s.requirementSlotsUserTouched,
+    generationMinStartMinutes: s.generationMinStartMinutes,
+    generationMaxEndMinutes: s.generationMaxEndMinutes,
+    generationAllowedDays: s.generationAllowedDays,
+    generationMinProfessorRating: s.generationMinProfessorRating,
+    generationLimitFirstYearCredits: s.generationLimitFirstYearCredits,
+    generationCompressedSchedule: s.generationCompressedSchedule,
+    activeStep: s.activeStep,
+  };
+}
+
 export const createUrlSlice: StateCreator<
   AppStore,
   [],
@@ -128,8 +168,9 @@ export const createUrlSlice: StateCreator<
       languageBuckets: decoded.languageBuckets,
       electiveLevelBuckets: decoded.electiveLevelBuckets,
       coursesThisSemester: decoded.coursesThisSemester,
-      selectedScheduleIndex: Math.max(0, decoded.selectedScheduleIndex),
-      generationSeed: decoded.generationSeed >>> 0,
+      firstSeed: decoded.firstSeed >>> 0,
+      currentSeed: decoded.currentSeed >>> 0,
+      currentSwaps: decoded.swaps,
       includeClosedComponents: decoded.includeClosedComponents ?? false,
       virtualSectionsOnly: decoded.virtualSectionsOnly ?? false,
       wizardMode: decoded.wizardMode,
@@ -143,7 +184,6 @@ export const createUrlSlice: StateCreator<
       generationLimitFirstYearCredits: decoded.generationLimitFirstYearCredits,
       generationCompressedSchedule: decoded.generationCompressedSchedule,
       activeStep: decoded.activeStep ?? 0,
-      generatedSchedules: [],
       generationError: null,
       constrainedPerRequirement,
       ...(decoded.selectedTermId != null ? { selectedTermId: decoded.selectedTermId } : {}),
@@ -156,87 +196,13 @@ export const createUrlSlice: StateCreator<
   getEncodedStateBase64: () => {
     const s = get();
     if (!s.catalogue || !s.indices) return null;
-    const input: EncodeInput = {
-      selectedTermId: s.selectedTermId,
-      firstYear: s.firstYear,
-      program: s.program,
-      minorProgram: s.minorProgram,
-      completedCourses: s.completedCourses,
-      levelBuckets: s.levelBuckets,
-      languageBuckets: s.languageBuckets,
-      electiveLevelBuckets: s.electiveLevelBuckets,
-      coursesThisSemester: s.coursesThisSemester,
-      selectedScheduleIndex: s.selectedScheduleIndex,
-      generationSeed: s.generationSeed >>> 0,
-      selectedPerRequirement: s.selectedPerRequirement,
-      selectedOptionsPerRequirement: s.selectedOptionsPerRequirement,
-      constrainedPerRequirement: s.constrainedPerRequirement,
-      requirementTreeWithStatus: s.requirementTreeWithStatus,
-      remainingRequirements: s.remainingRequirements,
-      includeClosedComponents: s.includeClosedComponents,
-      virtualSectionsOnly: s.virtualSectionsOnly,
-      studentPrograms: s.studentPrograms,
-      wizardMode: s.wizardMode,
-      basicPinnedCourses: s.basicPinnedCourses,
-      basicElectivesCount: s.basicElectivesCount,
-      basicExcludedCategories: s.basicExcludedCategories,
-      requirementSlotsUserTouched: s.requirementSlotsUserTouched,
-      generationMinStartMinutes: s.generationMinStartMinutes,
-      generationMaxEndMinutes: s.generationMaxEndMinutes,
-      generationAllowedDays: s.generationAllowedDays,
-      generationMinProfessorRating: s.generationMinProfessorRating,
-      generationLimitFirstYearCredits: s.generationLimitFirstYearCredits,
-      generationCompressedSchedule: s.generationCompressedSchedule,
-      activeStep: s.activeStep,
-    };
-    return encodeStateToBase64(
-      input,
-      s.catalogue,
-      s.indices,
-    );
+    return encodeStateToBase64(buildEncodeInput(s), s.catalogue, s.indices);
   },
 
   getShareUrl: () => {
     const s = get();
     if (!s.catalogue || !s.indices) return null;
-    const input: EncodeInput = {
-      selectedTermId: s.selectedTermId,
-      firstYear: s.firstYear,
-      program: s.program,
-      minorProgram: s.minorProgram,
-      completedCourses: s.completedCourses,
-      levelBuckets: s.levelBuckets,
-      languageBuckets: s.languageBuckets,
-      electiveLevelBuckets: s.electiveLevelBuckets,
-      coursesThisSemester: s.coursesThisSemester,
-      selectedScheduleIndex: s.selectedScheduleIndex,
-      generationSeed: s.generationSeed >>> 0,
-      selectedPerRequirement: s.selectedPerRequirement,
-      selectedOptionsPerRequirement: s.selectedOptionsPerRequirement,
-      constrainedPerRequirement: s.constrainedPerRequirement,
-      requirementTreeWithStatus: s.requirementTreeWithStatus,
-      remainingRequirements: s.remainingRequirements,
-      includeClosedComponents: s.includeClosedComponents,
-      virtualSectionsOnly: s.virtualSectionsOnly,
-      studentPrograms: s.studentPrograms,
-      wizardMode: s.wizardMode,
-      basicPinnedCourses: s.basicPinnedCourses,
-      basicElectivesCount: s.basicElectivesCount,
-      basicExcludedCategories: s.basicExcludedCategories,
-      requirementSlotsUserTouched: s.requirementSlotsUserTouched,
-      generationMinStartMinutes: s.generationMinStartMinutes,
-      generationMaxEndMinutes: s.generationMaxEndMinutes,
-      generationAllowedDays: s.generationAllowedDays,
-      generationMinProfessorRating: s.generationMinProfessorRating,
-      generationLimitFirstYearCredits: s.generationLimitFirstYearCredits,
-      generationCompressedSchedule: s.generationCompressedSchedule,
-      activeStep: s.activeStep,
-    };
-    const bytes = encodeState(
-      input,
-      s.catalogue,
-      s.indices,
-    );
+    const bytes = encodeState(buildEncodeInput(s), s.catalogue, s.indices);
     if (!bytes) return null;
     return stateToShareUrl(bytes);
   },

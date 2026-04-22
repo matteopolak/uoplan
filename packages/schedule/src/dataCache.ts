@@ -7,6 +7,8 @@ export { normalizeCourseCode } from './utils/courseUtils';
 
 export interface DataCache {
   getCourse(code: string): Course | undefined;
+  /** Returns the canonical course code for `code`, resolving aliases. Returns normalized `code` if not found. */
+  resolveToCanonical(code: string): string;
   getSchedule(code: string): CourseSchedule | undefined;
   getCoursesByDiscipline(discipline: string): Course[];
   getAllCourses(): Course[];
@@ -76,6 +78,9 @@ export function withExtraCourses(base: DataCache, courses: Course[]): DataCache 
     getCourse(code) {
       return base.getCourse(code) ?? extra.get(normalizeCourseCode(code));
     },
+    resolveToCanonical(code) {
+      return base.resolveToCanonical(code);
+    },
     getSchedule(code) {
       return base.getSchedule(code);
     },
@@ -101,6 +106,9 @@ export function buildDataCache(catalogue: Catalogue, schedulesData: SchedulesDat
   for (const course of catalogue.courses) {
     const key = normalizeCourseCode(course.code);
     courseMap.set(key, course);
+    for (const alias of course.aliases ?? []) {
+      courseMap.set(normalizeCourseCode(alias), course);
+    }
 
     if (isStageWorkTermCourse(course)) {
       continue;
@@ -124,6 +132,11 @@ export function buildDataCache(catalogue: Catalogue, schedulesData: SchedulesDat
   return {
     getCourse(code: string): Course | undefined {
       return courseMap.get(normalizeCourseCode(code));
+    },
+    resolveToCanonical(code: string): string {
+      const norm = normalizeCourseCode(code);
+      const course = courseMap.get(norm);
+      return course ? normalizeCourseCode(course.code) : norm;
     },
     getSchedule(code: string): CourseSchedule | undefined {
       return scheduleMap.get(normalizeCourseCode(code));

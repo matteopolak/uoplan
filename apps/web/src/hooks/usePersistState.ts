@@ -17,8 +17,9 @@ function hasPersistedStateChange(next: AppStore, prev: AppStore): boolean {
     next.languageBuckets !== prev.languageBuckets ||
     next.electiveLevelBuckets !== prev.electiveLevelBuckets ||
     next.coursesThisSemester !== prev.coursesThisSemester ||
-    next.selectedScheduleIndex !== prev.selectedScheduleIndex ||
-    next.generationSeed !== prev.generationSeed ||
+    next.firstSeed !== prev.firstSeed ||
+    next.currentSeed !== prev.currentSeed ||
+    next.currentSwaps !== prev.currentSwaps ||
     next.selectedPerRequirement !== prev.selectedPerRequirement ||
     next.selectedOptionsPerRequirement !== prev.selectedOptionsPerRequirement ||
     next.constrainedPerRequirement !== prev.constrainedPerRequirement ||

@@ -86,7 +86,7 @@ function App() {
     generationMaxEndMinutes,
     generationAllowedDays,
     generationMinProfessorRating,
-    generatedSchedules,
+    currentSchedule,
     generationError,
     filteredPrereqEligibleCourses,
     levelBuckets,
@@ -121,7 +121,7 @@ function App() {
       generationMaxEndMinutes: s.generationMaxEndMinutes,
       generationAllowedDays: s.generationAllowedDays,
       generationMinProfessorRating: s.generationMinProfessorRating,
-      generatedSchedules: s.generatedSchedules,
+      currentSchedule: s.currentSchedule,
       generationError: s.generationError,
       filteredPrereqEligibleCourses: s.filteredPrereqEligibleCourses,
       levelBuckets: s.levelBuckets,
@@ -390,7 +390,7 @@ function App() {
     );
   }
 
-  const showAdvancedCalendar = showCalendar && generatedSchedules.length > 0 && wizardMode !== 'basic';
+  const showAdvancedCalendar = showCalendar && currentSchedule !== null && wizardMode !== 'basic';
   const showBasicCalendar = wizardMode === 'basic' && active > WizardStep.Mode;
 
   return (

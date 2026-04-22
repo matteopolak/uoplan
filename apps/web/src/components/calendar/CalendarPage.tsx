@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Box,
   Button,
   Group,
-  Select,
   Stack,
   Text,
   Title,
@@ -13,6 +12,8 @@ import {
 import { useMediaQuery } from "@mantine/hooks";
 import {
   IconArrowBackUp,
+  IconChevronLeft,
+  IconChevronRight,
   IconMenu2,
   IconRefresh,
   IconShare,
@@ -20,7 +21,7 @@ import {
 } from "@tabler/icons-react";
 import { useAppStore } from "../../store/appStore";
 import { useShallow } from "zustand/react/shallow";
-import { CalendarView, type CalendarViewHandle } from "./CalendarView";
+import { CalendarView } from "./CalendarView";
 import { ResetModal } from "../shared/ResetModal";
 import { GenerationErrorDetailBlocks } from "../GenerationErrorDetailBlocks";
 import { buildScheduleIcs, downloadTextFile } from "schedule";
@@ -45,47 +46,48 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
   }, []);
 
   const {
-    generatedSchedules,
-    selectedScheduleIndex,
-    swapHistory,
+    currentSchedule,
+    currentSwaps,
     indices,
     generationError,
     cache,
     professorRatings,
-    scheduleColorMaps,
-    hasMoreSchedules,
+    currentColorMap,
+    firstSeed,
+    currentSeed,
     wizardMode,
   } = useAppStore(
     useShallow((s) => ({
-      generatedSchedules: s.generatedSchedules,
-      selectedScheduleIndex: s.selectedScheduleIndex,
-      swapHistory: s.swapHistory,
+      currentSchedule: s.currentSchedule,
+      currentSwaps: s.currentSwaps,
       indices: s.indices,
       generationError: s.generationError,
       cache: s.cache,
       professorRatings: s.professorRatings,
-      scheduleColorMaps: s.scheduleColorMaps,
-      hasMoreSchedules: s.hasMoreSchedules,
+      currentColorMap: s.currentColorMap,
+      firstSeed: s.firstSeed,
+      currentSeed: s.currentSeed,
       wizardMode: s.wizardMode,
     })),
   );
 
-  const setSelectedScheduleIndex = useAppStore((s) => s.setSelectedScheduleIndex);
   const undoLastSwap = useAppStore((s) => s.undoLastSwap);
   const getShareUrl = useAppStore((s) => s.getShareUrl);
+  const goToPreviousSeed = useAppStore((s) => s.goToPreviousSeed);
+  const goToNextSeed = useAppStore((s) => s.goToNextSeed);
+  const randomizeSeed = useAppStore((s) => s.randomizeSeed);
   const generateSchedules = useAppStore((s) => s.generateSchedules);
-  const generateBasicSchedules = useAppStore((s) => s.generateBasicSchedules);
   const getSwapCandidates = useAppStore((s) => s.getSwapCandidates);
   const swapCourseInSchedule = useAppStore((s) => s.swapCourseInSchedule);
   const resetToDefault = useAppStore((s) => s.resetToDefault);
 
   const isBasic = wizardMode === "basic";
-
-  const morphRef = useRef<CalendarViewHandle>(null);
+  const hasSchedule = currentSchedule !== null;
+  const canGoPrevious = currentSeed > firstSeed && currentSeed > 0;
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [resetModalOpen, setResetModalOpen] = useState(false);
-  const [generatingOneMore, setGeneratingOneMore] = useState(false);
+  const [navigating, setNavigating] = useState(false);
   const [timetableStartDate, setTimetableStartDate] = useState("");
   const [timetableEndDate, setTimetableEndDate] = useState("");
 
@@ -94,22 +96,13 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   useTimetableDateRangeFromSchedule(
-    generatedSchedules,
-    selectedScheduleIndex,
+    currentSchedule,
     timetableStartDate,
     timetableEndDate,
     setTimetableStartDate,
     setTimetableEndDate,
   );
 
-  const scheduleOptions = generatedSchedules.map((_, i) => ({
-    value: String(i),
-    label: tr("calendarPage.schedule.label", {
-      index: i + 1,
-    }),
-  }));
-  const currentSchedule =
-    generatedSchedules[selectedScheduleIndex] ?? generatedSchedules[0] ?? null;
   const eventCount = currentSchedule?.enrollments.reduce(
     (sum, e) => sum + e.times.length,
     0,
@@ -129,15 +122,16 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
     genErrDetails.emptyPools.length > 4 &&
     genErrDetails.totalAvailable < genErrDetails.totalNeeded;
 
-  const handleGenerateOneMore = () => {
-    setGeneratingOneMore(true);
-    const generateFn = isBasic ? generateBasicSchedules : generateSchedules;
-    void generateFn({ appendFirstOnly: true }).then(() => {
-      setGeneratingOneMore(false);
-      // Trigger animation to the newly appended schedule
-      const newIdx = useAppStore.getState().selectedScheduleIndex;
-      morphRef.current?.animate(newIdx);
-    });
+  const handlePrevious = async () => {
+    setNavigating(true);
+    await goToPreviousSeed();
+    setNavigating(false);
+  };
+
+  const handleNext = async () => {
+    setNavigating(true);
+    await goToNextSeed();
+    setNavigating(false);
   };
 
   const handleDownloadIcs = () => {
@@ -148,8 +142,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
       startDate: timetableStartDate,
       endDate: timetableEndDate,
     });
-    const idx = (selectedScheduleIndex ?? 0) + 1;
-    const filename = `uoplan-schedule-${idx}-${timetableStartDate}-to-${timetableEndDate}.ics`;
+    const filename = `uoplan-schedule-${currentSeed}-${timetableStartDate}-to-${timetableEndDate}.ics`;
     downloadTextFile(filename, ics, "text/calendar;charset=utf-8");
   };
 
@@ -158,10 +151,11 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
       component="main"
       style={{
         width: "100%",
-        minHeight: "100vh",
+        height: "100vh",
         display: "flex",
         flexDirection: "row",
         boxSizing: "border-box",
+        overflow: "hidden",
       }}
     >
       {/* Mobile sidebar backdrop */}
@@ -184,6 +178,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
         aria-label="Calendar Controls"
         style={{
           width: CALENDAR_SIDEBAR_WIDTH_PX,
+          height: "100%",
           flexShrink: 0,
           padding: "24px 20px",
           borderRight: "2px solid #2C2E33",
@@ -237,15 +232,11 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
         {isBasic ? (
           <>
             <BasicCalendarHeaderActions onBack={onBack} />
-            <BasicCalendarSidebarControls 
-              generating={generatingOneMore}
-              hasMoreSchedules={hasMoreSchedules}
-              onGenerate={handleGenerateOneMore}
-            />
+            <BasicCalendarSidebarControls />
           </>
         ) : (
           <>
-            {swapHistory.length > 0 && (
+            {currentSwaps.length > 0 && (
               <Button
                 variant="light"
                 color="gray"
@@ -254,10 +245,10 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
                 leftSection={<IconArrowBackUp size={14} />}
                 onClick={() => undoLastSwap()}
               >
-                {swapHistory.length === 1
+                {currentSwaps.length === 1
                   ? tr("calendarPage.undoSwap")
                   : tr("calendarPage.undoSwapCount", {
-                      count: swapHistory.length,
+                      count: currentSwaps.length,
                     })}
               </Button>
             )}
@@ -304,20 +295,59 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
           </>
         )}
 
-        <Select
-          label={tr(isBasic ? "basicCalendar.generatedSchedules" : "calendarPage.schedule.selectLabel")}
-          data={scheduleOptions}
-          value={generatedSchedules.length > 0 ? String(
-            Math.min(selectedScheduleIndex, generatedSchedules.length - 1),
-          ) : ""}
-          onChange={(v) => {
-            const idx = Number(v ?? 0);
-            setSelectedScheduleIndex(idx);
-            morphRef.current?.animate(idx);
-          }}
-          size="md"
-          radius={0}
-        />
+        {/* Seed Navigation - only show in advanced mode (basic has its own in sidebar) */}
+        {!isBasic && (
+          <>
+            {hasSchedule ? (
+              <Group gap="xs">
+                <Button
+                  variant="light"
+                  color="violet"
+                  size="sm"
+                  radius={0}
+                  leftSection={<IconChevronLeft size={14} />}
+                  disabled={!canGoPrevious || navigating}
+                  loading={navigating}
+                  onClick={handlePrevious}
+                >
+                  {tr("calendarPage.previous")}
+                </Button>
+                <Button
+                  variant="filled"
+                  color="violet"
+                  size="sm"
+                  radius={0}
+                  rightSection={<IconChevronRight size={14} />}
+                  loading={navigating}
+                  onClick={handleNext}
+                >
+                  {tr("calendarPage.next")}
+                </Button>
+              </Group>
+            ) : (
+              <Button
+                variant="filled"
+                color="violet"
+                size="sm"
+                radius={0}
+                loading={navigating}
+                onClick={async () => {
+                  setNavigating(true);
+                  await generateSchedules();
+                  setNavigating(false);
+                }}
+              >
+                {tr("calendarPage.generate")}
+              </Button>
+            )}
+
+            {hasSchedule && (
+              <Text size="sm" c="dimmed">
+                {tr("calendarPage.seedLabel", { seed: currentSeed })}
+              </Text>
+            )}
+          </>
+        )}
 
         <Button
           size="sm"
@@ -333,14 +363,12 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
         {!isBasic && (
           <Button
             variant="light"
-            color="violet"
+            color="gray"
             size="sm"
             radius={0}
-            loading={generatingOneMore}
-            disabled={generatingOneMore || !hasMoreSchedules}
-            onClick={handleGenerateOneMore}
+            onClick={() => randomizeSeed()}
           >
-            {hasMoreSchedules ? tr("calendarPage.generateNew") : tr("calendarPage.noMoreSchedules")}
+            {tr("calendarPage.randomize")}
           </Button>
         )}
 
@@ -362,12 +390,6 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
         )}
 
         <Stack gap={0}>
-          <Text size="sm" c="dimmed">
-            {tr(
-              "calendarPage.generatedTotal",
-              { count: generatedSchedules.length },
-            )}
-          </Text>
           <Text size="xs" c="dimmed">
             {tr(
               "calendarPage.showingBlocks",
@@ -409,15 +431,12 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
         }}
       >
         <CalendarView
-          ref={morphRef}
-          schedules={generatedSchedules}
-          selectedIndex={selectedScheduleIndex}
-          onSelectIndex={setSelectedScheduleIndex}
+          schedule={currentSchedule}
           cache={cache}
           professorRatings={professorRatings}
           getSwapCandidates={getSwapCandidates}
           onSwap={swapCourseInSchedule}
-          colorMaps={scheduleColorMaps}
+          colorMap={currentColorMap}
         />
       </Box>
 
@@ -455,12 +474,22 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
             size="md"
             radius={0}
             style={{ flex: 1, border: "none", height: 56 }}
-            leftSection={<IconRefresh size={22} />}
-            loading={generatingOneMore}
-            disabled={generatingOneMore || !hasMoreSchedules}
-            onClick={handleGenerateOneMore}
+            leftSection={<IconChevronLeft size={22} />}
+            disabled={!canGoPrevious}
+            onClick={handlePrevious}
           >
-            {hasMoreSchedules ? tr("calendarPage.mobile.tryAnother") : tr("calendarPage.noMoreSchedules")}
+            {tr("calendarPage.mobile.previous")}
+          </Button>
+          <Button
+            variant="subtle"
+            color="gray"
+            size="md"
+            radius={0}
+            style={{ flex: 1, border: "none", height: 56 }}
+            leftSection={<IconChevronRight size={22} />}
+            onClick={handleNext}
+          >
+            {tr("calendarPage.mobile.next")}
           </Button>
         </Box>
       )}
