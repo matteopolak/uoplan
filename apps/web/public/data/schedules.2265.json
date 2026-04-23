@@ -1,7 +1,7 @@
 {
   "termId": "2265",
   "totalCourses": 11079,
-  "totalWithSchedules": 878,
+  "totalWithSchedules": 877,
   "schedules": [
     {
       "subject": "ADM",
@@ -31,7 +31,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Closed"
+            "status": "Open"
           }
         ]
       }
@@ -1885,7 +1885,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Open"
+            "status": "Closed"
           },
           {
             "section": "X08-DGD Session A",
@@ -2049,96 +2049,6 @@
               "2026-07-31"
             ],
             "status": "Open"
-          },
-          {
-            "section": "X00-LEC Session A",
-            "sectionCode": "X00",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "Th",
-                "startMinutes": 870,
-                "endMinutes": 1040,
-                "virtual": true
-              }
-            ],
-            "instructors": [
-              "Devinder Gandhi"
-            ],
-            "meetingDates": [
-              "2026-05-04",
-              "2026-07-24"
-            ],
-            "status": "Open"
-          },
-          {
-            "section": "Y00-LEC Session A",
-            "sectionCode": "Y00",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "Fr",
-                "startMinutes": 870,
-                "endMinutes": 1040,
-                "virtual": true
-              }
-            ],
-            "instructors": [
-              "Devinder Gandhi"
-            ],
-            "meetingDates": [
-              "2026-05-04",
-              "2026-07-24"
-            ],
-            "status": "Closed"
-          }
-        ],
-        "DGD": [
-          {
-            "section": "X01-DGD Session A",
-            "sectionCode": "X01",
-            "component": "DGD",
-            "session": null,
-            "times": [
-              {
-                "day": "We",
-                "startMinutes": 1050,
-                "endMinutes": 1130,
-                "virtual": true
-              }
-            ],
-            "instructors": [
-              "Staff"
-            ],
-            "meetingDates": [
-              "2026-05-04",
-              "2026-07-24"
-            ],
-            "status": "Open"
-          },
-          {
-            "section": "Y01-DGD Session A",
-            "sectionCode": "Y01",
-            "component": "DGD",
-            "session": null,
-            "times": [
-              {
-                "day": "Fr",
-                "startMinutes": 1050,
-                "endMinutes": 1130,
-                "virtual": true
-              }
-            ],
-            "instructors": [
-              "Staff"
-            ],
-            "meetingDates": [
-              "2026-05-04",
-              "2026-07-24"
-            ],
-            "status": "Open"
           }
         ]
       }
@@ -2199,39 +2109,6 @@
             "meetingDates": [
               "2026-05-04",
               "2026-06-12"
-            ],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "ADM",
-      "catalogNumber": "3315",
-      "courseCode": "ADM 3315",
-      "title": "Marketing Section Days & Times Instructor Meeting Dates Status Details X00-LECSession A Tu 16:00 - 18:50 Mehdi Rhaiem 2026-05-04 - 2026-07-24",
-      "timeZone": "America/Toronto",
-      "components": {
-        "LEC": [
-          {
-            "section": "X00-LEC Session A",
-            "sectionCode": "X00",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "Tu",
-                "startMinutes": 960,
-                "endMinutes": 1130,
-                "virtual": false
-              }
-            ],
-            "instructors": [
-              "Mehdi Rhaiem"
-            ],
-            "meetingDates": [
-              "2026-05-04",
-              "2026-07-24"
             ],
             "status": "Open"
           }
@@ -2740,6 +2617,46 @@
     },
     {
       "subject": "ADM",
+      "catalogNumber": "3718",
+      "courseCode": "ADM 3718",
+      "title": "Business Law Section Days & Times Instructor Meeting Dates Status Details X00-LECSession B Mo 08:30 - 11:20We 08:30 - 11:20 J.L. Gilles Le VasseurJ.L. Gilles Le Vasseur 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
+      "timeZone": "America/Toronto",
+      "components": {
+        "LEC": [
+          {
+            "section": "X00-LEC Session B",
+            "sectionCode": "X00",
+            "component": "LEC",
+            "session": null,
+            "times": [
+              {
+                "day": "Mo",
+                "startMinutes": 510,
+                "endMinutes": 680,
+                "virtual": false
+              },
+              {
+                "day": "We",
+                "startMinutes": 510,
+                "endMinutes": 680,
+                "virtual": false
+              }
+            ],
+            "instructors": [
+              "J.L. Gilles Le Vasseur",
+              "J.L. Gilles Le Vasseur"
+            ],
+            "meetingDates": [
+              "2026-05-04",
+              "2026-06-12"
+            ],
+            "status": "Closed"
+          }
+        ]
+      }
+    },
+    {
+      "subject": "ADM",
       "catalogNumber": "3719",
       "courseCode": "ADM 3719",
       "title": "Gestion comparée Section Days & Times Instructor Meeting Dates Status Details X00-LECSession A We 19:00 - 21:50 Nadir A Djerboua 2026-05-04 - 2026-07-24",
@@ -2936,13 +2853,13 @@
                 "day": "Tu",
                 "startMinutes": 510,
                 "endMinutes": 680,
-                "virtual": false
+                "virtual": true
               },
               {
                 "day": "Th",
                 "startMinutes": 510,
                 "endMinutes": 680,
-                "virtual": false
+                "virtual": true
               }
             ],
             "instructors": [
@@ -2952,28 +2869,6 @@
             "meetingDates": [
               "2026-05-04",
               "2026-06-12"
-            ],
-            "status": "Open"
-          },
-          {
-            "section": "X00-LEC Session A",
-            "sectionCode": "X00",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "We",
-                "startMinutes": 870,
-                "endMinutes": 1040,
-                "virtual": true
-              }
-            ],
-            "instructors": [
-              "Leila Hamzaoui"
-            ],
-            "meetingDates": [
-              "2026-05-04",
-              "2026-07-24"
             ],
             "status": "Open"
           }
@@ -3335,7 +3230,7 @@
               "2026-05-04",
               "2026-06-18"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -3401,7 +3296,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Closed"
+            "status": "Open"
           }
         ]
       }
@@ -3658,7 +3553,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Closed"
+            "status": "Open"
           }
         ]
       }
@@ -4195,7 +4090,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Closed"
+            "status": "Open"
           }
         ]
       }
@@ -4235,7 +4130,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Closed"
+            "status": "Open"
           }
         ]
       }
@@ -4395,7 +4290,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -6817,7 +6712,7 @@
       "subject": "CEG",
       "catalogNumber": "2136",
       "courseCode": "CEG 2136",
-      "title": "Computer Architecture I Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A Mo 14:30 - 15:50Th 14:30 - 15:50 StaffStaff 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z01-LABSession A Fr 10:00 - 12:50 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z02-DGDSession A Mo 16:00 - 17:20 Staff 2026-05-04 - 2026-07-24",
+      "title": "Computer Architecture I Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A Mo 14:30 - 15:50Th 14:30 - 15:50 Wassim El AhmarWassim El Ahmar 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z01-LABSession A Fr 10:00 - 12:50 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z02-DGDSession A Mo 16:00 - 17:20 Staff 2026-05-04 - 2026-07-24",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -6841,14 +6736,14 @@
               }
             ],
             "instructors": [
-              "Staff",
-              "Staff"
+              "Wassim El Ahmar",
+              "Wassim El Ahmar"
             ],
             "meetingDates": [
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Closed"
+            "status": "Open"
           }
         ],
         "LAB": [
@@ -6872,7 +6767,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Closed"
+            "status": "Open"
           }
         ],
         "DGD": [
@@ -6896,7 +6791,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Closed"
+            "status": "Open"
           }
         ]
       }
@@ -6905,7 +6800,7 @@
       "subject": "CEG",
       "catalogNumber": "3185",
       "courseCode": "CEG 3185",
-      "title": "Introduction to Data Communications and Networking Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A Tu 13:00 - 14:20Th 13:00 - 14:20 StaffStaff 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z01-LABSession A We 08:30 - 09:50 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z02-LABSession A Th 11:30 - 12:50 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z03-LABSession A Fr 13:00 - 14:20 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z04-TUTSession A We 10:00 - 11:20 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z05-TUTSession A We 16:00 - 17:20 Staff 2026-05-04 - 2026-07-24",
+      "title": "Introduction to Data Communications and Networking Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A Tu 13:00 - 14:20Th 13:00 - 14:20 Mohamed AhmedMohamed Ahmed 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z01-LABSession A We 08:30 - 09:50 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z02-LABSession A Th 11:30 - 12:50 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z03-LABSession A Fr 13:00 - 14:20 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z04-TUTSession A We 10:00 - 11:20 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z05-TUTSession A We 16:00 - 17:20 Staff 2026-05-04 - 2026-07-24",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -6929,8 +6824,8 @@
               }
             ],
             "instructors": [
-              "Staff",
-              "Staff"
+              "Mohamed Ahmed",
+              "Mohamed Ahmed"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -7050,7 +6945,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -7531,7 +7426,7 @@
       "subject": "CHG",
       "catalogNumber": "3326",
       "courseCode": "CHG 3326",
-      "title": "Principles of Phase Equilibria and Chemical Reaction Equilibria Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A Tu 08:30 - 09:50Th 08:30 - 09:50 F. Handan TezelF. Handan Tezel 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z01-TUTSession A Mo 11:30 - 12:50 Staff 2026-05-04 - 2026-07-24",
+      "title": "Principles of Phase Equilibria and Chemical Reaction Equilibria Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A Tu 08:30 - 09:50Th 08:30 - 09:50 F. Handan TezelF. Handan Tezel 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z01-TUTSession A Mo 11:30 - 12:50 F. Handan Tezel 2026-05-04 - 2026-07-24",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -7580,7 +7475,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "F. Handan Tezel"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -9171,6 +9066,32 @@
     },
     {
       "subject": "CMN",
+      "catalogNumber": "4912",
+      "courseCode": "CMN 4912",
+      "title": "Directed Studies Section Days & Times Instructor Meeting Dates Status Details A00-RECTerm N/A 00:00 - 00:00 Staff 2026-05-01 - 2026-08-28",
+      "timeZone": "America/Toronto",
+      "components": {
+        "REC": [
+          {
+            "section": "A00-REC Term",
+            "sectionCode": "A00",
+            "component": "REC",
+            "session": null,
+            "times": [],
+            "instructors": [
+              "Staff"
+            ],
+            "meetingDates": [
+              "2026-05-01",
+              "2026-08-28"
+            ],
+            "status": "Open"
+          }
+        ]
+      }
+    },
+    {
+      "subject": "CMN",
       "catalogNumber": "5105",
       "courseCode": "CMN 5105",
       "title": "Contemporary Communication Issues Section Days & Times Instructor Meeting Dates Status Details A00-SEMSession C Tu 08:30 - 11:20Th 08:30 - 11:20 Elie Serge BanyongenElie Serge Banyongen 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31",
@@ -9979,7 +9900,7 @@
       "subject": "CSI",
       "catalogNumber": "2101",
       "courseCode": "CSI 2101",
-      "title": "Discrete Structures Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A Mo 13:00 - 14:20Th 11:30 - 12:50 Mohamed Ali IbrahimStaff 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z01-TUTSession A Tu 10:00 - 11:20 Staff 2026-05-04 - 2026-07-24",
+      "title": "Discrete Structures Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A Mo 13:00 - 14:20Th 11:30 - 12:50 Mohamed Ali IbrahimMohamed Ali Ibrahim 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z01-TUTSession A Tu 10:00 - 11:20 Mohamed Ali Ibrahim 2026-05-04 - 2026-07-24",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -10004,7 +9925,7 @@
             ],
             "instructors": [
               "Mohamed Ali Ibrahim",
-              "Staff"
+              "Mohamed Ali Ibrahim"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -10028,7 +9949,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Mohamed Ali Ibrahim"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -10043,7 +9964,7 @@
       "subject": "CSI",
       "catalogNumber": "2110",
       "courseCode": "CSI 2110",
-      "title": "Data Structures and Algorithms Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A Tu 10:00 - 11:20Th 08:30 - 09:50 Mohamed Ali IbrahimStaff 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z01-LABSession A Fr 13:00 - 14:20 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z02-LABSession A Mo 10:00 - 11:20 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z03-TUTSession A Tu 11:30 - 12:50 Staff 2026-05-04 - 2026-07-24",
+      "title": "Data Structures and Algorithms Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A Tu 10:00 - 11:20Th 08:30 - 09:50 Mohamed Ali IbrahimMohamed Ali Ibrahim 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z01-LABSession A Fr 13:00 - 14:20 Mohamed Ali Ibrahim 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z02-LABSession A Mo 10:00 - 11:20 Mohamed Ali Ibrahim 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z03-TUTSession A Tu 11:30 - 12:50 Staff 2026-05-04 - 2026-07-24",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -10068,7 +9989,7 @@
             ],
             "instructors": [
               "Mohamed Ali Ibrahim",
-              "Staff"
+              "Mohamed Ali Ibrahim"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -10092,7 +10013,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Mohamed Ali Ibrahim"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -10114,7 +10035,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Mohamed Ali Ibrahim"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -10153,7 +10074,7 @@
       "subject": "CSI",
       "catalogNumber": "3104",
       "courseCode": "CSI 3104",
-      "title": "Introduction to Formal Languages Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A Mo 10:00 - 11:20Th 10:00 - 11:20 Omar BadreldinStaff 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24",
+      "title": "Introduction to Formal Languages Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A Mo 10:00 - 11:20Th 10:00 - 11:20 Omar BadreldinOmar Badreldin 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -10178,7 +10099,7 @@
             ],
             "instructors": [
               "Omar Badreldin",
-              "Staff"
+              "Omar Badreldin"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -10369,7 +10290,7 @@
       "subject": "CSI",
       "catalogNumber": "3140",
       "courseCode": "CSI 3140",
-      "title": "WWW Structures, Techniques and Standards Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A We 10:00 - 11:20Fr 08:30 - 09:50 Mohamed Ali IbrahimStaff 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z01-LABSession A Mo 14:30 - 15:50 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z02-LABSession A Fr 14:30 - 15:50 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z03-LABSession A Tu 17:30 - 18:50 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z04-TUTSession A Th 08:30 - 09:50 Staff 2026-05-04 - 2026-07-24",
+      "title": "WWW Structures, Techniques and Standards Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A We 10:00 - 11:20Fr 08:30 - 09:50 Mohamed Ali IbrahimMohamed Ali Ibrahim 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z01-LABSession A Mo 14:30 - 15:50 Mohamed Ali Ibrahim 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z02-LABSession A Fr 14:30 - 15:50 Mohamed Ali Ibrahim 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z03-LABSession A Tu 17:30 - 18:50 Mohamed Ali Ibrahim 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z04-TUTSession A Th 08:30 - 09:50 Mohamed Ali Ibrahim 2026-05-04 - 2026-07-24",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -10394,7 +10315,7 @@
             ],
             "instructors": [
               "Mohamed Ali Ibrahim",
-              "Staff"
+              "Mohamed Ali Ibrahim"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -10418,7 +10339,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Mohamed Ali Ibrahim"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -10440,7 +10361,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Mohamed Ali Ibrahim"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -10462,7 +10383,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Mohamed Ali Ibrahim"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -10486,7 +10407,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Mohamed Ali Ibrahim"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -10805,7 +10726,7 @@
       "subject": "CVG",
       "catalogNumber": "3106",
       "courseCode": "CVG 3106",
-      "title": "Soil Mechanics II Section Days & Times Instructor Meeting Dates Status Details X00-LECSession B Tu 08:30 - 11:20Th 08:30 - 11:20 StaffStaff 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12 Section Days & Times Instructor Meeting Dates Status Details X01-TUTSession B Fr 13:00 - 15:50 Staff 2026-05-04 - 2026-06-12",
+      "title": "Soil Mechanics II Section Days & Times Instructor Meeting Dates Status Details X00-LECSession B Tu 08:30 - 11:20Th 08:30 - 11:20 Sai VanapalliSai Vanapalli 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12 Section Days & Times Instructor Meeting Dates Status Details X01-TUTSession B Fr 13:00 - 15:50 Sai Vanapalli 2026-05-04 - 2026-06-12",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -10829,8 +10750,8 @@
               }
             ],
             "instructors": [
-              "Staff",
-              "Staff"
+              "Sai Vanapalli",
+              "Sai Vanapalli"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -10854,7 +10775,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Sai Vanapalli"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -10979,7 +10900,7 @@
       "subject": "CVG",
       "catalogNumber": "3147",
       "courseCode": "CVG 3147",
-      "title": "Structural Steel Design I Section Days & Times Instructor Meeting Dates Status Details Y00-LECSession C Tu 08:30 - 11:20Fr 08:30 - 11:20 StaffStaff 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31 Section Days & Times Instructor Meeting Dates Status Details Y01-TUTSession C We 11:30 - 14:20 Staff 2026-06-22 - 2026-07-31",
+      "title": "Structural Steel Design I Section Days & Times Instructor Meeting Dates Status Details Y00-LECSession C Tu 08:30 - 11:20Fr 08:30 - 11:20 Alaa Mohammed AbdulridhaAlaa Mohammed Abdulridha 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31 Section Days & Times Instructor Meeting Dates Status Details Y01-TUTSession C We 11:30 - 14:20 Alaa Mohammed Abdulridha 2026-06-22 - 2026-07-31",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -11003,8 +10924,8 @@
               }
             ],
             "instructors": [
-              "Staff",
-              "Staff"
+              "Alaa Mohammed Abdulridha",
+              "Alaa Mohammed Abdulridha"
             ],
             "meetingDates": [
               "2026-06-22",
@@ -11028,7 +10949,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Alaa Mohammed Abdulridha"
             ],
             "meetingDates": [
               "2026-06-22",
@@ -11104,70 +11025,6 @@
             "meetingDates": [
               "2026-05-04",
               "2026-06-12"
-            ],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "CVG",
-      "catalogNumber": "3516",
-      "courseCode": "CVG 3516",
-      "title": "Numerical Modelling in Civil Engineering Section Days & Times Instructor Meeting Dates Status Details ZV00-LECSession C Mo 08:30 - 11:20We 08:30 - 11:20 StaffStaff 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31 Section Days & Times Instructor Meeting Dates Status Details ZV01-LABSession C Fr 08:00 - 11:50 Staff 2026-06-22 - 2026-07-31",
-      "timeZone": "America/Toronto",
-      "components": {
-        "LEC": [
-          {
-            "section": "ZV00-LEC Session C",
-            "sectionCode": "ZV00",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "Mo",
-                "startMinutes": 510,
-                "endMinutes": 680,
-                "virtual": false
-              },
-              {
-                "day": "We",
-                "startMinutes": 510,
-                "endMinutes": 680,
-                "virtual": false
-              }
-            ],
-            "instructors": [
-              "Staff",
-              "Staff"
-            ],
-            "meetingDates": [
-              "2026-06-22",
-              "2026-07-31"
-            ],
-            "status": "Open"
-          }
-        ],
-        "LAB": [
-          {
-            "section": "ZV01-LAB Session C",
-            "sectionCode": "ZV01",
-            "component": "LAB",
-            "session": null,
-            "times": [
-              {
-                "day": "Fr",
-                "startMinutes": 480,
-                "endMinutes": 710,
-                "virtual": false
-              }
-            ],
-            "instructors": [
-              "Staff"
-            ],
-            "meetingDates": [
-              "2026-06-22",
-              "2026-07-31"
             ],
             "status": "Open"
           }
@@ -11670,32 +11527,6 @@
       "subject": "CVG",
       "catalogNumber": "9998",
       "courseCode": "CVG 9998",
-      "title": "Comprehensive Examination (Phd) Section Days & Times Instructor Meeting Dates Status Details S00-RECTerm N/A 00:00 - 00:00 Staff 2026-05-01 - 2026-08-31",
-      "timeZone": "America/Toronto",
-      "components": {
-        "REC": [
-          {
-            "section": "S00-REC Term",
-            "sectionCode": "S00",
-            "component": "REC",
-            "session": null,
-            "times": [],
-            "instructors": [
-              "Staff"
-            ],
-            "meetingDates": [
-              "2026-05-01",
-              "2026-08-31"
-            ],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "DCC",
-      "catalogNumber": "2304",
-      "courseCode": "DCC 2304",
       "title": "Comprehensive Examination (Phd) Section Days & Times Instructor Meeting Dates Status Details S00-RECTerm N/A 00:00 - 00:00 Staff 2026-05-01 - 2026-08-31",
       "timeZone": "America/Toronto",
       "components": {
@@ -13411,6 +13242,46 @@
       }
     },
     {
+      "subject": "DRC",
+      "catalogNumber": "4821",
+      "courseCode": "DRC 4821",
+      "title": "Droit de l’environnement et de la durabilité (+1 combined) Section Days & Times Instructor Meeting Dates Status Details AA00-LECSession B Tu 08:30 - 11:20Th 08:30 - 11:20 Lynda Hubert TaLynda Hubert Ta 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
+      "timeZone": "America/Toronto",
+      "components": {
+        "LEC": [
+          {
+            "section": "AA00-LEC Session B",
+            "sectionCode": "AA00",
+            "component": "LEC",
+            "session": null,
+            "times": [
+              {
+                "day": "Tu",
+                "startMinutes": 510,
+                "endMinutes": 680,
+                "virtual": true
+              },
+              {
+                "day": "Th",
+                "startMinutes": 510,
+                "endMinutes": 680,
+                "virtual": true
+              }
+            ],
+            "instructors": [
+              "Lynda Hubert Ta",
+              "Lynda Hubert Ta"
+            ],
+            "meetingDates": [
+              "2026-05-04",
+              "2026-06-12"
+            ],
+            "status": "Open"
+          }
+        ]
+      }
+    },
+    {
       "subject": "DTI",
       "catalogNumber": "5125",
       "courseCode": "DTI 5125",
@@ -13673,33 +13544,9 @@
       "subject": "DTI",
       "catalogNumber": "9998",
       "courseCode": "DTI 9998",
-      "title": "Business Intelligence Technologies & Big Data Analytics (+1 combined) Section Days & Times Instructor Meeting Dates Status Details BV00-LECTerm Tu 19:00 - 21:50 Nour Eddine El Kadri 2026-05-05 - 2026-06-09",
+      "title": "Comprehensive Exam Section Days & Times Instructor Meeting Dates Status Details S00-RECTerm N/A 00:00 - 00:00 Staff 2026-05-01 - 2026-08-31",
       "timeZone": "America/Toronto",
       "components": {
-        "LEC": [
-          {
-            "section": "BV00-LEC Term",
-            "sectionCode": "BV00",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "Tu",
-                "startMinutes": 1140,
-                "endMinutes": 1310,
-                "virtual": false
-              }
-            ],
-            "instructors": [
-              "Nour Eddine El Kadri"
-            ],
-            "meetingDates": [
-              "2026-05-05",
-              "2026-06-09"
-            ],
-            "status": "Open"
-          }
-        ],
         "REC": [
           {
             "section": "S00-REC Term",
@@ -14016,32 +13863,6 @@
               "Staff"
             ],
             "meetingDates": null,
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "DVM",
-      "catalogNumber": "2506",
-      "courseCode": "DVM 2506",
-      "title": "Thesis Proposal Section Days & Times Instructor Meeting Dates Status Details S00-RECTerm N/A 00:00 - 00:00 Staff 2026-05-01 - 2026-08-31",
-      "timeZone": "America/Toronto",
-      "components": {
-        "REC": [
-          {
-            "section": "S00-REC Term",
-            "sectionCode": "S00",
-            "component": "REC",
-            "session": null,
-            "times": [],
-            "instructors": [
-              "Staff"
-            ],
-            "meetingDates": [
-              "2026-05-01",
-              "2026-08-31"
-            ],
             "status": "Open"
           }
         ]
@@ -15388,13 +15209,13 @@
                 "day": "Mo",
                 "startMinutes": 690,
                 "endMinutes": 860,
-                "virtual": false
+                "virtual": true
               },
               {
                 "day": "We",
                 "startMinutes": 690,
                 "endMinutes": 860,
-                "virtual": false
+                "virtual": true
               }
             ],
             "instructors": [
@@ -15404,21 +15225,6 @@
             "meetingDates": [
               "2026-05-04",
               "2026-06-12"
-            ],
-            "status": "Open"
-          },
-          {
-            "section": "A00-LEC Session C",
-            "sectionCode": "A00",
-            "component": "LEC",
-            "session": null,
-            "times": [],
-            "instructors": [
-              "Christine Straehle"
-            ],
-            "meetingDates": [
-              "2026-06-22",
-              "2026-07-31"
             ],
             "status": "Open"
           }
@@ -15641,7 +15447,7 @@
       "subject": "ECO",
       "catalogNumber": "3145",
       "courseCode": "ECO 3145",
-      "title": "Mathematical Economics I Section Days & Times Instructor Meeting Dates Status Details A00-LECSession B Mo 17:30 - 20:20We 17:30 - 20:20 StaffStaff 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
+      "title": "Mathematical Economics I Section Days & Times Instructor Meeting Dates Status Details A00-LECSession B Mo 17:30 - 20:20We 17:30 - 20:20 Quang Hung TruongQuang Hung Truong 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -15665,8 +15471,8 @@
               }
             ],
             "instructors": [
-              "Staff",
-              "Staff"
+              "Quang Hung Truong",
+              "Quang Hung Truong"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -16474,6 +16280,18 @@
               "2026-06-12"
             ],
             "status": "Closed"
+          },
+          {
+            "section": "A00-LEC Session B",
+            "sectionCode": "A00",
+            "component": "LEC",
+            "session": null,
+            "times": [],
+            "instructors": [
+              "Staff"
+            ],
+            "meetingDates": null,
+            "status": "Closed"
           }
         ]
       }
@@ -16623,7 +16441,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -16743,7 +16561,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -16877,7 +16695,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -16932,7 +16750,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Open"
+            "status": "Closed"
           },
           {
             "section": "DA00-LEC Session B",
@@ -17415,7 +17233,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -18003,7 +17821,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Closed"
+            "status": "Open"
           }
         ]
       }
@@ -19592,46 +19410,6 @@
       }
     },
     {
-      "subject": "ESL",
-      "catalogNumber": "2371",
-      "courseCode": "ESL 2371",
-      "title": "Bending the Rule: Oral and Written Grammar at the Advanced Level Section Days & Times Instructor Meeting Dates Status Details A00-LECSession C Mo 08:30 - 11:20We 08:30 - 11:20 Wafaa MorsyWafaa Morsy 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31",
-      "timeZone": "America/Toronto",
-      "components": {
-        "LEC": [
-          {
-            "section": "A00-LEC Session C",
-            "sectionCode": "A00",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "Mo",
-                "startMinutes": 510,
-                "endMinutes": 680,
-                "virtual": false
-              },
-              {
-                "day": "We",
-                "startMinutes": 510,
-                "endMinutes": 680,
-                "virtual": false
-              }
-            ],
-            "instructors": [
-              "Wafaa Morsy",
-              "Wafaa Morsy"
-            ],
-            "meetingDates": [
-              "2026-06-22",
-              "2026-07-31"
-            ],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
       "subject": "ESP",
       "catalogNumber": "1102",
       "courseCode": "ESP 1102",
@@ -20352,7 +20130,7 @@
       "subject": "FRA",
       "catalogNumber": "1710",
       "courseCode": "FRA 1710",
-      "title": "Analyse, écriture et argumentation I Section Days & Times Instructor Meeting Dates Status Details A00-LECSession A Tu 13:00 - 14:20Tu 13:00 - 14:20Tu 13:00 - 14:20 StaffStaffStaff 2026-05-04 - 2026-07-062026-07-07 - 2026-07-072026-07-08 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details A01-DGDSession A Tu 11:30 - 12:50Tu 11:30 - 12:50Tu 11:30 - 12:50 StaffStaffStaff 2026-05-04 - 2026-07-062026-07-07 - 2026-07-072026-07-08 - 2026-07-24",
+      "title": "Analyse, écriture et argumentation I Section Days & Times Instructor Meeting Dates Status Details A00-LECSession A Tu 13:00 - 14:20Tu 13:00 - 14:20Tu 13:00 - 14:20 Houda HamdiHouda HamdiHouda Hamdi 2026-05-04 - 2026-07-062026-07-07 - 2026-07-072026-07-08 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details A01-DGDSession A Tu 11:30 - 12:50Tu 11:30 - 12:50Tu 11:30 - 12:50 Houda HamdiStaffStaff 2026-05-04 - 2026-07-062026-07-07 - 2026-07-072026-07-08 - 2026-07-24",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -20382,9 +20160,9 @@
               }
             ],
             "instructors": [
-              "Staff",
-              "Staff",
-              "Staff"
+              "Houda Hamdi",
+              "Houda Hamdi",
+              "Houda Hamdi"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -20420,7 +20198,7 @@
               }
             ],
             "instructors": [
-              "Staff",
+              "Houda Hamdi",
               "Staff",
               "Staff"
             ],
@@ -20437,7 +20215,7 @@
       "subject": "FRA",
       "catalogNumber": "1720",
       "courseCode": "FRA 1720",
-      "title": "Analyse, écriture et argumentation II Section Days & Times Instructor Meeting Dates Status Details A00-LECSession A Th 20:30 - 21:50 Monia Brahim 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details A01-DGDSession A Th 19:00 - 20:20 Staff 2026-05-04 - 2026-07-24",
+      "title": "Analyse, écriture et argumentation II Section Days & Times Instructor Meeting Dates Status Details A00-LECSession A Th 20:30 - 21:50 Monia Brahim 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details A01-DGDSession A Th 19:00 - 20:20 Monia Brahim 2026-05-04 - 2026-07-24",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -20479,7 +20257,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Monia Brahim"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -20562,6 +20340,46 @@
                 "startMinutes": 690,
                 "endMinutes": 770,
                 "virtual": true
+              }
+            ],
+            "instructors": [
+              "Maxime Prévost",
+              "Maxime Prévost"
+            ],
+            "meetingDates": [
+              "2026-05-04",
+              "2026-07-24"
+            ],
+            "status": "Open"
+          }
+        ]
+      }
+    },
+    {
+      "subject": "FRA",
+      "catalogNumber": "3543",
+      "courseCode": "FRA 3543",
+      "title": "Programme de lecture Section Days & Times Instructor Meeting Dates Status Details A00-LECSession A Fr 13:00 - 14:20Tu 11:30 - 12:50 Maxime PrévostMaxime Prévost 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24",
+      "timeZone": "America/Toronto",
+      "components": {
+        "LEC": [
+          {
+            "section": "A00-LEC Session A",
+            "sectionCode": "A00",
+            "component": "LEC",
+            "session": null,
+            "times": [
+              {
+                "day": "Fr",
+                "startMinutes": 780,
+                "endMinutes": 860,
+                "virtual": false
+              },
+              {
+                "day": "Tu",
+                "startMinutes": 690,
+                "endMinutes": 770,
+                "virtual": false
               }
             ],
             "instructors": [
@@ -20937,6 +20755,32 @@
             "meetingDates": [
               "2026-06-22",
               "2026-07-31"
+            ],
+            "status": "Open"
+          }
+        ]
+      }
+    },
+    {
+      "subject": "GEG",
+      "catalogNumber": "3101",
+      "courseCode": "GEG 3101",
+      "title": "Introduction aux études sur le personnel de la santé : planification, politique et gestion Section Days & Times Instructor Meeting Dates Status Details WA00-SEMTerm N/A 00:00 - 00:00 Ivy Bourgeault 2026-05-01 - 2026-06-30",
+      "timeZone": "America/Toronto",
+      "components": {
+        "SEM": [
+          {
+            "section": "WA00-SEM Term",
+            "sectionCode": "WA00",
+            "component": "SEM",
+            "session": null,
+            "times": [],
+            "instructors": [
+              "Ivy Bourgeault"
+            ],
+            "meetingDates": [
+              "2026-05-01",
+              "2026-06-30"
             ],
             "status": "Open"
           }
@@ -23049,7 +22893,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -23265,7 +23109,7 @@
               "2026-06-22",
               "2026-07-31"
             ],
-            "status": "Closed"
+            "status": "Open"
           }
         ]
       }
@@ -23298,7 +23142,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Closed"
+            "status": "Open"
           }
         ]
       }
@@ -23603,7 +23447,7 @@
       "subject": "ITI",
       "catalogNumber": "1100",
       "courseCode": "ITI 1100",
-      "title": "Digital Systems I Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A Tu 11:30 - 12:50Fr 11:30 - 12:50 Mohammad Al RidhawiStaff 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z01-LABSession A Mo 08:30 - 11:20 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z02-LABSession A Th 08:30 - 11:20 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z03-TUTSession A Mo 13:00 - 14:20 Staff 2026-05-04 - 2026-07-24",
+      "title": "Digital Systems I Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A Tu 11:30 - 12:50Fr 11:30 - 12:50 Mohammad Al RidhawiMohammad Al Ridhawi 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z01-LABSession A Mo 08:30 - 11:20 Mohammad Al Ridhawi 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z02-LABSession A Th 08:30 - 11:20 Mohammad Al Ridhawi 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z03-TUTSession A Mo 13:00 - 14:20 Mohammad Al Ridhawi 2026-05-04 - 2026-07-24",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -23628,7 +23472,7 @@
             ],
             "instructors": [
               "Mohammad Al Ridhawi",
-              "Staff"
+              "Mohammad Al Ridhawi"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -23652,7 +23496,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Mohammad Al Ridhawi"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -23674,7 +23518,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Mohammad Al Ridhawi"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -23698,7 +23542,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Mohammad Al Ridhawi"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -23977,7 +23821,7 @@
               "2026-06-22",
               "2026-07-31"
             ],
-            "status": "Closed"
+            "status": "Open"
           }
         ]
       }
@@ -24041,7 +23885,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Open"
+            "status": "Closed"
           },
           {
             "section": "X02-DGD Session A",
@@ -24171,7 +24015,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Closed"
+            "status": "Open"
           },
           {
             "section": "X03-DGD Session A",
@@ -24224,7 +24068,7 @@
       "subject": "MAT",
       "catalogNumber": "1330",
       "courseCode": "MAT 1330",
-      "title": "Calculus for the Life Sciences I Section Days & Times Instructor Meeting Dates Status Details X00-LECSession A Tu 19:00 - 20:20Th 19:00 - 20:20 Haitian ZhongHaitian Zhong 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details X01-DGDSession A Th 17:30 - 18:50 Haitian Zhong 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details X02-DGDSession A Th 17:30 - 18:50 Haitian Zhong 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details X03-DGDSession A Fr 14:30 - 15:50 Haitian Zhong 2026-05-04 - 2026-07-24",
+      "title": "Calculus for the Life Sciences I Section Days & Times Instructor Meeting Dates Status Details X00-LECSession A Tu 19:00 - 20:20Th 19:00 - 20:20 Haitian ZhongHaitian Zhong 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details X01-DGDSession A Th 17:30 - 18:50 Haitian Zhong 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details X02-DGDSession A Th 17:30 - 18:50 Haitian Zhong 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details X03-DGDSession A Fr 14:30 - 15:50 Haitian Zhong 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details X04-DGDSession A Fr 14:30 - 15:50 Haitian Zhong 2026-05-04 - 2026-07-24",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -24279,7 +24123,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Open"
+            "status": "Closed"
           },
           {
             "section": "X02-DGD Session A",
@@ -24306,6 +24150,28 @@
           {
             "section": "X03-DGD Session A",
             "sectionCode": "X03",
+            "component": "DGD",
+            "session": null,
+            "times": [
+              {
+                "day": "Fr",
+                "startMinutes": 870,
+                "endMinutes": 950,
+                "virtual": true
+              }
+            ],
+            "instructors": [
+              "Haitian Zhong"
+            ],
+            "meetingDates": [
+              "2026-05-04",
+              "2026-07-24"
+            ],
+            "status": "Open"
+          },
+          {
+            "section": "X04-DGD Session A",
+            "sectionCode": "X04",
             "component": "DGD",
             "session": null,
             "times": [
@@ -24363,7 +24229,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Closed"
+            "status": "Open"
           }
         ],
         "DGD": [
@@ -24387,7 +24253,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Open"
+            "status": "Closed"
           },
           {
             "section": "X02-DGD Session A",
@@ -24625,7 +24491,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Closed"
+            "status": "Open"
           },
           {
             "section": "X03-DGD Session A",
@@ -24647,7 +24513,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Closed"
+            "status": "Open"
           },
           {
             "section": "X04-DGD Session A",
@@ -24733,7 +24599,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Open"
+            "status": "Closed"
           },
           {
             "section": "X02-DGD Session A",
@@ -25031,7 +24897,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Closed"
+            "status": "Open"
           }
         ],
         "DGD": [
@@ -25150,7 +25016,7 @@
       "subject": "MAT",
       "catalogNumber": "1741",
       "courseCode": "MAT 1741",
-      "title": "Calculus for the Life Sciences I Section Days & Times Instructor Meeting Dates Status Details X00-LECSession A Tu 19:00 - 20:20Th 19:00 - 20:20 Haitian ZhongHaitian Zhong 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details X01-DGDSession A Th 17:30 - 18:50 Haitian Zhong 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details X02-DGDSession A Th 17:30 - 18:50 Haitian Zhong 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details X03-DGDSession A Fr 14:30 - 15:50 Haitian Zhong 2026-05-04 - 2026-07-24",
+      "title": "Introduction à l'algèbre linéaire Section Days & Times Instructor Meeting Dates Status Details X00-LECSession A Mo 17:30 - 18:50We 17:30 - 18:50 Joseph KhouryJoseph Khoury 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details X01-DGDSession A Mo 19:00 - 20:20 Joseph Khoury 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details X02-DGDSession A We 19:00 - 20:20 Joseph Khoury 2026-05-04 - 2026-07-24",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -25160,18 +25026,6 @@
             "component": "LEC",
             "session": null,
             "times": [
-              {
-                "day": "Tu",
-                "startMinutes": 1140,
-                "endMinutes": 1220,
-                "virtual": false
-              },
-              {
-                "day": "Th",
-                "startMinutes": 1140,
-                "endMinutes": 1220,
-                "virtual": false
-              },
               {
                 "day": "Mo",
                 "startMinutes": 1050,
@@ -25186,8 +25040,8 @@
               }
             ],
             "instructors": [
-              "Haitian Zhong",
-              "Haitian Zhong"
+              "Joseph Khoury",
+              "Joseph Khoury"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -25204,12 +25058,6 @@
             "session": null,
             "times": [
               {
-                "day": "Th",
-                "startMinutes": 1050,
-                "endMinutes": 1130,
-                "virtual": false
-              },
-              {
                 "day": "Mo",
                 "startMinutes": 1140,
                 "endMinutes": 1220,
@@ -25217,13 +25065,13 @@
               }
             ],
             "instructors": [
-              "Haitian Zhong"
+              "Joseph Khoury"
             ],
             "meetingDates": [
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Open"
+            "status": "Closed"
           },
           {
             "section": "X02-DGD Session A",
@@ -25232,12 +25080,6 @@
             "session": null,
             "times": [
               {
-                "day": "Th",
-                "startMinutes": 1050,
-                "endMinutes": 1130,
-                "virtual": false
-              },
-              {
                 "day": "We",
                 "startMinutes": 1140,
                 "endMinutes": 1220,
@@ -25245,29 +25087,7 @@
               }
             ],
             "instructors": [
-              "Haitian Zhong"
-            ],
-            "meetingDates": [
-              "2026-05-04",
-              "2026-07-24"
-            ],
-            "status": "Open"
-          },
-          {
-            "section": "X03-DGD Session A",
-            "sectionCode": "X03",
-            "component": "DGD",
-            "session": null,
-            "times": [
-              {
-                "day": "Fr",
-                "startMinutes": 870,
-                "endMinutes": 950,
-                "virtual": false
-              }
-            ],
-            "instructors": [
-              "Haitian Zhong"
+              "Joseph Khoury"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -25464,70 +25284,6 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Closed"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "MAT",
-      "catalogNumber": "2543",
-      "courseCode": "MAT 2543",
-      "title": "Mathématiques discrètes pour l'informatique Section Days & Times Instructor Meeting Dates Status Details X00-LECSession A Mo 10:00 - 11:20We 08:30 - 09:50 Joseph KhouryJoseph Khoury 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details X01-DGDSession A Tu 17:30 - 18:50 Joseph Khoury 2026-05-04 - 2026-07-24",
-      "timeZone": "America/Toronto",
-      "components": {
-        "LEC": [
-          {
-            "section": "X00-LEC Session A",
-            "sectionCode": "X00",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "Mo",
-                "startMinutes": 600,
-                "endMinutes": 680,
-                "virtual": true
-              },
-              {
-                "day": "We",
-                "startMinutes": 510,
-                "endMinutes": 590,
-                "virtual": true
-              }
-            ],
-            "instructors": [
-              "Joseph Khoury",
-              "Joseph Khoury"
-            ],
-            "meetingDates": [
-              "2026-05-04",
-              "2026-07-24"
-            ],
-            "status": "Open"
-          }
-        ],
-        "DGD": [
-          {
-            "section": "X01-DGD Session A",
-            "sectionCode": "X01",
-            "component": "DGD",
-            "session": null,
-            "times": [
-              {
-                "day": "Tu",
-                "startMinutes": 1050,
-                "endMinutes": 1130,
-                "virtual": true
-              }
-            ],
-            "instructors": [
-              "Joseph Khoury"
-            ],
-            "meetingDates": [
-              "2026-05-04",
-              "2026-07-24"
-            ],
             "status": "Open"
           }
         ]
@@ -25608,7 +25364,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Closed"
+            "status": "Open"
           }
         ]
       }
@@ -25643,6 +25399,46 @@
             "instructors": [
               "Monica Nevins",
               "Monica Nevins"
+            ],
+            "meetingDates": [
+              "2026-05-04",
+              "2026-07-24"
+            ],
+            "status": "Open"
+          }
+        ]
+      }
+    },
+    {
+      "subject": "MAT",
+      "catalogNumber": "3720",
+      "courseCode": "MAT 3720",
+      "title": "Foundations of Probability Section Days & Times Instructor Meeting Dates Status Details X00-LECSession A Mo 11:30 - 12:50Th 13:00 - 14:20 Rafal KulikRafal Kulik 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24",
+      "timeZone": "America/Toronto",
+      "components": {
+        "LEC": [
+          {
+            "section": "X00-LEC Session A",
+            "sectionCode": "X00",
+            "component": "LEC",
+            "session": null,
+            "times": [
+              {
+                "day": "Mo",
+                "startMinutes": 690,
+                "endMinutes": 770,
+                "virtual": false
+              },
+              {
+                "day": "Th",
+                "startMinutes": 780,
+                "endMinutes": 860,
+                "virtual": false
+              }
+            ],
+            "instructors": [
+              "Rafal Kulik",
+              "Rafal Kulik"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -25737,7 +25533,7 @@
       "subject": "MAT",
       "catalogNumber": "5991",
       "courseCode": "MAT 5991",
-      "title": "Directed Studies Section Days & Times Instructor Meeting Dates Status Details A00-RECTerm N/A 00:00 - 00:00 Staff 2026-05-01 - 2026-08-31 Section Days & Times Instructor Meeting Dates Status Details B00-RECTerm N/A 00:00 - 00:00 Staff 2026-05-01 - 2026-08-31",
+      "title": "Directed Studies Section Days & Times Instructor Meeting Dates Status Details A00-RECTerm N/A 00:00 - 00:00 Patrick Boily 2026-05-01 - 2026-08-31",
       "timeZone": "America/Toronto",
       "components": {
         "REC": [
@@ -25748,28 +25544,13 @@
             "session": null,
             "times": [],
             "instructors": [
-              "Staff"
+              "Patrick Boily"
             ],
             "meetingDates": [
               "2026-05-01",
               "2026-08-31"
             ],
-            "status": "Open"
-          },
-          {
-            "section": "B00-REC Term",
-            "sectionCode": "B00",
-            "component": "REC",
-            "session": null,
-            "times": [],
-            "instructors": [
-              "Staff"
-            ],
-            "meetingDates": [
-              "2026-05-01",
-              "2026-08-31"
-            ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -26717,39 +26498,6 @@
     },
     {
       "subject": "MBA",
-      "catalogNumber": "6244",
-      "courseCode": "MBA 6244",
-      "title": "Lean Six Sigma Yellow Belt Section Days & Times Instructor Meeting Dates Status Details BV00-LECTerm Th 19:00 - 21:50 Kenneth Eakin 2026-05-07 - 2026-06-11",
-      "timeZone": "America/Toronto",
-      "components": {
-        "LEC": [
-          {
-            "section": "BV00-LEC Term",
-            "sectionCode": "BV00",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "Th",
-                "startMinutes": 1140,
-                "endMinutes": 1310,
-                "virtual": false
-              }
-            ],
-            "instructors": [
-              "Kenneth Eakin"
-            ],
-            "meetingDates": [
-              "2026-05-07",
-              "2026-06-11"
-            ],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "MBA",
       "catalogNumber": "6251",
       "courseCode": "MBA 6251",
       "title": "Corporate Finance Section Days & Times Instructor Meeting Dates Status Details A00-LECTerm We 19:00 - 21:50 Bruce Millar 2026-05-06 - 2026-06-10",
@@ -27420,7 +27168,7 @@
       "subject": "MCG",
       "catalogNumber": "2108",
       "courseCode": "MCG 2108",
-      "title": "Dynamics Section Days & Times Instructor Meeting Dates Status Details X00-LECSession B Tu 08:30 - 11:20Fr 08:30 - 11:20 Hamidreza ShirkhaniHamidreza Shirkhani 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12 Section Days & Times Instructor Meeting Dates Status Details X01-TUTSession B Tu 11:30 - 13:20Th 11:30 - 13:20 Hamidreza ShirkhaniStaff 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
+      "title": "Dynamics Section Days & Times Instructor Meeting Dates Status Details X00-LECSession B Tu 08:30 - 11:20Fr 08:30 - 11:20 Hamidreza ShirkhaniHamidreza Shirkhani 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12 Section Days & Times Instructor Meeting Dates Status Details X01-TUTSession B Tu 11:30 - 13:20Th 11:30 - 13:20 Hamidreza ShirkhaniHamidreza Shirkhani 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -27476,7 +27224,7 @@
             ],
             "instructors": [
               "Hamidreza Shirkhani",
-              "Staff"
+              "Hamidreza Shirkhani"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -27515,7 +27263,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ],
         "TUT": [
@@ -27539,7 +27287,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -28023,6 +27771,73 @@
     },
     {
       "subject": "MCG",
+      "catalogNumber": "4126",
+      "courseCode": "MCG 4126",
+      "title": "Selected Topics I Section Days & Times Instructor Meeting Dates Status Details X00-LECSession A N/A 00:00 - 00:00 Staff - Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A Mo 19:00 - 21:50 Mohammad Rafiee 2026-05-04 - 2026-07-24 Topic: Electronics Packaging & Manuf. Section Days & Times Instructor Meeting Dates Status Details ZV00-LECSession A We 19:00 - 21:50 Yao-Te Huang 2026-05-04 - 2026-07-24 Topic: Building Energy Analysis",
+      "timeZone": "America/Toronto",
+      "components": {
+        "LEC": [
+          {
+            "section": "X00-LEC Session A",
+            "sectionCode": "X00",
+            "component": "LEC",
+            "session": null,
+            "times": [],
+            "instructors": [
+              "Staff"
+            ],
+            "meetingDates": null,
+            "status": "Closed"
+          },
+          {
+            "section": "Z00-LEC Session A",
+            "sectionCode": "Z00",
+            "component": "LEC",
+            "session": null,
+            "times": [
+              {
+                "day": "Mo",
+                "startMinutes": 1140,
+                "endMinutes": 1310,
+                "virtual": true
+              }
+            ],
+            "instructors": [
+              "Mohammad Rafiee"
+            ],
+            "meetingDates": [
+              "2026-05-04",
+              "2026-07-24"
+            ],
+            "status": "Open"
+          },
+          {
+            "section": "ZV00-LEC Session A",
+            "sectionCode": "ZV00",
+            "component": "LEC",
+            "session": null,
+            "times": [
+              {
+                "day": "We",
+                "startMinutes": 1140,
+                "endMinutes": 1310,
+                "virtual": true
+              }
+            ],
+            "instructors": [
+              "Yao-Te Huang"
+            ],
+            "meetingDates": [
+              "2026-05-04",
+              "2026-07-24"
+            ],
+            "status": "Open"
+          }
+        ]
+      }
+    },
+    {
+      "subject": "MCG",
       "catalogNumber": "4190",
       "courseCode": "MCG 4190",
       "title": "Selected Topics I Section Days & Times Instructor Meeting Dates Status Details X00-LECSession A N/A 00:00 - 00:00 Staff - Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A Mo 19:00 - 21:50 Mohammad Rafiee 2026-05-04 - 2026-07-24 Topic: Electronics Packaging & Manuf. Section Days & Times Instructor Meeting Dates Status Details ZV00-LECSession A We 19:00 - 21:50 Yao-Te Huang 2026-05-04 - 2026-07-24 Topic: Building Energy Analysis",
@@ -28061,7 +27876,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Closed"
+            "status": "Open"
           },
           {
             "section": "ZV00-LEC Session A",
@@ -29444,7 +29259,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Closed"
+            "status": "Open"
           },
           {
             "section": "ZZ00-LEC Session A",
@@ -30809,46 +30624,6 @@
       }
     },
     {
-      "subject": "OMT",
-      "catalogNumber": "4126",
-      "courseCode": "OMT 4126",
-      "title": "Fondements scientifiques de la recherche en audiologie et en orthophonie Section Days & Times Instructor Meeting Dates Status Details A00-LECTerm Tu 11:30 - 14:30Th 11:30 - 14:30 Sarah PignacSarah Pignac 2026-06-02 - 2026-07-092026-06-02 - 2026-07-09",
-      "timeZone": "America/Toronto",
-      "components": {
-        "LEC": [
-          {
-            "section": "A00-LEC Term",
-            "sectionCode": "A00",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "Tu",
-                "startMinutes": 690,
-                "endMinutes": 870,
-                "virtual": true
-              },
-              {
-                "day": "Th",
-                "startMinutes": 690,
-                "endMinutes": 870,
-                "virtual": true
-              }
-            ],
-            "instructors": [
-              "Sarah Pignac",
-              "Sarah Pignac"
-            ],
-            "meetingDates": [
-              "2026-06-02",
-              "2026-07-09"
-            ],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
       "subject": "ORA",
       "catalogNumber": "5515",
       "courseCode": "ORA 5515",
@@ -31631,7 +31406,7 @@
                 "day": "We",
                 "startMinutes": 1110,
                 "endMinutes": 1280,
-                "virtual": false
+                "virtual": true
               }
             ],
             "instructors": [
@@ -31653,7 +31428,7 @@
                 "day": "Tu",
                 "startMinutes": 1110,
                 "endMinutes": 1280,
-                "virtual": false
+                "virtual": true
               }
             ],
             "instructors": [
@@ -31675,7 +31450,7 @@
                 "day": "Th",
                 "startMinutes": 1110,
                 "endMinutes": 1280,
-                "virtual": false
+                "virtual": true
               }
             ],
             "instructors": [
@@ -31684,58 +31459,6 @@
             "meetingDates": [
               "2026-07-07",
               "2026-08-14"
-            ],
-            "status": "Open"
-          }
-        ],
-        "STG": [
-          {
-            "section": "K01-STG Term",
-            "sectionCode": "K01",
-            "component": "STG",
-            "session": null,
-            "times": [
-              {
-                "day": "Mo",
-                "startMinutes": 480,
-                "endMinutes": 1020,
-                "virtual": true
-              },
-              {
-                "day": "Tu",
-                "startMinutes": 480,
-                "endMinutes": 1020,
-                "virtual": true
-              },
-              {
-                "day": "We",
-                "startMinutes": 480,
-                "endMinutes": 1020,
-                "virtual": true
-              },
-              {
-                "day": "Th",
-                "startMinutes": 480,
-                "endMinutes": 1020,
-                "virtual": true
-              },
-              {
-                "day": "Fr",
-                "startMinutes": 480,
-                "endMinutes": 1020,
-                "virtual": true
-              }
-            ],
-            "instructors": [
-              "Staff",
-              "Staff",
-              "Staff",
-              "Staff",
-              "Staff"
-            ],
-            "meetingDates": [
-              "2026-05-04",
-              "2026-06-26"
             ],
             "status": "Open"
           }
@@ -32033,6 +31756,74 @@
             "meetingDates": [
               "2026-04-20",
               "2026-06-15"
+            ],
+            "status": "Open"
+          }
+        ],
+        "LEC": [
+          {
+            "section": "X200-LEC Term",
+            "sectionCode": "X200",
+            "component": "LEC",
+            "session": null,
+            "times": [
+              {
+                "day": "We",
+                "startMinutes": 1110,
+                "endMinutes": 1280,
+                "virtual": true
+              }
+            ],
+            "instructors": [
+              "Staff"
+            ],
+            "meetingDates": [
+              "2026-07-07",
+              "2026-08-14"
+            ],
+            "status": "Open"
+          },
+          {
+            "section": "Y200-LEC Term",
+            "sectionCode": "Y200",
+            "component": "LEC",
+            "session": null,
+            "times": [
+              {
+                "day": "Tu",
+                "startMinutes": 1110,
+                "endMinutes": 1280,
+                "virtual": true
+              }
+            ],
+            "instructors": [
+              "Staff"
+            ],
+            "meetingDates": [
+              "2026-07-07",
+              "2026-08-14"
+            ],
+            "status": "Open"
+          },
+          {
+            "section": "Z200-LEC Term",
+            "sectionCode": "Z200",
+            "component": "LEC",
+            "session": null,
+            "times": [
+              {
+                "day": "Th",
+                "startMinutes": 1110,
+                "endMinutes": 1280,
+                "virtual": true
+              }
+            ],
+            "instructors": [
+              "Staff"
+            ],
+            "meetingDates": [
+              "2026-07-07",
+              "2026-08-14"
             ],
             "status": "Open"
           }
@@ -32447,83 +32238,6 @@
             ],
             "instructors": [
               "Staff"
-            ],
-            "meetingDates": [
-              "2026-07-07",
-              "2026-08-14"
-            ],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "PED",
-      "catalogNumber": "4174",
-      "courseCode": "PED 4174",
-      "title": "Didactique des sciences, de la technologie et de l’environnement à l’élémentaire Section Days & Times Instructor Meeting Dates Status Details X200-LECTerm Th 18:30 - 21:20 Louis Trudel 2026-07-07 - 2026-08-14 Section Days & Times Instructor Meeting Dates Status Details Y200-LECTerm We 18:30 - 21:20 Dovat Mutimbutimbu 2026-07-07 - 2026-08-14 Section Days & Times Instructor Meeting Dates Status Details Z200-LECTerm Tu 18:30 - 21:20 Dovat Mutimbutimbu 2026-07-07 - 2026-08-14",
-      "timeZone": "America/Toronto",
-      "components": {
-        "LEC": [
-          {
-            "section": "X200-LEC Term",
-            "sectionCode": "X200",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "Th",
-                "startMinutes": 1110,
-                "endMinutes": 1280,
-                "virtual": false
-              }
-            ],
-            "instructors": [
-              "Louis Trudel"
-            ],
-            "meetingDates": [
-              "2026-07-07",
-              "2026-08-14"
-            ],
-            "status": "Open"
-          },
-          {
-            "section": "Y200-LEC Term",
-            "sectionCode": "Y200",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "We",
-                "startMinutes": 1110,
-                "endMinutes": 1280,
-                "virtual": false
-              }
-            ],
-            "instructors": [
-              "Dovat Mutimbutimbu"
-            ],
-            "meetingDates": [
-              "2026-07-07",
-              "2026-08-14"
-            ],
-            "status": "Open"
-          },
-          {
-            "section": "Z200-LEC Term",
-            "sectionCode": "Z200",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "Tu",
-                "startMinutes": 1110,
-                "endMinutes": 1280,
-                "virtual": false
-              }
-            ],
-            "instructors": [
-              "Dovat Mutimbutimbu"
             ],
             "meetingDates": [
               "2026-07-07",
@@ -33349,41 +33063,6 @@
     },
     {
       "subject": "PHT",
-      "catalogNumber": "5513",
-      "courseCode": "PHT 5513",
-      "title": "Pathophysiology Section Days & Times Instructor Meeting Dates Status Details S00-LECSession A Tu 09:00 - 11:50 Jacqueline A. CarnegieSimon ChenChristopher Ro 2026-05-04 - 2026-07-24",
-      "timeZone": "America/Toronto",
-      "components": {
-        "LEC": [
-          {
-            "section": "S00-LEC Session A",
-            "sectionCode": "S00",
-            "component": "LEC",
-            "session": null,
-            "times": [
-              {
-                "day": "Tu",
-                "startMinutes": 540,
-                "endMinutes": 710,
-                "virtual": false
-              }
-            ],
-            "instructors": [
-              "Jacqueline A. Carnegie",
-              "Simon Chen",
-              "Christopher Ro"
-            ],
-            "meetingDates": [
-              "2026-05-04",
-              "2026-07-24"
-            ],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "PHT",
       "catalogNumber": "5631",
       "courseCode": "PHT 5631",
       "title": "Fondements et pratiques au niveau du système cardiorespiratoire Section Days & Times Instructor Meeting Dates Status Details A00-LECTerm Mo 13:00 - 15:50We 13:00 - 15:50 StaffStaff 2026-06-22 - 2026-08-062026-06-22 - 2026-08-06 Section Days & Times Instructor Meeting Dates Status Details A01-TUTTerm Mo 16:00 - 17:50We 16:00 - 17:50 StaffStaff 2026-06-22 - 2026-08-062026-06-22 - 2026-08-06 Section Days & Times Instructor Meeting Dates Status Details A02-LABTerm Tu 08:30 - 15:20Th 08:30 - 15:20 StaffStaff 2026-06-22 - 2026-08-062026-06-22 - 2026-08-06",
@@ -33870,7 +33549,7 @@
       "subject": "PHY",
       "catalogNumber": "1122",
       "courseCode": "PHY 1122",
-      "title": "Fundamentals of Physics II Section Days & Times Instructor Meeting Dates Status Details A00-LECSession A Tu 13:00 - 14:20Th 11:30 - 12:50 StaffStaff 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details A01-LABSession A We 13:00 - 15:50We 13:00 - 15:50We 13:00 - 15:50We 13:00 - 15:50We 13:00 - 15:50 Michael C. H. WongStaffStaffStaffStaff 2026-05-27 - 2026-05-272026-06-10 - 2026-06-102026-06-24 - 2026-06-242026-07-08 - 2026-07-082026-07-22 - 2026-07-22 Section Days & Times Instructor Meeting Dates Status Details A02-LABSession A Th 13:00 - 15:50Th 13:00 - 15:50Th 13:00 - 15:50Th 13:00 - 15:50Th 13:00 - 15:50 Michael C. H. WongStaffStaffStaffStaff 2026-05-28 - 2026-05-282026-06-11 - 2026-06-112026-06-25 - 2026-06-252026-07-09 - 2026-07-092026-07-23 - 2026-07-23 Section Days & Times Instructor Meeting Dates Status Details A03-DGDSession A Mo 14:30 - 15:50 Staff 2026-05-04 - 2026-07-24",
+      "title": "Fundamentals of Physics II Section Days & Times Instructor Meeting Dates Status Details A00-LECSession A Tu 13:00 - 14:20Th 11:30 - 12:50 Nicholas DallaireNicholas Dallaire 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details A01-LABSession A We 13:00 - 15:50We 13:00 - 15:50We 13:00 - 15:50We 13:00 - 15:50We 13:00 - 15:50 Michael C. H. WongStaffStaffStaffStaff 2026-05-27 - 2026-05-272026-06-10 - 2026-06-102026-06-24 - 2026-06-242026-07-08 - 2026-07-082026-07-22 - 2026-07-22 Section Days & Times Instructor Meeting Dates Status Details A02-LABSession A Th 13:00 - 15:50Th 13:00 - 15:50Th 13:00 - 15:50Th 13:00 - 15:50Th 13:00 - 15:50 Michael C. H. WongStaffStaffStaffStaff 2026-05-28 - 2026-05-282026-06-11 - 2026-06-112026-06-25 - 2026-06-252026-07-09 - 2026-07-092026-07-23 - 2026-07-23 Section Days & Times Instructor Meeting Dates Status Details A03-DGDSession A Mo 14:30 - 15:50 Nicholas Dallaire 2026-05-04 - 2026-07-24",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -33894,8 +33573,8 @@
               }
             ],
             "instructors": [
-              "Staff",
-              "Staff"
+              "Nicholas Dallaire",
+              "Nicholas Dallaire"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -34021,7 +33700,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Nicholas Dallaire"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -35239,7 +34918,7 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ],
         "DGD": [
@@ -35650,7 +35329,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -35730,7 +35409,7 @@
               "2026-06-22",
               "2026-07-31"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -35819,7 +35498,7 @@
       "subject": "POL",
       "catalogNumber": "4150",
       "courseCode": "POL 4150",
-      "title": "Electoral Systems and Political Parties Section Days & Times Instructor Meeting Dates Status Details A00-LECSession C Tu 11:30 - 14:20Th 11:30 - 14:20 StaffStaff 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31",
+      "title": "Electoral Systems and Political Parties Section Days & Times Instructor Meeting Dates Status Details A00-LECSession C Tu 11:30 - 14:20Th 11:30 - 14:20 Mehmet CakirMehmet Cakir 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -35843,8 +35522,8 @@
               }
             ],
             "instructors": [
-              "Staff",
-              "Staff"
+              "Mehmet Cakir",
+              "Mehmet Cakir"
             ],
             "meetingDates": [
               "2026-06-22",
@@ -36454,7 +36133,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
@@ -36673,7 +36352,47 @@
               "2026-05-04",
               "2026-07-24"
             ],
-            "status": "Closed"
+            "status": "Open"
+          }
+        ]
+      }
+    },
+    {
+      "subject": "PSY",
+      "catalogNumber": "3103",
+      "courseCode": "PSY 3103",
+      "title": "Introduction à la psychologie : fondements Section Days & Times Instructor Meeting Dates Status Details A00-LECSession B Mo 13:00 - 15:50We 13:00 - 15:50 Nathalie Le MarecNathalie Le Marec 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
+      "timeZone": "America/Toronto",
+      "components": {
+        "LEC": [
+          {
+            "section": "A00-LEC Session B",
+            "sectionCode": "A00",
+            "component": "LEC",
+            "session": null,
+            "times": [
+              {
+                "day": "Mo",
+                "startMinutes": 780,
+                "endMinutes": 950,
+                "virtual": false
+              },
+              {
+                "day": "We",
+                "startMinutes": 780,
+                "endMinutes": 950,
+                "virtual": false
+              }
+            ],
+            "instructors": [
+              "Nathalie Le Marec",
+              "Nathalie Le Marec"
+            ],
+            "meetingDates": [
+              "2026-05-04",
+              "2026-06-12"
+            ],
+            "status": "Open"
           }
         ]
       }
@@ -36682,7 +36401,7 @@
       "subject": "PSY",
       "catalogNumber": "3105",
       "courseCode": "PSY 3105",
-      "title": "The Psychology of Adolescence Section Days & Times Instructor Meeting Dates Status Details A00-LECSession B Mo 09:00 - 11:50We 09:00 - 11:50 Rylee OramRylee Oram 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12 Section Days & Times Instructor Meeting Dates Status Details E00-LECSession B Tu 13:00 - 15:50Th 13:00 - 15:50 StaffStaff 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
+      "title": "The Psychology of Adolescence Section Days & Times Instructor Meeting Dates Status Details A00-LECSession B Mo 09:00 - 11:50We 09:00 - 11:50 Rylee OramRylee Oram 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12 Section Days & Times Instructor Meeting Dates Status Details E00-LECSession B Tu 13:00 - 15:50Th 13:00 - 15:50 Rylee OramRylee Oram 2026-05-04 - 2026-06-122026-05-04 - 2026-06-12",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -36735,8 +36454,8 @@
               }
             ],
             "instructors": [
-              "Staff",
-              "Staff"
+              "Rylee Oram",
+              "Rylee Oram"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -36856,7 +36575,7 @@
               "2026-06-22",
               "2026-07-31"
             ],
-            "status": "Closed"
+            "status": "Open"
           }
         ]
       }
@@ -37123,9 +36842,9 @@
     },
     {
       "subject": "PSY",
-      "catalogNumber": "6002",
-      "courseCode": "PSY 6002",
-      "title": "Practicum in Applied Research Section Days & Times Instructor Meeting Dates Status Details T00-STGTerm N/A 00:00 - 00:00 Staff 2026-05-01 - 2026-08-31 Section Days & Times Instructor Meeting Dates Status Details Z00-STGTerm We 10:00 - 11:20 Staff 2026-05-01 - 2026-08-31",
+      "catalogNumber": "5521",
+      "courseCode": "PSY 5521",
+      "title": "Stage consult.-clinique psychologie Section Days & Times Instructor Meeting Dates Status Details T00-STGTerm N/A 00:00 - 00:00 Staff 2026-05-01 - 2026-08-31",
       "timeZone": "America/Toronto",
       "components": {
         "STG": [
@@ -37135,6 +36854,39 @@
             "component": "STG",
             "session": null,
             "times": [],
+            "instructors": [
+              "Staff"
+            ],
+            "meetingDates": [
+              "2026-05-01",
+              "2026-08-31"
+            ],
+            "status": "Open"
+          }
+        ]
+      }
+    },
+    {
+      "subject": "PSY",
+      "catalogNumber": "6002",
+      "courseCode": "PSY 6002",
+      "title": "Practicum in Applied Research Section Days & Times Instructor Meeting Dates Status Details Y00-STGTerm We 10:00 - 11:20 Staff 2026-05-01 - 2026-08-31 Section Days & Times Instructor Meeting Dates Status Details Z00-STGTerm We 10:00 - 11:20 Staff 2026-05-01 - 2026-08-31",
+      "timeZone": "America/Toronto",
+      "components": {
+        "STG": [
+          {
+            "section": "Y00-STG Term",
+            "sectionCode": "Y00",
+            "component": "STG",
+            "session": null,
+            "times": [
+              {
+                "day": "We",
+                "startMinutes": 600,
+                "endMinutes": 680,
+                "virtual": true
+              }
+            ],
             "instructors": [
               "Staff"
             ],
@@ -37369,7 +37121,7 @@
       "subject": "PSY",
       "catalogNumber": "6191",
       "courseCode": "PSY 6191",
-      "title": "Seminars in Psychology Section Days & Times Instructor Meeting Dates Status Details A00-LECSession C We 17:00 - 19:50Fr 12:00 - 14:50 Rajni SharmaStaff 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31 Topic: Psychedelics in Community & Culture Section Days & Times Instructor Meeting Dates Status Details P00-LECSession C Mo 14:30 - 17:20We 10:30 - 13:20 StaffStaff 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31 Topic: Nature and Ritual in End-of-Life Therapies",
+      "title": "Seminars in Psychology Section Days & Times Instructor Meeting Dates Status Details A00-LECSession C We 17:00 - 19:50Fr 12:00 - 14:50 Rajni SharmaStaff 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31 Topic: Psychedelics in Community & Culture Section Days & Times Instructor Meeting Dates Status Details P00-LECSession C Mo 14:30 - 17:20We 11:30 - 14:20 StaffStaff 2026-06-22 - 2026-07-312026-06-22 - 2026-07-31 Topic: Nature and Ritual in End-of-Life Therapies",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -37416,8 +37168,8 @@
               },
               {
                 "day": "We",
-                "startMinutes": 630,
-                "endMinutes": 800,
+                "startMinutes": 690,
+                "endMinutes": 860,
                 "virtual": true
               }
             ],
@@ -38064,7 +37816,7 @@
       "subject": "SEG",
       "catalogNumber": "3103",
       "courseCode": "SEG 3103",
-      "title": "Software Quality Assurance Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A Tu 11:30 - 14:20 Omar Badreldin 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z01-LABSession A Th 19:00 - 20:20 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z02-LABSession A Th 17:30 - 18:50 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z03-LABSession A Th 17:30 - 18:50 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z04-TUTSession A Th 16:00 - 17:20 Staff 2026-05-04 - 2026-07-24",
+      "title": "Software Quality Assurance Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A Tu 11:30 - 14:20 Omar Badreldin 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z01-LABSession A Th 19:00 - 20:20 Omar Badreldin 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z02-LABSession A Th 17:30 - 18:50 Omar Badreldin 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z03-LABSession A Th 17:30 - 18:50 Omar Badreldin 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z04-TUTSession A Th 16:00 - 17:20 Omar Badreldin 2026-05-04 - 2026-07-24",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -38106,7 +37858,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Omar Badreldin"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -38128,7 +37880,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Omar Badreldin"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -38150,7 +37902,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Omar Badreldin"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -38174,7 +37926,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Omar Badreldin"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -38336,7 +38088,7 @@
       "subject": "SEG",
       "catalogNumber": "3503",
       "courseCode": "SEG 3503",
-      "title": "Assurance de la qualité logicielle Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A Mo 11:30 - 12:50We 11:30 - 12:50 Mouhcine GuennounStaff 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z01-LABSession A Th 16:00 - 17:20 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z02-LABSession A We 14:30 - 15:50 Staff 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z03-TUTSession A Th 11:30 - 12:50 Staff 2026-05-04 - 2026-07-24",
+      "title": "Assurance de la qualité logicielle Section Days & Times Instructor Meeting Dates Status Details Z00-LECSession A Mo 11:30 - 12:50We 11:30 - 12:50 Mouhcine GuennounMouhcine Guennoun 2026-05-04 - 2026-07-242026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z01-LABSession A Th 16:00 - 17:20 Mouhcine Guennoun 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z02-LABSession A We 14:30 - 15:50 Mouhcine Guennoun 2026-05-04 - 2026-07-24 Section Days & Times Instructor Meeting Dates Status Details Z03-TUTSession A Th 11:30 - 12:50 Mouhcine Guennoun 2026-05-04 - 2026-07-24",
       "timeZone": "America/Toronto",
       "components": {
         "LEC": [
@@ -38361,7 +38113,7 @@
             ],
             "instructors": [
               "Mouhcine Guennoun",
-              "Staff"
+              "Mouhcine Guennoun"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -38385,7 +38137,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Mouhcine Guennoun"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -38407,7 +38159,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Mouhcine Guennoun"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -38431,7 +38183,7 @@
               }
             ],
             "instructors": [
-              "Staff"
+              "Mouhcine Guennoun"
             ],
             "meetingDates": [
               "2026-05-04",
@@ -38908,7 +38660,7 @@
               "2026-05-04",
               "2026-06-12"
             ],
-            "status": "Open"
+            "status": "Closed"
           }
         ]
       }
