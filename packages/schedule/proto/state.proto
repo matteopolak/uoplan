@@ -84,4 +84,5 @@ message ShareableState {
   uint32 magic = 29;
   uint32 active_step = 30;
   repeated ScheduleSwap swaps = 32;
+  bool show_calendar = 33;
 }

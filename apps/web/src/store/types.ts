@@ -86,6 +86,7 @@ export interface AppState {
   generationLimitFirstYearCredits: boolean;
   generationCompressedSchedule: boolean;
   activeStep: number;
+  showCalendar: boolean;
 }
 
 export interface AppActions {
