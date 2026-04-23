@@ -77,6 +77,7 @@ export const useAppStore = create<AppStore>()((...a) => {
     generationLimitFirstYearCredits: true,
     generationCompressedSchedule: false,
     activeStep: 0,
+    showCalendar: false,
 
     // Global action: touches many states
     resetToDefault: () => {

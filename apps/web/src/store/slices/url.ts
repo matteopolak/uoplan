@@ -57,6 +57,7 @@ function buildEncodeInput(s: AppStore): EncodeInput {
     generationLimitFirstYearCredits: s.generationLimitFirstYearCredits,
     generationCompressedSchedule: s.generationCompressedSchedule,
     activeStep: s.activeStep,
+    showCalendar: s.showCalendar,
   };
 }
 

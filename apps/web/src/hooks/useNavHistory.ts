@@ -35,6 +35,10 @@ export function useNavHistory() {
     useAppStore.setState({ activeStep: state.step });
   }, [state.step]);
 
+  useEffect(() => {
+    useAppStore.setState({ showCalendar: state.showCalendar });
+  }, [state.showCalendar]);
+
   // Keep the current history entry synchronized with our state shape so a
   // popstate fired back to any entry can still be handled.
   useEffect(() => {

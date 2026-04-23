@@ -73,6 +73,7 @@ export interface EncodeInput {
   generationLimitFirstYearCredits: boolean;
   generationCompressedSchedule: boolean;
   activeStep: number;
+  showCalendar: boolean;
 }
 
 export interface DecodedState {
@@ -108,6 +109,7 @@ export interface DecodedState {
   generationLimitFirstYearCredits: boolean;
   generationCompressedSchedule: boolean;
   activeStep: number;
+  showCalendar: boolean;
 }
 
 export interface CatalogueLike {
@@ -227,6 +229,7 @@ export function encodeState(
     generationCompressedSchedule: input.generationCompressedSchedule,
     magic: STATE_MAGIC,
     activeStep: input.activeStep,
+    showCalendar: input.showCalendar,
   };
 
   // Requirements
@@ -396,6 +399,7 @@ export function decodeState(
     generationLimitFirstYearCredits: state.generationLimitFirstYearCredits,
     generationCompressedSchedule: state.generationCompressedSchedule,
     activeStep: state.activeStep ?? 0,
+    showCalendar: state.showCalendar ?? false,
   };
 }
 

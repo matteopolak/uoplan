@@ -275,7 +275,7 @@ export const createDataSlice: StateCreator<
             u.searchParams.delete("t");
             u.searchParams.delete("f");
             const step = decoded.activeStep ?? 0;
-            const navState = { step, furthestStep: step, showCalendar: false };
+            const navState = { step, furthestStep: step, showCalendar: decoded.showCalendar ?? false };
             window.history.replaceState(navState, "", u.toString());
             window.dispatchEvent(new PopStateEvent("popstate", { state: navState }));
           }
