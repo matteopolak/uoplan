@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.0-beta.2](https://github.com/matteopolak/uoplan/compare/uoplan-monorepo-v1.0.0-beta.1...uoplan-monorepo-v1.0.0-beta.2) (2026-04-23)
+
+
+### Features
+
+* improve sharing completed schedules ([46c9053](https://github.com/matteopolak/uoplan/commit/46c90533ca3c3f236e58612a22b91f2b7cf98813))
+
+
+### Bug Fixes
+
+* move user to correct screen in shared state ([a2342dd](https://github.com/matteopolak/uoplan/commit/a2342ddcbe0a428f334a910a295fa835d9ceb995))
+* support more prerequisite formats ([3f7b3f1](https://github.com/matteopolak/uoplan/commit/3f7b3f13a15bac2448b716366f92971445c3d235))
+
 ## [1.0.0-beta.1](https://github.com/matteopolak/uoplan/compare/uoplan-monorepo-v1.0.0-beta.0...uoplan-monorepo-v1.0.0-beta.1) (2026-04-11)
 
 

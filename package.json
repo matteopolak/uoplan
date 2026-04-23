@@ -1,6 +1,6 @@
 {
   "name": "uoplan-monorepo",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
   "private": true,
   "packageManager": "pnpm@10.27.0",
   "scripts": {
