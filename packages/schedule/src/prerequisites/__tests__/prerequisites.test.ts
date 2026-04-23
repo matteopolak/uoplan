@@ -14,6 +14,7 @@ describe('prerequisites', () => {
     const courses = [courseA, courseB];
     mockCache = {
       getCourse: (c) => courses.find(x => x.code === c) || undefined,
+      resolveToCanonical: (c) => c,
       getAllCourses: () => courses,
       getCoursesByDiscipline: () => [],
       getSchedule: () => undefined,

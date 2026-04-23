@@ -41,6 +41,7 @@ describe('buildScheduleIcs', () => {
         }
         return undefined;
       },
+      resolveToCanonical: (code) => code,
       getSchedule: () => undefined,
       getCoursesByDiscipline: () => [],
       getAllCourses: () => [],

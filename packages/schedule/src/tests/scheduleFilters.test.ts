@@ -217,6 +217,7 @@ describe('getEffectiveSchedule', () => {
   it('returns raw schedule when includeClosed is true', () => {
     const cache: DataCache = {
       getCourse: () => undefined,
+      resolveToCanonical: (code) => code,
       getSchedule: () => schedOpen,
       getCoursesByDiscipline: () => [],
       getAllCourses: () => [],
@@ -229,6 +230,7 @@ describe('getEffectiveSchedule', () => {
   it('returns undefined when code not in cache', () => {
     const cache: DataCache = {
       getCourse: () => undefined,
+      resolveToCanonical: (code) => code,
       getSchedule: () => undefined,
       getCoursesByDiscipline: () => [],
       getAllCourses: () => [],
@@ -255,6 +257,7 @@ describe('getEffectiveSchedule', () => {
     });
     const cache: DataCache = {
       getCourse: () => undefined,
+      resolveToCanonical: (code) => code,
       getSchedule: () => schedNonVirtual,
       getCoursesByDiscipline: () => [],
       getAllCourses: () => [],
@@ -286,6 +289,7 @@ describe('cacheWithPerCourseVirtualFilter', () => {
 
     const cache: DataCache = {
       getCourse: () => undefined,
+      resolveToCanonical: (code) => code,
       getSchedule: (code) => (code === 'CSI 1234' ? schedBoth : undefined),
       getCoursesByDiscipline: () => [],
       getAllCourses: () => [],
@@ -323,6 +327,7 @@ describe('cacheWithPerCourseVirtualFilter', () => {
 
     const cache: DataCache = {
       getCourse: () => undefined,
+      resolveToCanonical: (code) => code,
       getSchedule: () => schedBoth,
       getCoursesByDiscipline: () => [],
       getAllCourses: () => [],

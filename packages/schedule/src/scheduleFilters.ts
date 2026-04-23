@@ -90,6 +90,7 @@ export function cacheWithClosedFilter(
   if (includeClosed && !virtualOnly) return cache;
   return {
     getCourse: (code) => cache.getCourse(code),
+    resolveToCanonical: (code) => cache.resolveToCanonical(code),
     getSchedule: (code) =>
       getEffectiveSchedule(cache, code, includeClosed, virtualOnly),
     getCoursesByDiscipline: (d) => cache.getCoursesByDiscipline(d),
@@ -113,6 +114,7 @@ export function cacheWithPerCourseVirtualFilter(
   const memo = new Map<string, CourseSchedule | undefined>();
   return {
     getCourse: (code) => cache.getCourse(code),
+    resolveToCanonical: (code) => cache.resolveToCanonical(code),
     getSchedule: (code) => {
       if (memo.has(code)) return memo.get(code);
       const virtualOnly = virtualFor(code);

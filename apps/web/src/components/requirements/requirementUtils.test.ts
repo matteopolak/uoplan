@@ -16,6 +16,7 @@ function emptyScheduleCache(): DataCache {
       ({ code, title: "Test", credits: 3 }) as NonNullable<
         ReturnType<DataCache["getCourse"]>
       >,
+    resolveToCanonical: (code) => code,
     getSchedule: () => undefined,
     getCoursesByDiscipline: () => [],
     getAllCourses: () => [],
@@ -241,6 +242,7 @@ describe("getConstrainMultiSelectOptions", () => {
         ({ code, title: "Test", credits: 3 }) as NonNullable<
           ReturnType<DataCache["getCourse"]>
         >,
+      resolveToCanonical: (code) => code,
       getSchedule: (code) =>
         ({
           courseCode: code,
@@ -299,6 +301,7 @@ describe("getConstrainMultiSelectOptions", () => {
         ({ code, title: "Test", credits: 3 }) as NonNullable<
           ReturnType<DataCache["getCourse"]>
         >,
+      resolveToCanonical: (code) => code,
       getSchedule: (code) => (code === "SEG 3100" ? schedNonVirtualOnly : undefined),
       getCoursesByDiscipline: () => [],
       getAllCourses: () => [],
@@ -371,6 +374,7 @@ describe("getConstrainMultiSelectOptions", () => {
         ({ code, title: "Test", credits: 3 }) as NonNullable<
           ReturnType<DataCache["getCourse"]>
         >,
+      resolveToCanonical: (code) => code,
       getSchedule: (code) => (code === "SEG 3100" ? schedNonVirtualOnly : undefined),
       getCoursesByDiscipline: () => [],
       getAllCourses: () => [],

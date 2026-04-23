@@ -20,6 +20,7 @@ function makeCache(schedules: Record<string, CourseSchedule | undefined>): DataC
 
   return {
     getCourse: (code: string) => courseByNorm.get(normalizeCourseCode(code)),
+    resolveToCanonical: (code: string) => code,
     getSchedule: (code: string) => schedules[normalizeCourseCode(code)],
     getCoursesByDiscipline: () => [],
     getAllCourses: () => [...courseByNorm.values()],
