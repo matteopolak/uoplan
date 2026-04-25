@@ -136,6 +136,11 @@ a {
   height: 100%;
 }
 
+/* Hide real events while phantom overlay controls the visual during morphing */
+.fc-uoplan-morphing .fc-event {
+  opacity: 0 !important;
+}
+
 .fc-uoplan-event {
   display: flex;
   flex-direction: column;

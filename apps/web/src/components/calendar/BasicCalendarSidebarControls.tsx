@@ -7,7 +7,7 @@ import { BasicCourseFiltersCard } from "../requirements/CourseFiltersCard";
 import { tr } from "../../i18n";
 import { parseTranscriptPdf, isOptCourse, normalizeCourseCode } from "schedule";
 
-export function BasicCalendarSidebarControls() {
+export function BasicCalendarSidebarControls({ onBeforeNavigate }: { onBeforeNavigate?: () => void }) {
   const {
     cache,
     basicPinnedCourses,
@@ -105,15 +105,14 @@ export function BasicCalendarSidebarControls() {
 
   const requiredCourseOptions = useMemo(() => {
     if (!cache) return [];
-    return cache.getAllSchedules().map((sched) => {
+    const seen = new Set<string>();
+    return cache.getAllSchedules().flatMap((sched) => {
       const course = cache.getCourse(sched.courseCode);
-      if (!course) return null;
-      return {
-        value: course.code,
-        label: `${course.code} - ${course.title}`,
-      };
-    }).filter((o): o is NonNullable<typeof o> => o !== null)
-      .sort((a, b) => a.label.localeCompare(b.label));
+      if (!course) return [];
+      if (seen.has(course.code)) return [];
+      seen.add(course.code);
+      return [{ value: course.code, label: `${course.code} - ${course.title}` }];
+    }).sort((a, b) => a.label.localeCompare(b.label));
   }, [cache]);
 
   const requiredCoursesFilter: OptionsFilter = ({ options, search }) => {
@@ -127,7 +126,8 @@ export function BasicCalendarSidebarControls() {
 
   const completedCourseOptions = useMemo(() => {
     if (!cache) return [];
-    return createCourseOptions(cache.getAllCourses().map((c) => c.code), cache);
+    const unique = [...new Set(cache.getAllCourses().map((c) => c.code))];
+    return createCourseOptions(unique, cache);
   }, [cache]);
 
   const completedCoursesFilter: OptionsFilter = ({ options, search }) => {
@@ -216,7 +216,7 @@ export function BasicCalendarSidebarControls() {
             color="violet"
             size="sm"
             radius={0}
-            onClick={() => goToPreviousSeed()}
+            onClick={() => { onBeforeNavigate?.(); goToPreviousSeed(); }}
           >
             {tr("calendarPage.previous")}
           </Button>
@@ -225,7 +225,7 @@ export function BasicCalendarSidebarControls() {
             color="violet"
             size="sm"
             radius={0}
-            onClick={() => goToNextSeed()}
+            onClick={() => { onBeforeNavigate?.(); goToNextSeed(); }}
           >
             {tr("calendarPage.next")}
           </Button>

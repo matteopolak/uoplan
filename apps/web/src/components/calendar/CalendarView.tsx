@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Box, Text, Modal } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import FullCalendar from '@fullcalendar/react';
@@ -12,9 +12,15 @@ import { CalendarEventContent } from './CalendarEventContent';
 import { SwapModalContent } from './SwapModalContent';
 import { useCalendarEvents, type CalendarEvent } from '../../hooks/useCalendarEvents';
 import { useSwapModal } from '../../hooks/useSwapModal';
+import { useCalendarMorph } from '../../hooks/useCalendarMorph';
+import { ScheduleMorphOverlay } from './ScheduleMorphOverlay';
 import { tr } from '../../i18n';
 
 const EMPTY_COLOR_MAP: Record<string, number> = {};
+
+export interface CalendarViewHandle {
+  captureAndPark: () => void;
+}
 
 interface CalendarViewProps {
   schedule: GeneratedSchedule | null;
@@ -31,17 +37,31 @@ interface CalendarViewProps {
   colorMap?: Record<string, number>;
 }
 
-export function CalendarView({
-  schedule,
-  cache,
-  professorRatings,
-  getSwapCandidates,
-  onSwap,
-  colorMap = EMPTY_COLOR_MAP,
-}: CalendarViewProps) {
+export const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
+  function CalendarView({
+    schedule,
+    cache,
+    professorRatings,
+    getSwapCandidates,
+    onSwap,
+    colorMap = EMPTY_COLOR_MAP,
+  }, ref) {
     const isMobile = useMediaQuery('(max-width: 768px)');
+    const prefersReduced = useMediaQuery('(prefers-reduced-motion: reduce)') ?? false;
 
-    // Expose animate() to parent - no-op for single schedule
+    const containerRef = useRef<HTMLDivElement>(null);
+    const morph = useCalendarMorph(containerRef, prefersReduced);
+
+    useImperativeHandle(ref, () => ({
+      captureAndPark: morph.captureAndPark,
+    }), [morph.captureAndPark]);
+
+    // When the schedule prop changes, complete the morph transition.
+    useEffect(() => {
+      return morph.onScheduleChanged();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [schedule]);
+
     const swap = useSwapModal(getSwapCandidates, cache);
 
     const referenceWeekStart = useMemo(
@@ -103,7 +123,11 @@ export function CalendarView({
           overflow: 'hidden',
         }}
       >
-        <Box style={{ flex: 1, minHeight: 0 }}>
+        <Box
+          ref={containerRef}
+          className={morph.isHidingEvents ? 'fc-uoplan-morphing' : undefined}
+          style={{ flex: 1, minHeight: 0 }}
+        >
           <FullCalendar
             plugins={[timeGridPlugin, interactionPlugin]}
             initialView="timeGridWeek"
@@ -131,6 +155,11 @@ export function CalendarView({
           />
         </Box>
 
+        <ScheduleMorphOverlay
+          phantoms={morph.phantoms}
+          onComplete={morph.onAnimationComplete}
+        />
+
         <Modal
           opened={swap.isOpen}
           onClose={swap.closeModal}
@@ -154,4 +183,5 @@ export function CalendarView({
         </Modal>
       </Box>
     );
-}
+  }
+);

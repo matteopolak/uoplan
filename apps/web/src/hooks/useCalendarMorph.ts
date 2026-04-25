@@ -219,14 +219,19 @@ function buildPhantoms(
 }
 
 interface CalendarMorphState {
-  displayedIndex: number;
   phantoms: Phantom[];
   /** Real events must be invisible — the overlay owns the visual. */
   isHidingEvents: boolean;
   /** Real events are fading in (phantoms already gone). */
   isFadingIn: boolean;
   onAnimationComplete: () => void;
-  triggerTransition: (newIndex: number) => void;
+  /** Synchronously capture old event positions and park phantoms over them.
+   *  Call this immediately before triggering a schedule navigation. */
+  captureAndPark: () => void;
+  /** Call inside a useEffect on the `schedule` prop. Completes the transition
+   *  after FullCalendar has settled with the new schedule.
+   *  Returns a cleanup function (safe to return directly from useEffect). */
+  onScheduleChanged: () => (() => void) | undefined;
 }
 
 /**
@@ -238,21 +243,18 @@ interface CalendarMorphState {
  *   → fading-in      phantoms gone; real events fade in briefly (FADE_IN_MS)
  *   → idle
  *
- * Phantoms fade fully to zero before real events are revealed, so there is
- * never a moment where both a phantom and its matching real event are
- * simultaneously visible — which would cause alpha-compositing doubling.
+ * Usage:
+ *  1. Call captureAndPark() synchronously before the schedule navigation action.
+ *  2. Call onScheduleChanged() inside a useEffect on the schedule prop.
  */
 export function useCalendarMorph(
-  initialIndex: number,
   containerRef: React.RefObject<HTMLElement | null>,
   prefersReduced: boolean,
 ): CalendarMorphState {
-  const [displayedIndex, setDisplayedIndex] = useState(initialIndex);
   const [phase, setPhase] = useState<Phase>("idle");
   const [phantoms, setPhantoms] = useState<Phantom[]>([]);
 
   const oldCapturesRef = useRef<CapturedEvent[]>([]);
-  const pendingIndexRef = useRef<number | null>(null);
   // Always reflects the latest phase without stale-closure issues.
   const phaseRef = useRef<Phase>("idle");
 
@@ -261,33 +263,28 @@ export function useCalendarMorph(
     setPhase(p);
   }, []);
 
-  const triggerTransition = useCallback(
-    (newIndex: number) => {
-      if (newIndex === displayedIndex) return;
-      // Ignore re-entrant calls while an animation is already running.
-      if (phaseRef.current !== "idle") return;
+  const captureAndPark = useCallback(() => {
+    if (phaseRef.current !== "idle") return;
+    if (prefersReduced) return;
 
-      if (prefersReduced) {
-        setDisplayedIndex(newIndex);
-        return;
-      }
+    const oldCaptures = captureEventPositions(containerRef.current);
+    oldCapturesRef.current = oldCaptures;
+    setPhantoms(buildParkedPhantoms(oldCaptures));
+    setPhaseAndRef("pre-animating");
+  }, [prefersReduced, containerRef, setPhaseAndRef]);
 
-      const oldCaptures = captureEventPositions(containerRef.current);
-      oldCapturesRef.current = oldCaptures;
-      pendingIndexRef.current = newIndex;
-
-      // Parked phantoms cover old event positions the instant we hide them,
-      // so the calendar grid never becomes visible during the render settle.
-      setPhantoms(buildParkedPhantoms(oldCaptures));
-      setDisplayedIndex(newIndex);
-      setPhaseAndRef("pre-animating");
-    },
-    [displayedIndex, prefersReduced, containerRef, setPhaseAndRef],
-  );
-
-  // pre-animating → wait for FullCalendar to finish rendering, then start animation
+  // fading-in → idle after the CSS reveal animation completes
   useEffect(() => {
-    if (phase !== "pre-animating") return;
+    if (phase !== "fading-in") return;
+    const t = window.setTimeout(() => {
+      setPhaseAndRef("idle");
+    }, FADE_IN_MS + 20);
+    return () => window.clearTimeout(t);
+  }, [phase, setPhaseAndRef]);
+
+  const onScheduleChanged = useCallback((): (() => void) | undefined => {
+    if (phaseRef.current !== "pre-animating") return;
+
     const t = window.setTimeout(() => {
       const newCaptures = captureEventPositions(containerRef.current);
       const built = buildPhantoms(oldCapturesRef.current, newCaptures);
@@ -299,32 +296,22 @@ export function useCalendarMorph(
       setPhantoms(built);
       setPhaseAndRef("animating");
     }, RENDER_SETTLE_MS);
-    return () => window.clearTimeout(t);
-  }, [phase, containerRef, setPhaseAndRef]);
 
-  // fading-in → clean up after the CSS reveal animation
-  useEffect(() => {
-    if (phase !== "fading-in") return;
-    const t = window.setTimeout(() => {
-      setPhaseAndRef("idle");
-      pendingIndexRef.current = null;
-    }, FADE_IN_MS + 20); // small buffer so the CSS animation always completes
     return () => window.clearTimeout(t);
-  }, [phase, setPhaseAndRef]);
+  }, [containerRef, setPhaseAndRef]);
 
   const onAnimationComplete = useCallback(() => {
     // Phantoms are now at opacity 0. Remove them and start the brief reveal.
     setPhantoms([]);
     setPhaseAndRef("fading-in");
-    pendingIndexRef.current = null;
   }, [setPhaseAndRef]);
 
   return {
-    displayedIndex,
     phantoms,
     isHidingEvents: phase === "pre-animating" || phase === "animating",
     isFadingIn: phase === "fading-in",
     onAnimationComplete,
-    triggerTransition,
+    captureAndPark,
+    onScheduleChanged,
   };
 }

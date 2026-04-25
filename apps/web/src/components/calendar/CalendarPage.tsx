@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Box,
@@ -21,7 +21,7 @@ import {
 } from "@tabler/icons-react";
 import { useAppStore } from "../../store/appStore";
 import { useShallow } from "zustand/react/shallow";
-import { CalendarView } from "./CalendarView";
+import { CalendarView, type CalendarViewHandle } from "./CalendarView";
 import { ResetModal } from "../shared/ResetModal";
 import { GenerationErrorDetailBlocks } from "../GenerationErrorDetailBlocks";
 import { buildScheduleIcs, downloadTextFile } from "schedule";
@@ -85,6 +85,8 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
   const hasSchedule = currentSchedule !== null;
   const canGoPrevious = currentSeed > firstSeed && currentSeed > 0;
 
+  const morphRef = useRef<CalendarViewHandle>(null);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [navigating, setNavigating] = useState(false);
@@ -123,12 +125,14 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
     genErrDetails.totalAvailable < genErrDetails.totalNeeded;
 
   const handlePrevious = async () => {
+    morphRef.current?.captureAndPark();
     setNavigating(true);
     await goToPreviousSeed();
     setNavigating(false);
   };
 
   const handleNext = async () => {
+    morphRef.current?.captureAndPark();
     setNavigating(true);
     await goToNextSeed();
     setNavigating(false);
@@ -232,7 +236,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
         {isBasic ? (
           <>
             <BasicCalendarHeaderActions onBack={onBack} />
-            <BasicCalendarSidebarControls />
+            <BasicCalendarSidebarControls onBeforeNavigate={() => morphRef.current?.captureAndPark()} />
           </>
         ) : (
           <>
@@ -431,6 +435,7 @@ export function CalendarPage({ onBack }: CalendarPageProps) {
         }}
       >
         <CalendarView
+          ref={morphRef}
           schedule={currentSchedule}
           cache={cache}
           professorRatings={professorRatings}
