@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.0-beta.3](https://github.com/matteopolak/uoplan/compare/uoplan-monorepo-v1.0.0-beta.2...uoplan-monorepo-v1.0.0-beta.3) (2026-04-27)
+
+
+### Features
+
+* **seo:** improve seo for some keywords ([9dba13a](https://github.com/matteopolak/uoplan/commit/9dba13a90f57e2c7f466ba9e1487dfdc57ae4368))
+
+
+### Bug Fixes
+
+* calendar animation, duplicate courses in basic mode ([45ea698](https://github.com/matteopolak/uoplan/commit/45ea6988012636582b447ac87d7731d51bf9fc57))
+* use the same defaults everywhere ([e29ab0f](https://github.com/matteopolak/uoplan/commit/e29ab0f14e38b39f7275223c65236ffe01670b5a))
+
 ## [1.0.0-beta.2](https://github.com/matteopolak/uoplan/compare/uoplan-monorepo-v1.0.0-beta.1...uoplan-monorepo-v1.0.0-beta.2) (2026-04-23)
 
 
