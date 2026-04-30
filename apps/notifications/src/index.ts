@@ -6,6 +6,7 @@ export interface Env {
   VAPID_PRIVATE_KEY: string;
   VAPID_SUBJECT: string;
   NOTIFY_SECRET: string;
+  TURNSTILE_SECRET_KEY: string;
 }
 
 const ALLOWED_ORIGINS = ['https://uoplan.party', 'http://localhost:5173'];
@@ -36,20 +37,47 @@ async function endpointKey(endpoint: string): Promise<string> {
   return `sub:${hex}`;
 }
 
+async function verifyTurnstile(token: string, secret: string, ip: string): Promise<boolean> {
+  const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `secret=${encodeURIComponent(secret)}&response=${encodeURIComponent(token)}&remoteip=${encodeURIComponent(ip)}`,
+  });
+  const data = await res.json<{ success: boolean }>();
+  return data.success;
+}
+
 async function handleSubscribe(req: Request, env: Env): Promise<Response> {
-  const sub = await req.json<{ endpoint?: string; keys?: { p256dh?: string; auth?: string } }>();
+  const sub = await req.json<{
+    endpoint?: string;
+    keys?: { p256dh?: string; auth?: string };
+    'cf-turnstile-response'?: string;
+  }>();
   if (!sub?.endpoint || !sub?.keys?.p256dh || !sub?.keys?.auth) {
     return json(req, 400, { error: 'Invalid subscription' });
   }
+  const token = sub['cf-turnstile-response'];
+  if (!token) return json(req, 400, { error: 'Missing Turnstile token' });
+  const ip = req.headers.get('CF-Connecting-IP') ?? '';
+  if (!(await verifyTurnstile(token, env.TURNSTILE_SECRET_KEY, ip))) {
+    return json(req, 403, { error: 'Turnstile verification failed' });
+  }
   const key = await endpointKey(sub.endpoint);
-  await env.WEBPUSH_SUBSCRIPTIONS.put(key, JSON.stringify(sub));
+  const { endpoint, keys } = sub;
+  await env.WEBPUSH_SUBSCRIPTIONS.put(key, JSON.stringify({ endpoint, keys }));
   return json(req, 201, { ok: true });
 }
 
 async function handleUnsubscribe(req: Request, env: Env): Promise<Response> {
-  const body = await req.json<{ endpoint?: string }>();
+  const body = await req.json<{ endpoint?: string; 'cf-turnstile-response'?: string }>();
   if (!body?.endpoint) {
     return json(req, 400, { error: 'Missing endpoint' });
+  }
+  const token = body['cf-turnstile-response'];
+  if (!token) return json(req, 400, { error: 'Missing Turnstile token' });
+  const ip = req.headers.get('CF-Connecting-IP') ?? '';
+  if (!(await verifyTurnstile(token, env.TURNSTILE_SECRET_KEY, ip))) {
+    return json(req, 403, { error: 'Turnstile verification failed' });
   }
   const key = await endpointKey(body.endpoint);
   await env.WEBPUSH_SUBSCRIPTIONS.delete(key);

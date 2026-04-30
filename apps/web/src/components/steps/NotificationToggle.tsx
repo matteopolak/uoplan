@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Alert, Group, Switch, Text } from '@mantine/core';
 import { IconAlertTriangle, IconBell, IconBellOff } from '@tabler/icons-react';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 
 const WORKER_URL =
   (import.meta.env.VITE_NOTIFICATIONS_URL as string | undefined) ??
   'https://notifications.uoplan.party';
 const VAPID_PUBLIC_KEY = (import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined) ?? '';
+const TURNSTILE_SITE_KEY =
+  (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined) ??
+  '0x4AAAAAADGEYLH_6_yl1r5j';
 const LS_KEY = 'uoplan-notifications';
 
 type NotifState =
@@ -53,6 +57,30 @@ export function NotificationToggle() {
   const [state, setState] = useState<NotifState>(loadState);
   const [loading, setLoading] = useState(false);
 
+  const turnstileRef = useRef<TurnstileInstance>(undefined);
+  const resolveTokenRef = useRef<((token: string) => void) | null>(null);
+  const rejectTokenRef = useRef<(() => void) | null>(null);
+
+  function getTurnstileToken(): Promise<string> {
+    return new Promise((resolve, reject) => {
+      resolveTokenRef.current = resolve;
+      rejectTokenRef.current = reject;
+      turnstileRef.current?.execute();
+    });
+  }
+
+  function handleTurnstileSuccess(token: string) {
+    resolveTokenRef.current?.(token);
+    resolveTokenRef.current = null;
+    rejectTokenRef.current = null;
+  }
+
+  function handleTurnstileFailure() {
+    rejectTokenRef.current?.();
+    resolveTokenRef.current = null;
+    rejectTokenRef.current = null;
+  }
+
   const unsupportedReason = getUnsupportedReason();
   const isSubscribed = state.status === 'subscribed';
   const isDenied = state.status === 'denied';
@@ -78,10 +106,13 @@ export function NotificationToggle() {
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as unknown as ArrayBuffer,
       });
 
+      const token = await getTurnstileToken();
+      turnstileRef.current?.reset();
+
       await fetch(`${WORKER_URL}/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sub.toJSON()),
+        body: JSON.stringify({ ...sub.toJSON(), 'cf-turnstile-response': token }),
       });
 
       const next: NotifState = { status: 'subscribed', subscription: sub.toJSON() };
@@ -98,6 +129,9 @@ export function NotificationToggle() {
     if (state.status !== 'subscribed') return;
     setLoading(true);
     try {
+      const token = await getTurnstileToken();
+      turnstileRef.current?.reset();
+
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
       await sub?.unsubscribe();
@@ -105,7 +139,7 @@ export function NotificationToggle() {
       await fetch(`${WORKER_URL}/unsubscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ endpoint: state.subscription.endpoint }),
+        body: JSON.stringify({ endpoint: state.subscription.endpoint, 'cf-turnstile-response': token }),
       });
 
       saveState({ status: 'disabled' });
@@ -122,6 +156,15 @@ export function NotificationToggle() {
 
   return (
     <>
+      <Turnstile
+        ref={turnstileRef}
+        siteKey={TURNSTILE_SITE_KEY}
+        options={{ size: 'invisible', execution: 'execute', appearance: 'interaction-only' }}
+        onSuccess={handleTurnstileSuccess}
+        onError={handleTurnstileFailure}
+        onExpire={handleTurnstileFailure}
+        style={{ display: 'none' }}
+      />
       <Group justify="space-between" align="center" wrap="nowrap">
         <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
           {icon}
