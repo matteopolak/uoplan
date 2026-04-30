@@ -64,12 +64,14 @@ jobs:
           echo "Waiting for run to appear..."
           sleep 20
 
+          SCRAPE_RUN_ID=""
           for i in $(seq 1 24); do
             RUN_ID=$(gh run list --workflow=daily-scrape.yml --limit=5 \
               --json createdAt,databaseId \
               --jq "[.[] | select(.createdAt > \"$BEFORE\")] | .[0].databaseId // empty")
             if [ -n "$RUN_ID" ]; then
               echo "Found triggered run: $RUN_ID"
+              SCRAPE_RUN_ID=$RUN_ID
               echo "SCRAPE_RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
               break
             fi
