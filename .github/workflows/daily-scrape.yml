@@ -5,6 +5,15 @@ on:
     # 05:00 UTC ≈ midnight America/Toronto (standard) / 1am (DST)
     - cron: "0 5 * * *"
   workflow_dispatch:
+    inputs:
+      terms:
+        description: 'Full terms.json content (JSON). If provided, overrides the committed file.'
+        required: false
+        default: ''
+
+concurrency:
+  group: daily-scrape
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -40,11 +49,14 @@ jobs:
       - name: Clear scraper caches (no cache mode)
         run: rm -rf .cache
 
+      - name: Write terms override
+        if: inputs.terms != ''
+        env:
+          TERMS_CONTENT: ${{ inputs.terms }}
+        run: echo "$TERMS_CONTENT" > apps/web/public/data/terms.json
+
       - name: Run catalogue scraper
         run: pnpm run scrape:catalogue
-
-      - name: Scrape term list for schedule matrix
-        run: pnpm run scrape:schedules:terms
 
       - name: Set terms matrix output
         id: set_terms

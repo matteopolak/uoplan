@@ -1393,9 +1393,28 @@ async function generateIndices(dataDir: string): Promise<void> {
   );
 }
 
+async function getAcademicYearFromTerms(dataDir: string): Promise<number> {
+  try {
+    const raw = await fs.readFile(path.join(dataDir, 'terms.json'), 'utf-8');
+    const data = JSON.parse(raw) as { terms?: { termId: string; name: string }[] };
+    if (!Array.isArray(data.terms) || data.terms.length === 0) return getCurrentAcademicYear();
+    let best = 0;
+    for (const term of data.terms) {
+      const m = term.name.match(/(\d{4})/);
+      if (!m) continue;
+      const year = parseInt(m[1], 10);
+      const acYear = term.name.toLowerCase().includes('fall') ? year : year - 1;
+      if (acYear > best) best = acYear;
+    }
+    return best > 0 ? best : getCurrentAcademicYear();
+  } catch {
+    return getCurrentAcademicYear();
+  }
+}
+
 async function main() {
-  const currentYear = getCurrentAcademicYear();
   const dataDir = '../web/public/data';
+  const currentYear = await getAcademicYearFromTerms(dataDir);
   await fs.mkdir(dataDir, { recursive: true });
 
   // Load existing missing-URLs log so we can merge into it

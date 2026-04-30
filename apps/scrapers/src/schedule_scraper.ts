@@ -193,37 +193,6 @@ async function createClient(): Promise<ClientInfo> {
   throw new Error(`Failed to find ICSID on initial class search page; first 400 chars: ${preview}`);
 }
 
-async function scrapeTerms(client: Got): Promise<Term[]> {
-  const res = await client.get(BASE_URL);
-  const html = res.body;
-  const $ = cheerio.load(html);
-  const select = $('#CLASS_SRCH_WRK2_STRM\\$35\\$');
-  if (select.length === 0) {
-    const preview = html.slice(0, 400).replace(/\s+/g, ' ');
-    throw new Error(
-      `Failed to find term dropdown (#CLASS_SRCH_WRK2_STRM$35$); first 400 chars: ${preview}`,
-    );
-  }
-
-  const terms: Term[] = [];
-  select.find('option').each((_, opt) => {
-    const termId = ($(opt).attr('value') ?? '').trim();
-    const name = $(opt).text().replace(/\s+/g, ' ').trim();
-    if (!termId) return; // skip blank option
-    if (!name) return;
-    terms.push({ termId, name });
-  });
-
-  // Deduplicate by termId while preserving order.
-  const seen = new Set<string>();
-  const unique: Term[] = [];
-  for (const t of terms) {
-    if (seen.has(t.termId)) continue;
-    seen.add(t.termId);
-    unique.push(t);
-  }
-  return unique;
-}
 
 function buildSearchBody(args: {
   icsid: string;
@@ -657,21 +626,19 @@ async function fetchScheduleForCourse(
 }
 
 async function main(): Promise<void> {
-  const termsOnly = process.env.TERMS_ONLY === '1' || process.argv.includes('--terms-only');
-  if (termsOnly) {
-    console.log('TERMS_ONLY: scraping available terms...');
-    const clientInfo = await createClient();
-    const terms = await scrapeTerms(clientInfo.client);
-    terms.sort((a, b) => a.termId.localeCompare(b.termId));
-    const termsPath = path.join(PUBLIC_DIR, 'data', 'terms.json');
-    await fs.mkdir(path.dirname(termsPath), { recursive: true });
-    await fs.writeFile(termsPath, JSON.stringify({ terms }, null, 2), 'utf-8');
-    console.log(`Saved ${terms.length} term(s) to ${termsPath}`);
-    return;
-  }
-
   const onlySubject = process.env.ONLY_SUBJECT;
   const onlyCatalog = process.env.ONLY_CATALOG;
+  const onlyTermId = process.env.ONLY_TERM_ID;
+
+  const termsRaw = await fs.readFile(path.join(PUBLIC_DIR, 'data', 'terms.json'), 'utf-8');
+  let terms: Term[] = (JSON.parse(termsRaw) as { terms: Term[] }).terms;
+
+  if (onlyTermId) {
+    terms = terms.filter((t) => t.termId === onlyTermId);
+    if (terms.length === 0) {
+      throw new Error(`ONLY_TERM_ID=${onlyTermId} not found in terms.json`);
+    }
+  }
 
   console.log('Initializing PeopleSoft session...');
   const clientCount = USE_CACHE_ONLY ? 1 : MAX_CONCURRENCY;
@@ -679,32 +646,6 @@ async function main(): Promise<void> {
     Array.from({ length: clientCount }, createClient),
   );
 
-  console.log('Scraping available terms...');
-  let terms: Term[] = await scrapeTerms(clientInfos[0].client);
-
-  const onlyTermId = process.env.ONLY_TERM_ID;
-  if (onlyTermId) {
-    terms = terms.filter((t) => t.termId === onlyTermId);
-    if (terms.length === 0) {
-      throw new Error(`ONLY_TERM_ID=${onlyTermId} did not match any scraped term.`);
-    }
-  }
-
-  terms.sort((a, b) => a.termId.localeCompare(b.termId));
-
-  if (!onlyTermId) {
-    await fs.writeFile(
-      path.join(PUBLIC_DIR, 'data', 'terms.json'),
-      JSON.stringify({ terms }, null, 2),
-      'utf-8',
-    );
-    console.log(`Saved ${terms.length} term(s) to ${path.join(PUBLIC_DIR, 'data', 'terms.json')}`);
-  } else {
-    console.log(
-      'Skipping terms.json write (ONLY_TERM_ID is set; CI writes full terms via TERMS_ONLY before per-term jobs).',
-    );
-  }
-  
   console.log(`Initialized ${clientInfos.length} PeopleSoft session(s).`);
 
   for (const term of terms) {

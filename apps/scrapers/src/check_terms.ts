@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import * as cheerio from 'cheerio';
 import { got } from 'got';
+import { CookieJar } from 'tough-cookie';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TERMS_JSON = path.join(__dirname, '../../web/public/data/terms.json');
@@ -28,20 +29,40 @@ export function parseTermDropdown(html: string): Term[] {
   });
 }
 
-async function main() {
-  const res = await got.get(SEARCH_URL);
-  const currentTerms = parseTermDropdown(res.body);
+async function fetchTerms(): Promise<Term[]> {
+  const jar = new CookieJar();
+  const client = got.extend({
+    cookieJar: jar,
+    followRedirect: true,
+    https: { rejectUnauthorized: true },
+  });
 
-  if (currentTerms.length === 0) {
-    const preview = res.body.slice(0, 400).replace(/\s+/g, ' ');
-    throw new Error(`Term dropdown not found in response. First 400 chars: ${preview}`);
+  let lastHtml = '';
+  for (let attempt = 1; attempt <= 10; attempt++) {
+    const res = await client.get(SEARCH_URL);
+    lastHtml = res.body;
+    const terms = parseTermDropdown(lastHtml);
+    if (terms.length > 0) return terms;
   }
+
+  const preview = lastHtml.slice(0, 400).replace(/\s+/g, ' ');
+  throw new Error(`Term dropdown not found after 10 attempts. First 400 chars: ${preview}`);
+}
+
+async function main() {
+  const currentTerms = await fetchTerms();
 
   const raw = await fs.readFile(TERMS_JSON, 'utf8');
   const { terms: knownTerms } = JSON.parse(raw) as { terms: Term[] };
   const knownIds = new Set(knownTerms.map((t) => t.termId));
 
   const newTerms = currentTerms.filter((t) => !knownIds.has(t.termId));
+
+  if (newTerms.length > 0) {
+    const sorted = [...currentTerms].sort((a, b) => a.termId.localeCompare(b.termId));
+    await fs.writeFile(TERMS_JSON, JSON.stringify({ terms: sorted }, null, 2) + '\n', 'utf-8');
+  }
+
   console.log(JSON.stringify(newTerms));
 }
 

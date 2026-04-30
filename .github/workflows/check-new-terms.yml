@@ -57,7 +57,8 @@ jobs:
         run: |
           BEFORE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           echo "Dispatching daily-scrape.yml at $BEFORE"
-          gh workflow run daily-scrape.yml
+          TERMS_JSON=$(cat apps/web/public/data/terms.json)
+          gh workflow run daily-scrape.yml --field "terms=$TERMS_JSON"
 
           # Wait for the run to appear in the API
           echo "Waiting for run to appear..."
