@@ -27,8 +27,8 @@ jobs:
         run: |
           TERM_NAME="${{ inputs.term_name }}"
           PAYLOAD=$(jq -n \
-            --arg title "uoplan — New Term Available" \
-            --arg body "$TERM_NAME is now on uoplan. Start planning your schedule!" \
+            --arg title "$TERM_NAME Schedules Are In" \
+            --arg body "You can now view the new class schedules on uoplan.party. Start planning your timetable so you're ready for registration day." \
             --arg url "https://uoplan.party" \
             '{title: $title, body: $body, url: $url}')
 

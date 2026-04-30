@@ -9,6 +9,8 @@ const out = resolve(__dirname, '../public/apple-touch-icon.png');
 
 await sharp(svg)
   .resize(180, 180)
+  // change the background to the dark background of the website
+  .flatten({ background: '#121212' })
   .png()
   .toFile(out);
 
