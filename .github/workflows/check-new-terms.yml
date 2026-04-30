@@ -2,8 +2,12 @@ name: Check for new terms and notify
 
 on:
   schedule:
-    - cron: '0 */4 * * *'
+    - cron: '0 * * * *'
   workflow_dispatch:
+
+concurrency:
+  group: check-new-terms
+  cancel-in-progress: false
 
 permissions:
   contents: read
