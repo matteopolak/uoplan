@@ -67,8 +67,9 @@ async function encryptPayload(
 	// ECDH shared secret
 	const uaPublicKey = await crypto.subtle.importKey('raw', uaPublicKeyBytes, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
 	const sharedSecretBits = await crypto.subtle.deriveBits(
+		// CF Workers types incorrectly use $public; runtime expects public
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		{ name: 'ECDH', $public: uaPublicKey } as any,
+		{ name: 'ECDH', public: uaPublicKey } as any,
 		serverKeyPair.privateKey,
 		256,
 	);
