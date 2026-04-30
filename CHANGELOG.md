@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.0.0-beta.4](https://github.com/matteopolak/uoplan/compare/uoplan-monorepo-v1.0.0-beta.3...uoplan-monorepo-v1.0.0-beta.4) (2026-04-30)
+
+
+### Features
+
+* add loader to notification toggle ([603db7e](https://github.com/matteopolak/uoplan/commit/603db7ebffd0d46f71813c7860e6857da6f78576))
+* add notifications for new terms ([2032973](https://github.com/matteopolak/uoplan/commit/2032973d5cbddc5899b126b8ed5c2153269bd9cd))
+* add turnstile for notifications ([4489ccf](https://github.com/matteopolak/uoplan/commit/4489ccf7ac3417c72b7a872831199098665a6484))
+* improve notification wording ([69e0c05](https://github.com/matteopolak/uoplan/commit/69e0c053d1cde9317a1859bf5702d09664711a87))
+* make it a pwa ([87f284d](https://github.com/matteopolak/uoplan/commit/87f284d62a9c61a5ccd1514e42b13da43f9412b4))
+
+
+### Bug Fixes
+
+* **ci:** separate term state properly ([a9770be](https://github.com/matteopolak/uoplan/commit/a9770be7d5f843587b8cae438ab9bb2f808facd7))
+* **ci:** update scrape run id in current step ([301683b](https://github.com/matteopolak/uoplan/commit/301683b0c803e42ae78c28737bc269e1ded003d8))
+* **ci:** use silent pnpm for proper output parsing ([d3fce54](https://github.com/matteopolak/uoplan/commit/d3fce545e47f0c28ba9d87ebf9089c74749490cf))
+* **ci:** use terms to determine current schedule year, not calendar year ([44aa91f](https://github.com/matteopolak/uoplan/commit/44aa91fcf19579dc165a723f23e019a8a3698964))
+* show notification warning when it isnt supported on the browser ([235b93e](https://github.com/matteopolak/uoplan/commit/235b93e3112300403db625c025ed52faebc4a8d3))
+* use fetch instead of web-push in worker ([f668e51](https://github.com/matteopolak/uoplan/commit/f668e5143b6b4e2bb26efbc7d799f96dd987a214))
+* use public instead of $public ([f4b2cb4](https://github.com/matteopolak/uoplan/commit/f4b2cb47500320266bda26e3debbb2f2d44c6de5))
+
 ## [1.0.0-beta.3](https://github.com/matteopolak/uoplan/compare/uoplan-monorepo-v1.0.0-beta.2...uoplan-monorepo-v1.0.0-beta.3) (2026-04-27)
 
 
