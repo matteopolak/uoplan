@@ -1,7 +1,7 @@
 {
   "termId": "2265",
   "totalCourses": 11141,
-  "totalWithSchedules": 883,
+  "totalWithSchedules": 877,
   "schedules": [
     {
       "subject": "ADM",
@@ -8116,6 +8116,25 @@
       }
     },
     {
+      "subject": "ART",
+      "catalogNumber": "59001",
+      "courseCode": "ART 59001",
+      "title": "Professional Internship 1/2",
+      "timeZone": "America/Toronto",
+      "components": {
+        "STG": [
+          {
+            "section": "A00-STG Term",
+            "sectionCode": "A00",
+            "component": "STG",
+            "session": null,
+            "times": [],
+            "status": "Open"
+          }
+        ]
+      }
+    },
+    {
       "subject": "ASE",
       "catalogNumber": "5909",
       "courseCode": "ASE 5909",
@@ -12300,25 +12319,6 @@
       }
     },
     {
-      "subject": "CLA",
-      "catalogNumber": "3900",
-      "courseCode": "CLA 3900",
-      "title": "Archaeological Field Work II",
-      "timeZone": "America/Toronto",
-      "components": {
-        "LEC": [
-          {
-            "section": "B00-LEC Term",
-            "sectionCode": "B00",
-            "component": "LEC",
-            "session": null,
-            "times": [],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
       "subject": "CLI",
       "catalogNumber": "3510",
       "courseCode": "CLI 3510",
@@ -12669,6 +12669,14 @@
           {
             "section": "B00-SEM Term",
             "sectionCode": "B00",
+            "component": "SEM",
+            "session": null,
+            "times": [],
+            "status": "Closed"
+          },
+          {
+            "section": "C00-SEM Term",
+            "sectionCode": "C00",
             "component": "SEM",
             "session": null,
             "times": [],
@@ -27605,25 +27613,6 @@
     },
     {
       "subject": "ENG",
-      "catalogNumber": "7997",
-      "courseCode": "ENG 7997",
-      "title": "M. Thesis Proposal",
-      "timeZone": "America/Toronto",
-      "components": {
-        "REC": [
-          {
-            "section": "A00-REC Term",
-            "sectionCode": "A00",
-            "component": "REC",
-            "session": null,
-            "times": [],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "ENG",
       "catalogNumber": "9997",
       "courseCode": "ENG 9997",
       "title": "Ph.D. Thesis Proposal",
@@ -33068,25 +33057,6 @@
     },
     {
       "subject": "HIS",
-      "catalogNumber": "5199",
-      "courseCode": "HIS 5199",
-      "title": "English Language Requirement in History",
-      "timeZone": "America/Toronto",
-      "components": {
-        "REC": [
-          {
-            "section": "A00-REC Term",
-            "sectionCode": "A00",
-            "component": "REC",
-            "session": null,
-            "times": [],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "HIS",
       "catalogNumber": "5599",
       "courseCode": "HIS 5599",
       "title": "Exigence de langue française en histoire",
@@ -34133,25 +34103,6 @@
                 ]
               }
             ],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "ISI",
-      "catalogNumber": "6998",
-      "courseCode": "ISI 6998",
-      "title": "Master's Thesis Proposal",
-      "timeZone": "America/Toronto",
-      "components": {
-        "REC": [
-          {
-            "section": "A00-REC Term",
-            "sectionCode": "A00",
-            "component": "REC",
-            "session": null,
-            "times": [],
             "status": "Open"
           }
         ]
@@ -43209,44 +43160,6 @@
     },
     {
       "subject": "MUS",
-      "catalogNumber": "4924",
-      "courseCode": "MUS 4924",
-      "title": "Research Project I",
-      "timeZone": "America/Toronto",
-      "components": {
-        "LEC": [
-          {
-            "section": "A00-LEC Term",
-            "sectionCode": "A00",
-            "component": "LEC",
-            "session": null,
-            "times": [],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "MUS",
-      "catalogNumber": "5902",
-      "courseCode": "MUS 5902",
-      "title": "Practicum",
-      "timeZone": "America/Toronto",
-      "components": {
-        "STG": [
-          {
-            "section": "A00-STG Term",
-            "sectionCode": "A00",
-            "component": "STG",
-            "session": null,
-            "times": [],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "MUS",
       "catalogNumber": "7902",
       "courseCode": "MUS 7902",
       "title": "Thesis proposition",
@@ -48337,7 +48250,7 @@
                 "startMinutes": 780,
                 "endMinutes": 950,
                 "virtual": false,
-                "instructor": "Judith Ann King",
+                "instructor": "Nathalie Christina Dionne",
                 "meetingDates": [
                   "2026-06-22",
                   "2026-08-06"
@@ -48348,7 +48261,7 @@
                 "startMinutes": 780,
                 "endMinutes": 950,
                 "virtual": false,
-                "instructor": "Judith Ann King",
+                "instructor": "Nathalie Christina Dionne",
                 "meetingDates": [
                   "2026-06-22",
                   "2026-08-06"
@@ -48390,7 +48303,7 @@
                 "startMinutes": 960,
                 "endMinutes": 1070,
                 "virtual": false,
-                "instructor": "Judith Ann King",
+                "instructor": "Nathalie Christina Dionne",
                 "meetingDates": [
                   "2026-06-22",
                   "2026-08-06"
@@ -48443,7 +48356,7 @@
                 "startMinutes": 510,
                 "endMinutes": 920,
                 "virtual": false,
-                "instructor": "Judith Ann King",
+                "instructor": "Nathalie Christina Dionne",
                 "meetingDates": [
                   "2026-06-22",
                   "2026-08-06"
@@ -57999,25 +57912,6 @@
           {
             "section": "B00-REC Term",
             "sectionCode": "B00",
-            "component": "REC",
-            "session": null,
-            "times": [],
-            "status": "Open"
-          }
-        ]
-      }
-    },
-    {
-      "subject": "TRA",
-      "catalogNumber": "9996",
-      "courseCode": "TRA 9996",
-      "title": "Comprehensive Examination",
-      "timeZone": "America/Toronto",
-      "components": {
-        "REC": [
-          {
-            "section": "A00-REC Term",
-            "sectionCode": "A00",
             "component": "REC",
             "session": null,
             "times": [],

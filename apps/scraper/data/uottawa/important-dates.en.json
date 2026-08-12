@@ -1,7 +1,7 @@
 {
   "locale": "en",
   "sourceUrl": "https://www.uottawa.ca/study/important-academic-dates-deadlines",
-  "reviewedText": "August 2026",
+  "reviewedText": "September 2026",
   "terms": [
     {
       "sourceId": "9221_158141",
@@ -5407,7 +5407,7 @@
                 },
                 {
                   "id": "9221_157941:breaks:g0:r2",
-                  "topic": "Reading week. No classes in programs at the faculties of Arts, Law, Engineering, Medicine (except for the MD program), Health Sciences, Science and Social Sciences and at the Telfer School of Management. Some exceptions may apply at both the undergraduate and graduate levels. CO-OP work terms and clinical and non-clinical placements are not affected. No exams are held and no assignments are due during Reading Week.",
+                  "topic": "Reading week. No classes in programs at the faculties of Arts, Law, Engineering, Medicine (except for the MD program), Health Sciences, Science and Social Sciences and at the Telfer School of Management. Some exceptions may apply at both the undergraduate and graduate levels. CO-OP work terms, research activities for graduate studies and clinical and non-clinical placements are not affected. No exams are held and no assignments are due during Reading Week.",
                   "dateText": "October 25 to 31",
                   "effect": "no_classes",
                   "interval": {
@@ -5861,7 +5861,7 @@
         },
         {
           "id": "9221_157941:academic_integrity",
-          "label": "Mandatory training on academic integrity (undergraduate studies)",
+          "label": "Mandatory training on academic integrity",
           "category": "academic_integrity",
           "groups": [
             {
@@ -5986,7 +5986,7 @@
                 },
                 {
                   "id": "9221_158001:breaks:g0:r1",
-                  "topic": "Reading week. No classes in programs at the faculties of Arts, Law (except Common Law), Engineering, Medicine (except for the MD program), Health Sciences, Science and Social Sciences and at the Telfer School of Management. Some exceptions may apply at both the undergraduate and graduate levels. CO-OP work terms and clinical and non-clinical placements are not affected. No exams are held and no assignments are due during Reading Week. No reading week for: Faculty of Education, the English Teacher Education program and the French Formation à l’enseignement program.",
+                  "topic": "Reading week. No classes in programs at the faculties of Arts, Law (except Common Law), Engineering, Medicine (except for the MD program), Health Sciences, Science and Social Sciences and at the Telfer School of Management. Some exceptions may apply at both the undergraduate and graduate levels. CO-OP work terms, research activities for graduate studies and clinical and non-clinical placements are not affected. No exams are held and no assignments are due during Reading Week. No reading week for: Faculty of Education, the English Teacher Education program and the French Formation à l’enseignement program.",
                   "dateText": "February 14 to 20",
                   "effect": "no_classes",
                   "interval": {

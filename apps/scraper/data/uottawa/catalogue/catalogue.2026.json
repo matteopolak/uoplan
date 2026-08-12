@@ -17701,7 +17701,7 @@
       "title": "Introduction to Biochemistry",
       "credits": 3,
       "description": "The chemistry and biological properties of amino acids, proteins, nucleic acids, lipids, carbohydrates, and vitamins. The course includes laboratory and tutorial sessions. Priority given to students for whom this course is mandatory. Previously BCH 2140 and BCH 2336.",
-      "component": "Laboratory, Lecture, Discussion GroupPrerequisites: CHM 2120",
+      "component": "Discussion Group, Laboratory, LecturePrerequisites: CHM 2120",
       "aliases": [
         "BCH 2140",
         "BCH 2336"
@@ -17796,7 +17796,7 @@
       "title": "Molecular Biology Laboratory",
       "credits": 3,
       "description": "Basic techniques in molecular biology (recombinant DNA, vectors, plasmids, gene screening, protein analysis) and their use in genetic engineering and cloning research. This course cannot be combined for units with BIO 3151. Priority given to students for whom this course is compulsory.",
-      "component": "Laboratory, Discussion GroupPrerequisite: BCH 2333. BCH 3170 or BIO 3170 is corequisite to BCH 3356. The courses BCH 3356, BIO 3151 cannot be combined for units.",
+      "component": "Discussion Group, LaboratoryPrerequisite: BCH 2333. BCH 3170 or BIO 3170 is corequisite to BCH 3356. The courses BCH 3356, BIO 3151 cannot be combined for units.",
       "prereqText": "BCH 2333",
       "prerequisites": {
         "type": "course",
@@ -23953,7 +23953,7 @@
       "title": "Data Collection and Interpretation",
       "credits": 3,
       "description": "Combinatorial analysis; probability and random variables; discrete and continuous densities and distribution functions; expectation and variance; normal (Gaussian), distributions; statistical estimation and hypothesis testing; method of least squares, correlation and regression. Basic principles and techniques for the efficient design of experiments and effective analysis of data. Topics include: the nature and analysis of process variability, comparing processes, blocking and randomization, empirical model building for quantifying relationships between process inputs and outputs, two-level factorial and fractional factorial designs for screening out inert input variables, other designs, a practical approach to experimental design.",
-      "component": "Lecture, TutorialPrerequisites: CHG 1125, CHG 1371, MAT 2384.",
+      "component": "Tutorial, LecturePrerequisites: CHG 1125, CHG 1371, MAT 2384.",
       "prereqText": "CHG 1125, CHG 1371, MAT 2384",
       "prerequisites": {
         "type": "and_group",
@@ -29723,7 +29723,7 @@
       "title": "Criminal Law and Procedure (Part 2 of 2)",
       "credits": 5,
       "description": "General principles of criminal law; burdens of proof; the physical and mental elements offences; select defences; basic elements of criminal procedure; the impact of the Charter of Rights and Freedoms on both substantive and procedural issues. (Part 2 of 2)",
-      "component": "Tutorial, LecturePrerequisite: CML 11031",
+      "component": "Lecture, TutorialPrerequisite: CML 11031",
       "prereqText": "CML 11031",
       "prerequisites": {
         "type": "course",
@@ -41769,18 +41769,18 @@
       }
     },
     {
-      "code": "CTM 8501",
-      "title": "Études dirigées en médicine clinique et translationnelle",
-      "credits": 3,
-      "description": "Cours individuel ayant pour objectif d’approfondir les connaissances de l’étudiant dans un domaine particulier de la médicine clinique et translationnelle.",
-      "component": "Cours magistral"
-    },
-    {
       "code": "CTM 8502",
       "title": "PhD Séminaire",
       "credits": 3,
       "description": "Obligatoire pour tous les étudiants inscrits au programme de doctorat. Présentation d’un séminaire et réalisation d’activités liées à la communication scientifique. Participation régulière aux présentations scientifiques, y compris la série de séminaires du MCT et de la Faculté.",
       "component": "Séminaire"
+    },
+    {
+      "code": "CTM 8534",
+      "title": "Études dirigées en médicine clinique et translationnelle",
+      "credits": 3,
+      "description": "Cours individuel ayant pour objectif d’approfondir les connaissances de l’étudiant dans un domaine particulier de la médicine clinique et translationnelle.",
+      "component": "Cours magistral"
     },
     {
       "code": "CTS 6101",
@@ -41927,7 +41927,7 @@
       "title": "Measurements I",
       "credits": 4,
       "description": "Principles and analysis of civil engineering measurements. Probability and normal distribution; systematic and random errors; probabilistic principles of errors; statistical treatment of experimental data. Basic theory of mechanical and electrical strain measurement systems. Measurements in water resources and geotechnical engineering.",
-      "component": "Seminar, Discussion Group, Laboratory, Lecture, Research, Work Term, Theory and Laboratory, TutorialPrerequisites: MAT 1320, MAT 1322, MAT 1341.",
+      "component": "Research, Discussion Group, Laboratory, Lecture, Seminar, Work Term, Theory and Laboratory, TutorialPrerequisites: MAT 1320, MAT 1322, MAT 1341.",
       "prereqText": "MAT 1320, MAT 1322, MAT 1341",
       "prerequisites": {
         "type": "and_group",
@@ -62049,7 +62049,7 @@
       "title": "Circuit Theory I",
       "credits": 3,
       "description": "DC and sinusoidal steady state (AC) analysis of circuits. Basic passive circuit elements (resistors, capacitors, inductors). Voltage and current sources. Kirchoff laws. Loop and nodal analysis. Circuit theorems: Superposition, Maximum power transfer, Thevenin, Norton. Forced and natural responses of RL and RC circuits using the differential equation approach. Sinusoidal signals, complex numbers, phasors and impedance concepts. Average and RMS quantities. Steady state time-domain behaviour of inductors and capacitors. Complex, average and apparent power. Introduction to the use of electrical measurement equipment and Computer-Aided Design tools to support circuit analysis.",
-      "component": "Lecture, Tutorial, LaboratoryPrerequisites: ITI 1100, MAT 1341, MAT 1322.",
+      "component": "Laboratory, Lecture, TutorialPrerequisites: ITI 1100, MAT 1341, MAT 1322.",
       "prereqText": "ITI 1100, MAT 1341, MAT 1322",
       "prerequisites": {
         "type": "and_group",
@@ -98363,13 +98363,6 @@
       "component": "Lecture"
     },
     {
-      "code": "MAT 5121",
-      "title": "Introduction to Hilbert Space",
-      "credits": 3,
-      "description": "This course is equivalent to MATH 5009 at Carleton University.",
-      "component": "Lecture"
-    },
-    {
       "code": "MAT 5122",
       "title": "Banach Algebras",
       "credits": 3,
@@ -98419,13 +98412,6 @@
           }
         ]
       }
-    },
-    {
-      "code": "MAT 5127",
-      "title": "Complex Analysis",
-      "credits": 3,
-      "description": "This course is equivalent to MATH 5005 at Carleton University.",
-      "component": "Lecture"
     },
     {
       "code": "MAT 5131",
@@ -98481,13 +98467,6 @@
       "title": "Group Theory",
       "credits": 3,
       "description": "This course is equivalent to MATH 5106 at Carleton University.",
-      "component": "Lecture"
-    },
-    {
-      "code": "MAT 5146",
-      "title": "Rings and Modules",
-      "credits": 3,
-      "description": "This course is equivalent to MATH 5103 at Carleton University.",
       "component": "Lecture"
     },
     {
@@ -98614,29 +98593,6 @@
       }
     },
     {
-      "code": "MAT 5162",
-      "title": "Mathematical Foundations of Computer Science",
-      "credits": 3,
-      "description": "Foundations of functional languages, lambda calculi (typed, polymorphically typed, untyped), Curry-Howard Isomorphism, proofs-as-programs, normalization and rewriting theory, operational semantics, type assignment, introduction to denotational semantics of programs, fixed-point programming. Topics chosen from: denotational semantics for lambda calculi, models of programming languages, complexity theory and logic of computation, models of concurrent and distributed systems, etc. This course is equivalent to MATH 6807 at Carleton University.",
-      "component": "LecturePrerequisite: Honours undergraduate algebra and either topology or analysis. Some acquaintance with Logic useful.",
-      "prereqText": "Honours undergraduate algebra and either topology or analysis",
-      "prerequisites": {
-        "type": "or_group",
-        "text": "Honours undergraduate algebra and either topology or analysis",
-        "children": [
-          {
-            "type": "non_course",
-            "text": "Honours undergraduate algebra and either topology",
-            "kind": "coursework"
-          },
-          {
-            "type": "non_course",
-            "text": "analysis"
-          }
-        ]
-      }
-    },
-    {
       "code": "MAT 5163",
       "title": "Analytic Number Theory",
       "credits": 3,
@@ -98662,13 +98618,6 @@
       "title": "Formal Language and Syntax Analysis",
       "credits": 3,
       "description": "This course is equivalent to MATH/COMP 5807 at Carleton University.",
-      "component": "Lecture"
-    },
-    {
-      "code": "MAT 5168",
-      "title": "Homology Theory",
-      "credits": 3,
-      "description": "This course is equivalent to MATH 5202 at Carleton University.",
       "component": "Lecture"
     },
     {
@@ -98729,17 +98678,10 @@
       }
     },
     {
-      "code": "MAT 5172",
-      "title": "Topics in Stochastic Processes",
-      "credits": 3,
-      "description": "This course is equivalent to STAT 5508 at Carleton University.",
-      "component": "Lecture"
-    },
-    {
       "code": "MAT 5173",
       "title": "Stochastic Analysis",
       "credits": 3,
-      "description": "Brownian motion, continuous martingales and stochastic integration. This course is equivalent to STAT 5604 at Carleton University.",
+      "description": "Introduction to stochastic processes from a non-measure theoretic point of view. Conditional expectation. Brownian motion, Gaussian processes, martingales. Wiener and Itô integrals with respect to Brownian motion. Itô formula. Stochastic differential equations. Applications to financial mathematics, the Black-Scholes formula. This course is equivalent to STAT 5604 at Carleton University",
       "component": "Lecture"
     },
     {
@@ -98771,20 +98713,6 @@
       "title": "Robust Statistical Inference",
       "credits": 3,
       "description": "This course is equivalent to STAT 5506 at Carleton University.",
-      "component": "Lecture"
-    },
-    {
-      "code": "MAT 5176",
-      "title": "Advanced Statistical Inference",
-      "credits": 3,
-      "description": "Pure significance tests; uniformly most powerful unbiased and invariant tests; asymptotic comparison of tests; confidence intervals; large sample theory of likelihood ratio and chi-square tests; likelihood inference; Bayesian inference. Topics such as empirical Bayes inference, fiducial and structural inference, resampling methods. This course is equivalent to STAT 5507 at Carleton University.",
-      "component": "Lecture"
-    },
-    {
-      "code": "MAT 5177",
-      "title": "Multivariate Normal Theory",
-      "credits": 3,
-      "description": "This course is equivalent to STAT 5500 at Carleton University.",
       "component": "Lecture"
     },
     {
@@ -99124,13 +99052,6 @@
       "component": "Lecture"
     },
     {
-      "code": "MAT 5325",
-      "title": "Topics in Information and Systems Science",
-      "credits": 3,
-      "description": "This course is equivalent to MATH 5802 at Carleton University.",
-      "component": "Lecture"
-    },
-    {
       "code": "MAT 5326",
       "title": "Topics in Analysis",
       "credits": 3,
@@ -99142,34 +99063,6 @@
       "title": "Topics in Algebra",
       "credits": 3,
       "description": "This course is equivalent to MATH 6101 at Carleton University.",
-      "component": "Lecture"
-    },
-    {
-      "code": "MAT 5328",
-      "title": "Topics in Analysis",
-      "credits": 3,
-      "description": "This course is equivalent to MATH 6008 at Carleton University.",
-      "component": "Lecture"
-    },
-    {
-      "code": "MAT 5329",
-      "title": "Topics in Analysis",
-      "credits": 3,
-      "description": "This course is equivalent to MATH 6009 at Carleton University.",
-      "component": "Lecture"
-    },
-    {
-      "code": "MAT 5330",
-      "title": "Topics in Algebra",
-      "credits": 3,
-      "description": "This course is equivalent to MATH 6102 at Carleton University.",
-      "component": "Lecture"
-    },
-    {
-      "code": "MAT 5331",
-      "title": "Topics in Algebra",
-      "credits": 3,
-      "description": "This course is equivalent to MATH 6103 at Carleton University.",
       "component": "Lecture"
     },
     {
@@ -99227,13 +99120,6 @@
       "component": "Cours magistral"
     },
     {
-      "code": "MAT 5521",
-      "title": "Introduction aux espaces hilbertiens",
-      "credits": 3,
-      "description": "Ce cours est équivalent à MATH 5009 à la Carleton University.",
-      "component": "Cours magistral"
-    },
-    {
       "code": "MAT 5522",
       "title": "Algèbres de banach",
       "credits": 3,
@@ -99268,13 +99154,6 @@
       "credits": 3,
       "description": "Espaces de Banach et de Hilbert, opérateurs linéaires bornés, espaces duals. Chapitres choisis parmi les suivants : topologies faibles, théorème d'Alaoglu, opérateurs compacts, calcul différentiel dans les espaces de Banach, théorèmes de représentation de Riesz. Ce cours est équivalent à MATH 5008 à la Carleton University.",
       "component": "Cours magistralPrerequisite for MAT 5526"
-    },
-    {
-      "code": "MAT 5527",
-      "title": "Analyse complexe",
-      "credits": 3,
-      "description": "Ce cours est équivalent à MATH 5005 à la Carleton University.",
-      "component": "Cours magistral"
     },
     {
       "code": "MAT 5531",
@@ -99356,13 +99235,6 @@
       "title": "Théorie des groupes",
       "credits": 3,
       "description": "Ce cours est équivalent à MATH 5106 à la Carleton University.",
-      "component": "Cours magistral"
-    },
-    {
-      "code": "MAT 5546",
-      "title": "Anneaux et modules",
-      "credits": 3,
-      "description": "Ce cours est équivalent à MATH 5103 à la Carleton University.",
       "component": "Cours magistral"
     },
     {
@@ -99480,13 +99352,6 @@
       "component": "Cours magistral"
     },
     {
-      "code": "MAT 5568",
-      "title": "Homologie",
-      "credits": 3,
-      "description": "Ce cours est équivalent à MATH 5202 à la Carleton University.",
-      "component": "Cours magistral"
-    },
-    {
       "code": "MAT 5570",
       "title": "Théorie des probabilités I",
       "credits": 3,
@@ -99544,54 +99409,6 @@
           }
         ]
       }
-    },
-    {
-      "code": "MAT 5572",
-      "title": "Processus stochastique : Chapitres choisis",
-      "credits": 3,
-      "description": "Ce cours est équivalent à STAT 5508 à la Carleton University.",
-      "component": "Cours magistral"
-    },
-    {
-      "code": "MAT 5576",
-      "title": "Inférence statistique",
-      "credits": 3,
-      "description": "Tests de signification pure; tests uniformément les plus puissants sans biais et sans variance; comparaison asymptotique des tests; intervalles de confiance; théorie des grands échantillons et tests du carré chi; inférence de la vraisemblance; inférence de Bayes; inférence empirique de Bayes; induction fiduciaire et structurale; méthodes de répétition de l'échantillonnage. Ce cours est équivalent à STAT 5507 à la Carleton University.",
-      "component": "Cours magistralPréalables : MAT 4170 ou l'équivalent, et MAT 5191.",
-      "prereqText": "MAT 4170 ou l'équivalent, et MAT 5191",
-      "prerequisites": {
-        "type": "and_group",
-        "text": "MAT 4170 ou l'équivalent, et MAT 5191",
-        "children": [
-          {
-            "type": "or_group",
-            "text": "MAT 4170 ou l'équivalent,",
-            "children": [
-              {
-                "type": "course",
-                "code": "MAT 4170",
-                "text": "MAT 4170"
-              },
-              {
-                "type": "non_course",
-                "text": "l'équivalent,"
-              }
-            ]
-          },
-          {
-            "type": "course",
-            "code": "MAT 5191",
-            "text": "MAT 5191"
-          }
-        ]
-      }
-    },
-    {
-      "code": "MAT 5577",
-      "title": "Analyse multivariée normale",
-      "credits": 3,
-      "description": "Ce cours est équivalent à STAT 5500 à la Carleton University.",
-      "component": "Cours magistral"
     },
     {
       "code": "MAT 5580",
@@ -99737,37 +99554,9 @@
     },
     {
       "code": "MAT 5727",
-      "title": "Algèbre - chapitres choisis : Introduction à la géométrie algébrique",
+      "title": "Algèbre - chapitres choisis",
       "credits": 3,
       "description": "Ce cours est équivalent à MATH 6101 à la Carleton University.",
-      "component": "Cours magistral"
-    },
-    {
-      "code": "MAT 5728",
-      "title": "Analyse : Chapitres choisis",
-      "credits": 3,
-      "description": "Ce cours est équivalent à MATH 6008 à la Carleton University.",
-      "component": "Cours magistral"
-    },
-    {
-      "code": "MAT 5729",
-      "title": "Analyse : Chapitres choisis",
-      "credits": 3,
-      "description": "Ce cours est équivalent à MATH 6009 à la Carleton University.",
-      "component": "Cours magistral"
-    },
-    {
-      "code": "MAT 5730",
-      "title": "Analyse : Chapitres choisis",
-      "credits": 3,
-      "description": "Ce cours est équivalent à MATH 6102 à la Carleton University.",
-      "component": "Cours magistral"
-    },
-    {
-      "code": "MAT 5731",
-      "title": "Analyse : Chapitres choisis",
-      "credits": 3,
-      "description": "Ce cours est équivalent à MATH 6103 à la Carleton University.",
       "component": "Cours magistral"
     },
     {
@@ -99789,13 +99578,6 @@
       "title": "Séminaire / Seminar",
       "credits": 3,
       "description": "Ce cours est équivalent à MATH 5900 à la Carleton University. / This course is equivalent to MATH 5900 at Carleton University.",
-      "component": "Cours magistral / Lecture"
-    },
-    {
-      "code": "MAT 5990S",
-      "title": "M.Sc. Séminaire / Seminar M.A.",
-      "credits": 3,
-      "description": "",
       "component": "Cours magistral / Lecture"
     },
     {
@@ -99824,13 +99606,6 @@
       "title": "Stage de recherche / Research Internship",
       "credits": 3,
       "description": "Cours visant à donner à l'étudiant la possibilité d'entreprendre de la recherche mathématique dans le contexte d'un projet en collaboration avec un organisme parrain des secteurs public ou privé. Inclut des séminaires sur des sujets pertinents au projet de l'étudiant. Note finale S (satisfaisant) ou NS (non satisfaisant), à décider par le professeur responsable du cours en consultation avec le superviseur du stage, fondée sur le contenu mathématique et sur la présentation orale et écrite des résultats. / Project-oriented course affording students the opportunity to undertake research in applied mathematics as a cooperative project with governmental or industrial sponsors. Project work and seminars on related topics. Grade S (Satisfactory) or NS (Not satisfactory) to be assigned based upon the mathematical content as well as upon the oral and written presentation of results, and to be determined by the professor in charge of the course in consultation with the internship supervisor.",
-      "component": "Cours magistral / Lecture"
-    },
-    {
-      "code": "MAT 6990",
-      "title": "Séminaire / Seminar",
-      "credits": 3,
-      "description": "Ce cours est équivalent à MATH 6900 à la Carleton University. / This course is equivalent to MATH 6900 at Carleton University.",
       "component": "Cours magistral / Lecture"
     },
     {
@@ -102201,7 +101976,7 @@
       "title": "Transfert de chaleur",
       "credits": 3,
       "description": "Principes fondamentaux en transfert de chaleur par conduction, convection et radiation. Application de ces principes pour la résolution de problèmes d'ingénierie.",
-      "component": "Cours magistral, TutorielPréalable : MCG 3740.",
+      "component": "Tutoriel, Cours magistralPréalable : MCG 3740.",
       "prereqText": "MCG 3740",
       "prerequisites": {
         "type": "course",
@@ -106858,6 +106633,13 @@
       "title": "Séminaire en enseignement en santé",
       "credits": 3,
       "description": "Examen critique des thèmes reliés à l'enseignement en santé et inspirés de la recherche et des enjeux disciplinaires.",
+      "component": "Séminaire"
+    },
+    {
+      "code": "MED 65332",
+      "title": "Séminaire en enseignement en santé (Partie 2/2)",
+      "credits": 3,
+      "description": "Examen critique des thèmes reliés à l'enseignement en santé et inspirés de la recherche et des enjeux disciplinaires. (Partie 2/2)",
       "component": "Séminaire"
     },
     {
@@ -120066,9 +119848,9 @@
     },
     {
       "code": "ORA 5549",
-      "title": "Stage II",
+      "title": "Stage III",
       "credits": 0,
-      "description": "Approfondissement des connaissances et des compétences en lien avec les clientèles et les rôles professionnels en orthophonie sous supervision directe entre 50% et 80% du temps. Stage en bloc d'une durée de 30 jours permettant d'accumuler entre 50 et 75 heures cliniques.",
+      "description": "Approfondissement des connaissances et des compétences en lien avec les clientèles et les rôles professionnels en audiologie et en orthophonie sous supervision directe entre 50% et 80% du temps. Stage en bloc d'une durée de 25 jours permettant d'accumuler entre 50 et 75 heures cliniques. L'évaluation du stage se fera sur la base S (satisfaisant) ou NS (non satisfaisant).",
       "component": "StagePréalables : ORA 5529, 33 cr. de cours ORA ou REA pour les étudiants d'orthophonie ou 36 cr. de cours ORA ou REA pour les étudiants d'audiologie. 12 cr. de cours ORA ou REA sont concomitants à ORA 5549.",
       "prereqText": "ORA 5529, 33 cr. de cours ORA ou REA pour les étudiants d'orthophonie ou 36 cr. de cours ORA ou REA pour les étudiants d'audiologie. 12 cr. de cours ORA ou REA sont concomitants à ORA 5549",
       "prerequisites": {
@@ -120150,9 +119932,9 @@
     },
     {
       "code": "ORA 5559",
-      "title": "Stage III",
+      "title": "Stage IV",
       "credits": 0,
-      "description": "Approfondissement des connaissances et des compétences en lien avec les clientèles et les rôles professionnels en orthophonie sous supervision directe entre 25 % et 50 % du temps. Stage en bloc d'une durée de 30 jours permettant d'accumuler entre 75 et 100 heures cliniques. Préparation à l'entrée en pratique de la profession d'orthophoniste.",
+      "description": "Approfondissement des connaissances et des compétences en lien avec les clientèles et les rôles professionnels en audiologie et en orthophonie sous supervision directe entre 25 % et 50 % du temps. Stage bihebdomadaire d'une durée de 12 semaines permettant d'accumuler entre 75 et 100 heures cliniques. Préparation à l'entrée en pratique des professions d'orthophoniste et d'audiologiste. L'évaluation du stage se fera sur la base S (satisfaisant) ou NS (non satisfaisant).",
       "component": "StagePréalables : ORA 5549, 45 cr. de cours en orthophonie (ORA) ou sciences de la réadaptation (REA) pour les étudiants d'orthophonie ou 48 cr. de cours en orthophonie (ORA) ou sciences de la réadaptation (REA) pour les étudiants d'audiologie.",
       "prereqText": "ORA 5549, 45 cr. de cours en orthophonie (ORA) ou sciences de la réadaptation (REA) pour les étudiants d'orthophonie ou 48 cr. de cours en orthophonie (ORA) ou sciences de la réadaptation (REA) pour les étudiants d'audiologie",
       "prerequisites": {
@@ -120217,9 +119999,9 @@
     },
     {
       "code": "ORA 5660",
-      "title": "Stage IV",
+      "title": "Stage V",
       "credits": 0,
-      "description": "Consolidation des connaissances et des compétences en lien avec les clientèles et les rôles professionnels en orthophonie sous supervision directe au maximum 25% du temps. Stage en bloc d'une durée de 50 jours permettant d'accumuler entre 100 et 150 heures cliniques et menant à l'autonomie professionnelle.",
+      "description": "Consolidation des connaissances et des compétences en lien avec les clientèles et les rôles professionnels en audiologie et en orthophonie sous supervision directe au maximum 25% du temps. Stage en bloc d'une durée de 50 jours permettant d'accumuler entre 100 et 150 heures cliniques et menant à l'autonomie professionnelle. L'évaluation se fera sur la base S (satisfaisant) ou NS (non satisfaisant).",
       "component": "StagePréalables : ORA 5559, 57 crédits de cours en orthophonie (ORA) ou sciences de la réadaptation (REA).",
       "prereqText": "ORA 5559, 57 crédits de cours en orthophonie (ORA) ou sciences de la réadaptation (REA)",
       "prerequisites": {
@@ -189404,13 +189186,13 @@
           "options": [
             {
               "type": "course",
-              "code": "MHA 5140",
-              "credits": 1.5
+              "code": "MHA 5150",
+              "credits": 3
             },
             {
               "type": "course",
-              "code": "MHA 5141",
-              "credits": 1.5
+              "code": "MHA 5158",
+              "credits": 3
             },
             {
               "type": "course",
@@ -189419,7 +189201,12 @@
             },
             {
               "type": "course",
-              "code": "MHA 5330",
+              "code": "MHA 5335",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "MHA 5345",
               "credits": 3
             },
             {
@@ -189429,23 +189216,8 @@
             },
             {
               "type": "course",
-              "code": "MHA 6250",
+              "code": "MHA 6303",
               "credits": 1.5
-            },
-            {
-              "type": "course",
-              "code": "MHA 6260",
-              "credits": 1.5
-            },
-            {
-              "type": "course",
-              "code": "MHA 6271",
-              "credits": 1.5
-            },
-            {
-              "type": "course",
-              "code": "MHA 6301",
-              "credits": 3
             },
             {
               "type": "course",
@@ -189454,12 +189226,7 @@
             },
             {
               "type": "course",
-              "code": "MHA 6315",
-              "credits": 3
-            },
-            {
-              "type": "course",
-              "code": "MHA 6351",
+              "code": "MHA 6316",
               "credits": 3
             },
             {
@@ -189474,11 +189241,6 @@
             },
             {
               "type": "course",
-              "code": "MHA 6370",
-              "credits": 3
-            },
-            {
-              "type": "course",
               "code": "MHA 6380",
               "credits": 3
             }
@@ -189486,12 +189248,102 @@
         },
         {
           "type": "and",
-          "title": "Residency/Project",
+          "title": "Optional Courses",
           "options": [
             {
-              "type": "course",
-              "code": "MHA 6990",
-              "credits": 6
+              "type": "group",
+              "title": "6 optional course units - (selected from the list of graduate courses in MHA OR from other graduate programs, subject to approval by the director of the MHA program):",
+              "credits": 6,
+              "options": [
+                {
+                  "type": "course",
+                  "code": "CMN 5133",
+                  "indented": true
+                },
+                {
+                  "type": "course",
+                  "code": "DCL 5107",
+                  "indented": true
+                },
+                {
+                  "type": "course",
+                  "code": "DCL 5202",
+                  "indented": true
+                },
+                {
+                  "type": "course",
+                  "code": "EDU 5129",
+                  "indented": true
+                },
+                {
+                  "type": "course",
+                  "code": "HSS 6112",
+                  "indented": true
+                },
+                {
+                  "type": "course",
+                  "code": "MBA 5320",
+                  "indented": true
+                },
+                {
+                  "type": "course",
+                  "code": "MHA 6266",
+                  "indented": true
+                },
+                {
+                  "type": "course",
+                  "code": "MHA 6356",
+                  "indented": true
+                },
+                {
+                  "type": "course",
+                  "code": "NSG 6160",
+                  "indented": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "and",
+          "title": "Residency or Consulting Project",
+          "options": [
+            {
+              "type": "elective",
+              "title": "One option from:"
+            },
+            {
+              "type": "options_group",
+              "title": "Options",
+              "options": [
+                {
+                  "type": "and",
+                  "title": "Option 1:",
+                  "options": [
+                    {
+                      "type": "course",
+                      "code": "MHA 6990",
+                      "credits": 6
+                    }
+                  ]
+                },
+                {
+                  "type": "and",
+                  "title": "Option 2:",
+                  "options": [
+                    {
+                      "type": "course",
+                      "code": "MHA 6996",
+                      "credits": 3
+                    },
+                    {
+                      "type": "elective",
+                      "title": "3 optional course units from the list of approved courses",
+                      "credits": 3
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }
@@ -190978,11 +190830,6 @@
             {
               "type": "course",
               "code": "DTO 6106",
-              "credits": 3
-            },
-            {
-              "type": "course",
-              "code": "DTO 6107",
               "credits": 3
             },
             {
@@ -266832,6 +266679,11 @@
                   "type": "course",
                   "code": "NUT 5115",
                   "indented": true
+                },
+                {
+                  "type": "course",
+                  "code": "NUT 5116",
+                  "indented": true
                 }
               ]
             },
@@ -266921,6 +266773,11 @@
                 },
                 {
                   "type": "course",
+                  "code": "NUT 5116",
+                  "indented": true
+                },
+                {
+                  "type": "course",
                   "code": "NUT 5121",
                   "indented": true
                 },
@@ -266970,7 +266827,13 @@
             {
               "type": "course",
               "code": "SSP 6009"
-            },
+            }
+          ]
+        },
+        {
+          "type": "and",
+          "title": "Thesis",
+          "options": [
             {
               "type": "course",
               "code": "THM 7999"
@@ -274167,7 +274030,7 @@
       "requirements": [
         {
           "type": "and",
-          "title": "Compulsory courses at the 1000 level",
+          "title": "Basic skills",
           "options": [
             {
               "type": "course",
@@ -274178,7 +274041,13 @@
               "type": "course",
               "code": "ENG 1120",
               "credits": 3
-            },
+            }
+          ]
+        },
+        {
+          "type": "and",
+          "title": "Compulsory courses at the 1000 level",
+          "options": [
             {
               "type": "course",
               "code": "ECH 1100",
@@ -278633,7 +278502,8 @@
           "options": [
             {
               "type": "course",
-              "code": "FSS 3330"
+              "code": "FSS 3930",
+              "credits": 3
             },
             {
               "type": "course",
@@ -281558,6 +281428,11 @@
             },
             {
               "type": "course",
+              "code": "PAP 3355",
+              "credits": 3
+            },
+            {
+              "type": "course",
               "code": "PAP 3370",
               "credits": 3
             }
@@ -281586,6 +281461,7 @@
             {
               "type": "group",
               "title": "3 course units from:",
+              "credits": 3,
               "options": [
                 {
                   "type": "course",
@@ -281624,8 +281500,8 @@
             },
             {
               "type": "elective",
-              "title": "9 option course units form the list of optional courses",
-              "credits": 9
+              "title": "6 optional course units from the list of optional courses",
+              "credits": 6
             }
           ]
         },
@@ -281635,14 +281511,215 @@
           "options": [
             {
               "type": "elective",
-              "title": "36 elective course units",
-              "credits": 36
+              "title": "33 elective course units",
+              "credits": 33
             },
             {
-              "type": "elective",
-              "title": "6 elective course units plus a minor",
-              "credits": 6,
+              "type": "course",
+              "title": "3 elective course units plus a minor including POL 1101 not compulsory but highly recommended",
+              "code": "POL 1101",
+              "credits": 3,
               "indented": true
+            },
+            {
+              "type": "course",
+              "code": "ECO 1102",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "ECO 1104",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "ECO 2110",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "ECO 2111",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "ECO 2114",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "ECO 2115",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "ECO 2118",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "ECO 2121",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "ECO 2147",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "FEM 2107",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 3325",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 3340",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 3345",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 3360",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 3365",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 4310",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 4320",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 4330",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 4340",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 4350",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 4355",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "POL 1101",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "POL 3125",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "POL 3159",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "POL 3171",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "POL 3175",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "POL 4134",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "POL 4154",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "POL 4162",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "SOC 2101",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "SOC 2104",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "SOC 2309",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "SOC 2312",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "SOC 3105",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "SOC 3116",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "SOC 3137",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "SOC 3308",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "TSO 2520",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "TSO 3555",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "TSO 4565",
+              "credits": 3
             }
           ]
         },
@@ -298342,7 +298419,7 @@
             },
             {
               "type": "course",
-              "code": "BIO 1550",
+              "code": "BIO 1150",
               "credits": 3
             },
             {

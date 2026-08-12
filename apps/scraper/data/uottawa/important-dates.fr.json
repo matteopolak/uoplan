@@ -1,7 +1,7 @@
 {
   "locale": "fr-CA",
   "sourceUrl": "https://www.uottawa.ca/etudes/dates-importantes-echeances-scolaires",
-  "reviewedText": "Août 2026",
+  "reviewedText": "Septembre 2026",
   "terms": [
     {
       "sourceId": "9221_158141",
@@ -5408,7 +5408,7 @@
                 },
                 {
                   "id": "9221_157941:breaks:g0:r2",
-                  "topic": "Période d’étude : les cours des facultés des Arts, de Droit, de Génie, de Médecine (à l’exception du programme M.D.), des Sciences, des Sciences de la santé, des Sciences sociales et de l’École de gestion Telfer sont annulés. Des exceptions pourraient s’appliquer dans certaines disciplines, tant au premier cycle qu’aux cycles supérieurs. Les stages coopératifs et autres (cliniques et non cliniques) ont lieu. Aucun examen ni remise de travaux n’a lieu pendant la période d’étude.",
+                  "topic": "Période d’étude : les cours des facultés des Arts, de Droit, de Génie, de Médecine (à l’exception du programme M.D.), des Sciences, des Sciences de la santé, des Sciences sociales et de l’École de gestion Telfer sont annulés. Des exceptions pourraient s’appliquer dans certaines disciplines, tant au premier cycle qu’aux cycles supérieurs. Les stages coopératifs, les activités de recherche aux études supérieures et autres stages (cliniques et non cliniques) ont lieu. Aucun examen ni remise de travaux n’a lieu pendant la période d’étude.",
                   "dateText": "25 au 31 octobre",
                   "effect": "no_classes",
                   "interval": {
@@ -5862,7 +5862,7 @@
         },
         {
           "id": "9221_157941:academic_integrity",
-          "label": "Formation obligatoire sur l’intégrité dans les études (études de premier cycle)",
+          "label": "Formation obligatoire sur l’intégrité dans les études",
           "category": "academic_integrity",
           "groups": [
             {
@@ -5987,7 +5987,7 @@
                 },
                 {
                   "id": "9221_158001:breaks:g0:r1",
-                  "topic": "Période d’étude : les cours des facultés des Arts, de Droit (à l'exception de Common Law), de Génie, de Médecine (à l’exception du programme M.D.), des Sciences, des Sciences de la santé, des Sciences sociales et de l’École de gestion Telfer sont annulés. Des exceptions pourraient s’appliquer dans certaines disciplines, tant au premier cycle qu’aux cycles supérieurs. Les stages coopératifs et autres (cliniques et non cliniques) ont lieu. Aucun examen ni remise de travaux n’a lieu pendant la période d’étude. Aucune période d’étude pour: Faculté d’éducation, le programme Teacher Education en anglais et le programme de Formation à l’enseignement en français.",
+                  "topic": "Période d’étude : les cours des facultés des Arts, de Droit (à l'exception de Common Law), de Génie, de Médecine (à l’exception du programme M.D.), des Sciences, des Sciences de la santé, des Sciences sociales et de l’École de gestion Telfer sont annulés. Des exceptions pourraient s’appliquer dans certaines disciplines, tant au premier cycle qu’aux cycles supérieurs. Les stages coopératifs, les activités de recherche aux études supérieurs et autres stages (cliniques et non cliniques) ont lieu. Aucun examen ni remise de travaux n’a lieu pendant la période d’étude. Aucune période d’étude pour: Faculté d’éducation, le programme Teacher Education en anglais et le programme de Formation à l’enseignement en français.",
                   "dateText": "14 au 20 février",
                   "effect": "no_classes",
                   "interval": {

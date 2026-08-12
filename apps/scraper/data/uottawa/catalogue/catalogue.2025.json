@@ -17701,7 +17701,7 @@
       "title": "Introduction to Biochemistry",
       "credits": 3,
       "description": "The chemistry and biological properties of amino acids, proteins, nucleic acids, lipids, carbohydrates, and vitamins. The course includes laboratory and tutorial sessions. Priority given to students for whom this course is mandatory. Previously BCH 2140 and BCH 2336.",
-      "component": "Laboratory, Lecture, Discussion GroupPrerequisites: CHM 2120",
+      "component": "Discussion Group, Laboratory, LecturePrerequisites: CHM 2120",
       "aliases": [
         "BCH 2140",
         "BCH 2336"
@@ -17796,7 +17796,7 @@
       "title": "Molecular Biology Laboratory",
       "credits": 3,
       "description": "Basic techniques in molecular biology (recombinant DNA, vectors, plasmids, gene screening, protein analysis) and their use in genetic engineering and cloning research. This course cannot be combined for units with BIO 3151. Priority given to students for whom this course is compulsory.",
-      "component": "Laboratory, Discussion GroupPrerequisite: BCH 2333. BCH 3170 or BIO 3170 is corequisite to BCH 3356. The courses BCH 3356, BIO 3151 cannot be combined for units.",
+      "component": "Discussion Group, LaboratoryPrerequisite: BCH 2333. BCH 3170 or BIO 3170 is corequisite to BCH 3356. The courses BCH 3356, BIO 3151 cannot be combined for units.",
       "prereqText": "BCH 2333",
       "prerequisites": {
         "type": "course",
@@ -29723,7 +29723,7 @@
       "title": "Criminal Law and Procedure (Part 2 of 2)",
       "credits": 5,
       "description": "General principles of criminal law; burdens of proof; the physical and mental elements offences; select defences; basic elements of criminal procedure; the impact of the Charter of Rights and Freedoms on both substantive and procedural issues. (Part 2 of 2)",
-      "component": "Tutorial, LecturePrerequisite: CML 11031",
+      "component": "Lecture, TutorialPrerequisite: CML 11031",
       "prereqText": "CML 11031",
       "prerequisites": {
         "type": "course",
@@ -41927,7 +41927,7 @@
       "title": "Measurements I",
       "credits": 4,
       "description": "Principles and analysis of civil engineering measurements. Probability and normal distribution; systematic and random errors; probabilistic principles of errors; statistical treatment of experimental data. Basic theory of mechanical and electrical strain measurement systems. Measurements in water resources and geotechnical engineering.",
-      "component": "Seminar, Discussion Group, Laboratory, Lecture, Research, Work Term, Theory and Laboratory, TutorialPrerequisites: MAT 1320, MAT 1322, MAT 1341.",
+      "component": "Research, Discussion Group, Laboratory, Lecture, Seminar, Work Term, Theory and Laboratory, TutorialPrerequisites: MAT 1320, MAT 1322, MAT 1341.",
       "prereqText": "MAT 1320, MAT 1322, MAT 1341",
       "prerequisites": {
         "type": "and_group",
@@ -62049,7 +62049,7 @@
       "title": "Circuit Theory I",
       "credits": 3,
       "description": "DC and sinusoidal steady state (AC) analysis of circuits. Basic passive circuit elements (resistors, capacitors, inductors). Voltage and current sources. Kirchoff laws. Loop and nodal analysis. Circuit theorems: Superposition, Maximum power transfer, Thevenin, Norton. Forced and natural responses of RL and RC circuits using the differential equation approach. Sinusoidal signals, complex numbers, phasors and impedance concepts. Average and RMS quantities. Steady state time-domain behaviour of inductors and capacitors. Complex, average and apparent power. Introduction to the use of electrical measurement equipment and Computer-Aided Design tools to support circuit analysis.",
-      "component": "Lecture, Tutorial, LaboratoryPrerequisites: ITI 1100, MAT 1341, MAT 1322.",
+      "component": "Laboratory, Lecture, TutorialPrerequisites: ITI 1100, MAT 1341, MAT 1322.",
       "prereqText": "ITI 1100, MAT 1341, MAT 1322",
       "prerequisites": {
         "type": "and_group",
@@ -274167,7 +274167,7 @@
       "requirements": [
         {
           "type": "and",
-          "title": "Compulsory courses at the 1000 level",
+          "title": "Basic skills",
           "options": [
             {
               "type": "course",
@@ -274178,7 +274178,13 @@
               "type": "course",
               "code": "ENG 1120",
               "credits": 3
-            },
+            }
+          ]
+        },
+        {
+          "type": "and",
+          "title": "Compulsory courses at the 1000 level",
+          "options": [
             {
               "type": "course",
               "code": "ECH 1100",
@@ -281558,6 +281564,11 @@
             },
             {
               "type": "course",
+              "code": "PAP 3355",
+              "credits": 3
+            },
+            {
+              "type": "course",
               "code": "PAP 3370",
               "credits": 3
             }
@@ -281586,6 +281597,7 @@
             {
               "type": "group",
               "title": "3 course units from:",
+              "credits": 3,
               "options": [
                 {
                   "type": "course",
@@ -281624,8 +281636,8 @@
             },
             {
               "type": "elective",
-              "title": "9 option course units form the list of optional courses",
-              "credits": 9
+              "title": "6 optional course units from the list of optional courses",
+              "credits": 6
             }
           ]
         },
@@ -281635,14 +281647,215 @@
           "options": [
             {
               "type": "elective",
-              "title": "36 elective course units",
-              "credits": 36
+              "title": "33 elective course units",
+              "credits": 33
             },
             {
-              "type": "elective",
-              "title": "6 elective course units plus a minor",
-              "credits": 6,
+              "type": "course",
+              "title": "3 elective course units plus a minor including POL 1101 not compulsory but highly recommended",
+              "code": "POL 1101",
+              "credits": 3,
               "indented": true
+            },
+            {
+              "type": "course",
+              "code": "ECO 1102",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "ECO 1104",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "ECO 2110",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "ECO 2111",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "ECO 2114",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "ECO 2115",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "ECO 2118",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "ECO 2121",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "ECO 2147",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "FEM 2107",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 3325",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 3340",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 3345",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 3360",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 3365",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 4310",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 4320",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 4330",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 4340",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 4350",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "PAP 4355",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "POL 1101",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "POL 3125",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "POL 3159",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "POL 3171",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "POL 3175",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "POL 4134",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "POL 4154",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "POL 4162",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "SOC 2101",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "SOC 2104",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "SOC 2309",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "SOC 2312",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "SOC 3105",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "SOC 3116",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "SOC 3137",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "SOC 3308",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "TSO 2520",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "TSO 3555",
+              "credits": 3
+            },
+            {
+              "type": "course",
+              "code": "TSO 4565",
+              "credits": 3
             }
           ]
         },
@@ -298342,7 +298555,7 @@
             },
             {
               "type": "course",
-              "code": "BIO 1550",
+              "code": "BIO 1150",
               "credits": 3
             },
             {
