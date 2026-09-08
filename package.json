@@ -1,6 +1,6 @@
 {
   "name": "uoplan-monorepo",
-  "version": "1.0.0-beta.42",
+  "version": "1.0.0-beta.43",
   "private": true,
   "type": "module",
   "scripts": {

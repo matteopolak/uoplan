@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.0-beta.43](https://github.com/uoplan/uoplan/compare/uoplan-monorepo-v1.0.0-beta.42...uoplan-monorepo-v1.0.0-beta.43) (2026-09-08)
+
+
+### Features
+
+* import official uoZone schedules ([2361a0e](https://github.com/uoplan/uoplan/commit/2361a0ebaf4fa1d717c278f39950d0ca3fb9472c))
+
+
+### Bug Fixes
+
+* **nav:** make back button navigate to logical parent, not browser history ([d4a4c50](https://github.com/uoplan/uoplan/commit/d4a4c50ebd8bda676718a9fe3a3a7405d9a726d0))
+* parse current uoZone schedule pages ([83e7251](https://github.com/uoplan/uoplan/commit/83e725159ba73780dbae4366a92b90147446a6aa))
+
 ## [1.0.0-beta.42](https://github.com/uoplan/uoplan/compare/uoplan-monorepo-v1.0.0-beta.41...uoplan-monorepo-v1.0.0-beta.42) (2026-08-11)
 
 
