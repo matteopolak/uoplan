@@ -138,6 +138,7 @@ export interface AnalyticsEventMap {
     minorMatched?: boolean;
   };
   uenroll_imported: { ok: boolean; courseCount?: number };
+  uozone_schedule_imported: { ok: boolean; courseCount?: number; skippedCount?: number };
 
   // --- Misc ---------------------------------------------------------------
   notification_subscribed: Record<string, never>;

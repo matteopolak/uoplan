@@ -652,6 +652,9 @@ msgstr "Dates"
 msgid "calendar.hover.instructor"
 msgstr "Enseignant"
 
+msgid "calendar.hover.location"
+msgstr "Lieu"
+
 #: apps/web/src/components/calendar/EventInfoSection.tsx:161
 msgid "calendar.hover.instructorPredicted"
 msgstr "Enseignant·e prévu·e"
@@ -4423,6 +4426,60 @@ msgstr "Importer depuis uEnroll"
 
 msgid "uenrollImport.modal.warnings"
 msgstr "Certains cours n'ont pas été trouvés"
+
+msgid "uozoneImport.button"
+msgstr "Téléverser l'horaire officiel"
+
+msgid "uozoneImport.modal.chooseFile"
+msgstr "Choisir SA_LEARNER_SERVICES.html"
+
+msgid "uozoneImport.modal.confirm"
+msgstr "Remplacer mon horaire"
+
+msgid "uozoneImport.modal.description"
+msgstr "Importez vos sections officielles, dates de cours, enseignants et lieux depuis uoZone. Cette action remplace l'horaire actuellement affiché dans uoPlan."
+
+msgid "uozoneImport.modal.invalid"
+msgstr "Impossible de lire cet horaire"
+
+msgid "uozoneImport.modal.invalidDescription"
+msgstr "Choisissez le fichier SA_LEARNER_SERVICES.html d'une vue en liste en anglais enregistrée comme page Web complète."
+
+msgid "uozoneImport.modal.noMatches"
+msgstr "Aucune section exacte trouvée"
+
+msgid "uozoneImport.modal.noMatchesDescription"
+msgstr "Les sections inscrites dans ce fichier ne correspondent pas à la session sélectionnée. Passez à la bonne session et réessayez."
+
+msgid "uozoneImport.modal.none"
+msgstr "aucun"
+
+msgid "uozoneImport.modal.privacy"
+msgstr "La page enregistrée est analysée uniquement dans votre navigateur et n'est pas téléversée vers uoPlan."
+
+msgid "uozoneImport.modal.recognized"
+msgstr "{fileName} : {count, plural, one {# cours reconnu} other {# cours reconnus}}"
+
+msgid "uozoneImport.modal.stepChoose"
+msgstr "Ouvrez le dossier créé à côté de la page enregistrée et choisissez SA_LEARNER_SERVICES.html."
+
+msgid "uozoneImport.modal.stepList"
+msgstr "Sélectionnez List View et assurez-vous que la page est en anglais."
+
+msgid "uozoneImport.modal.stepOpen"
+msgstr "Dans uoZone, ouvrez My Class Schedule pour la session sélectionnée dans uoPlan."
+
+msgid "uozoneImport.modal.stepSave"
+msgstr "Utilisez la commande Enregistrer la page sous de votre navigateur et enregistrez la page Web complète."
+
+msgid "uozoneImport.modal.title"
+msgstr "Importer l'horaire officiel d'uoZone"
+
+msgid "uozoneImport.modal.warnings"
+msgstr "Certaines entrées ont été ignorées"
+
+msgid "uozoneImport.modal.warningsDescription"
+msgstr "Cours sans section exacte correspondante : {courses}. Cours non inscrits ignorés : {count}."
 
 msgid "vs.backToCompare"
 msgstr "Voir le comparatif complet"

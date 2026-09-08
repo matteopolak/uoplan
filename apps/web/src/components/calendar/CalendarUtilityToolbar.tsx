@@ -5,6 +5,7 @@ import {
   IconEraser,
   IconFileImport,
   IconTerminal,
+  IconUpload,
 } from "@tabler/icons-react";
 import { tr, useTr } from "../../i18n";
 import { SaveStatusIndicator } from "./SaveStatusIndicator";
@@ -20,6 +21,8 @@ export interface CalendarUtilityToolbarProps {
   onRandomize: () => void;
   onClear: () => void;
   onImport: () => void;
+  onUploadSchedule: () => void;
+  uploadScheduleShow: boolean;
   cliDisabled: boolean;
   onEnrolCli: () => void;
   /** Tooltip side. Sidebar uses "right"; the embedded header uses "bottom". */
@@ -42,6 +45,8 @@ export function CalendarUtilityToolbar({
   onRandomize,
   onClear,
   onImport,
+  onUploadSchedule,
+  uploadScheduleShow,
   cliDisabled,
   onEnrolCli,
   tooltipPosition = "right",
@@ -101,6 +106,20 @@ export function CalendarUtilityToolbar({
           <IconFileImport size={16} />
         </ActionIcon>
       </Tooltip>
+      {uploadScheduleShow ? (
+        <Tooltip label={tr("uozoneImport.button")} withArrow position={tooltipPosition}>
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="md"
+            radius="md"
+            onClick={onUploadSchedule}
+            aria-label={tr("uozoneImport.button")}
+          >
+            <IconUpload size={16} />
+          </ActionIcon>
+        </Tooltip>
+      ) : null}
       <Tooltip label={tr("enrolCli.button")} withArrow position={tooltipPosition}>
         <ActionIcon
           variant="subtle"

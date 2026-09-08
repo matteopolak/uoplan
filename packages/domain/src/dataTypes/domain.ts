@@ -115,6 +115,14 @@ export type MeetingTime = {
   instructor?: string | null;
   meetingDates?: [string, string] | null;
   /**
+   * Human-readable meeting location supplied by a user-owned schedule import.
+   * Canonical schedule assets do not currently include room data, so these
+   * optional fields exist only on imported section clones.
+   */
+  location?: string | null;
+  /** Mailing/map-friendly location used for calendar exports when available. */
+  address?: string | null;
+  /**
    * 1-based index into the canonical professor registry (`ProfessorsData`),
    * 0/undefined when unassigned ("Staff") or unresolved. Resolve via
    * `professorIndexFromRef` / the registry runtime helpers.

@@ -116,6 +116,7 @@ export function scheduleToEvents(
           endMinutes: t.endMinutes,
           componentSection,
           virtual: Boolean(t.virtual),
+          location: t.location?.trim() || null,
           professor,
           professorRatingValue,
           professorRatingDetails,

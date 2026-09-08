@@ -15,6 +15,8 @@ export interface CalendarEvent {
   endMinutes: number;
   componentSection: string;
   virtual: boolean;
+  /** Per-meeting room/location supplied by an imported official schedule. */
+  location?: string | null;
   professor: CanonicalProfessorName;
   professorRatingValue?: number | null;
   professorRatingDetails?: Array<{

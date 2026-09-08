@@ -40,16 +40,17 @@ into shared code, add a registry field instead.
 id at the call site. Adding a third school then means filling in a table, not
 hunting for `=== "uottawa"` checks.
 
-| Flag                 | uOttawa | Carleton | Gates                                                                                                                      |
-| -------------------- | ------- | -------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `grades`             | ✅      | ❌       | Grade averages, the Trends section, the explore spotlight gallery, the `prefer_easier` ranking goal, the Difficulty filter |
-| `feedback`           | ✅      | ❌       | uoZone course-evaluation surfaces, the `prefer_sentiment` goal, the Feedback filter                                        |
-| `frenchImmersion`    | ✅      | ❌       | The French Immersion stream and FLS companion rules                                                                        |
-| `bilingualCatalogue` | ✅      | ❌       | The Language filter (Carleton's calendar is English-only)                                                                  |
-| `importantDatesFr`   | ✅      | ❌       | The French important-dates asset                                                                                           |
-| `transcriptImport`   | ✅      | ❌       | Transcript PDF import (parser is tied to one registrar's layout)                                                           |
-| `uEnrollImport`      | ✅      | ❌       | uEnroll share-link import                                                                                                  |
-| `enrolCli`           | ✅      | ❌       | The `@uoplan/cli` PeopleSoft enrolment helper                                                                              |
+| Flag                     | uOttawa | Carleton | Gates                                                                                                                      |
+| ------------------------ | ------- | -------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `grades`                 | ✅      | ❌       | Grade averages, the Trends section, the explore spotlight gallery, the `prefer_easier` ranking goal, the Difficulty filter |
+| `feedback`               | ✅      | ❌       | uoZone course-evaluation surfaces, the `prefer_sentiment` goal, the Feedback filter                                        |
+| `frenchImmersion`        | ✅      | ❌       | The French Immersion stream and FLS companion rules                                                                        |
+| `bilingualCatalogue`     | ✅      | ❌       | The Language filter (Carleton's calendar is English-only)                                                                  |
+| `importantDatesFr`       | ✅      | ❌       | The French important-dates asset                                                                                           |
+| `transcriptImport`       | ✅      | ❌       | Transcript PDF import (parser is tied to one registrar's layout)                                                           |
+| `uEnrollImport`          | ✅      | ❌       | uEnroll share-link import                                                                                                  |
+| `officialScheduleImport` | ✅      | ❌       | Official saved registrar schedule-page import                                                                              |
+| `enrolCli`               | ✅      | ❌       | The `@uoplan/cli` PeopleSoft enrolment helper                                                                              |
 
 Read them with `useSchoolFeature("grades")` in React, or
 `getSchool(id).features.grades` elsewhere.

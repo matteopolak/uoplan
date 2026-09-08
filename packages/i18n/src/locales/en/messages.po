@@ -652,6 +652,9 @@ msgstr "Dates"
 msgid "calendar.hover.instructor"
 msgstr "Instructor"
 
+msgid "calendar.hover.location"
+msgstr "Location"
+
 #: apps/web/src/components/calendar/EventInfoSection.tsx:161
 msgid "calendar.hover.instructorPredicted"
 msgstr "Predicted instructor"
@@ -4423,6 +4426,60 @@ msgstr "Import from uEnroll"
 
 msgid "uenrollImport.modal.warnings"
 msgstr "Some courses could not be found"
+
+msgid "uozoneImport.button"
+msgstr "Upload official schedule"
+
+msgid "uozoneImport.modal.chooseFile"
+msgstr "Choose SA_LEARNER_SERVICES.html"
+
+msgid "uozoneImport.modal.confirm"
+msgstr "Replace my schedule"
+
+msgid "uozoneImport.modal.description"
+msgstr "Import your official enrolled sections, meeting dates, instructors, and locations from uoZone. This replaces the schedule currently shown in uoPlan."
+
+msgid "uozoneImport.modal.invalid"
+msgstr "Couldn't read this schedule"
+
+msgid "uozoneImport.modal.invalidDescription"
+msgstr "Choose the SA_LEARNER_SERVICES.html file from an English List View saved as a complete webpage."
+
+msgid "uozoneImport.modal.noMatches"
+msgstr "No exact sections found"
+
+msgid "uozoneImport.modal.noMatchesDescription"
+msgstr "The enrolled sections in this file do not match the currently selected term. Switch to the right term and try again."
+
+msgid "uozoneImport.modal.none"
+msgstr "none"
+
+msgid "uozoneImport.modal.privacy"
+msgstr "The saved page is parsed only in your browser and is not uploaded to uoPlan."
+
+msgid "uozoneImport.modal.recognized"
+msgstr "{fileName}: {count, plural, one {# course recognized} other {# courses recognized}}"
+
+msgid "uozoneImport.modal.stepChoose"
+msgstr "Open the folder created beside the saved page and choose SA_LEARNER_SERVICES.html."
+
+msgid "uozoneImport.modal.stepList"
+msgstr "Select List View and make sure the page is in English."
+
+msgid "uozoneImport.modal.stepOpen"
+msgstr "In uoZone, open My Class Schedule for the term you selected in uoPlan."
+
+msgid "uozoneImport.modal.stepSave"
+msgstr "Use your browser's Save Page As command and save the complete webpage."
+
+msgid "uozoneImport.modal.title"
+msgstr "Import official uoZone schedule"
+
+msgid "uozoneImport.modal.warnings"
+msgstr "Some entries were skipped"
+
+msgid "uozoneImport.modal.warningsDescription"
+msgstr "Courses with no exact section match: {courses}. Non-enrolled courses skipped: {count}."
 
 msgid "vs.backToCompare"
 msgstr "See the full comparison"

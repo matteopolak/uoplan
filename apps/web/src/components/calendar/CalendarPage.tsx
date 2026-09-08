@@ -67,12 +67,14 @@ import { CalendarUtilityToolbar } from "./CalendarUtilityToolbar";
 import { CalendarMobileDrawer } from "./CalendarMobileDrawer";
 import { EnrolCliModal } from "./EnrolCliModal";
 import { UEnrollImportModal } from "./UEnrollImportModal";
+import { UoZoneScheduleImportModal } from "./UoZoneScheduleImportModal";
 import { AdvancedGenerationOptions } from "./AdvancedGenerationOptions";
 import { BasicGenerationOptions } from "./BasicGenerationOptions";
 import { encodeSchedulePayload } from "../../lib/encodeSchedulePayload";
 import { useScheduleWeeks } from "../../hooks/useScheduleWeeks";
 import { formatWeekLabel } from "../../lib/formatWeekCount";
 import { cancelScheduleGeneration } from "../../workers/scheduleWorkerClient";
+import { useSchoolFeature } from "../../hooks/useSchool";
 
 type ScheduleNavigationButtonsProps = {
   canGoPrevious: boolean;
@@ -259,6 +261,7 @@ export function CalendarPage({ onExit, variant = "page" }: CalendarPageProps = {
   const { terms, selectedTermId } = useTermSelection();
   const program = useActiveProgram();
   const importantDates = useImportantDates();
+  const hasOfficialScheduleImport = useSchoolFeature("officialScheduleImport");
 
   // When a term is opened from the degree planner it links that term into this
   // calendar (see `openInCalendar`). While that link is live for the term on
@@ -312,6 +315,7 @@ export function CalendarPage({ onExit, variant = "page" }: CalendarPageProps = {
   const [controlsOpen, setControlsOpen] = useState(false);
   const [enrolCliOpen, setEnrolCliOpen] = useState(false);
   const [uenrollImportOpen, setUenrollImportOpen] = useState(false);
+  const [uozoneImportOpen, setUozoneImportOpen] = useState(false);
   const [exportRequest, setExportRequest] = useState<ScheduleExportRequest | null>(null);
   const sidebarResize = useSidebarResize();
   const sidebarWidth = sidebarResize.width;
@@ -471,6 +475,8 @@ export function CalendarPage({ onExit, variant = "page" }: CalendarPageProps = {
     onRandomize: () => void randomizeSeed(),
     onClear: handleClearGenerationOptions,
     onImport: () => setUenrollImportOpen(true),
+    onUploadSchedule: () => setUozoneImportOpen(true),
+    uploadScheduleShow: hasOfficialScheduleImport,
     cliDisabled: !cliCommand,
     onEnrolCli: () => setEnrolCliOpen(true),
   };
@@ -587,6 +593,10 @@ export function CalendarPage({ onExit, variant = "page" }: CalendarPageProps = {
         command={cliCommand ?? ""}
       />
       <UEnrollImportModal opened={uenrollImportOpen} onClose={() => setUenrollImportOpen(false)} />
+      <UoZoneScheduleImportModal
+        opened={uozoneImportOpen}
+        onClose={() => setUozoneImportOpen(false)}
+      />
       <ScheduleExportDialog
         opened={exportRequest !== null}
         onClose={handleCloseExportDialog}
@@ -606,6 +616,10 @@ export function CalendarPage({ onExit, variant = "page" }: CalendarPageProps = {
         command={cliCommand ?? ""}
       />
       <UEnrollImportModal opened={uenrollImportOpen} onClose={() => setUenrollImportOpen(false)} />
+      <UoZoneScheduleImportModal
+        opened={uozoneImportOpen}
+        onClose={() => setUozoneImportOpen(false)}
+      />
       <ScheduleExportDialog
         opened={exportRequest !== null}
         onClose={handleCloseExportDialog}

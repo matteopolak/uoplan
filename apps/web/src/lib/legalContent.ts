@@ -37,7 +37,7 @@ const CONTACT_EMAIL = "admin@uoplan.party";
 
 const privacyEn: LegalDoc = {
   title: "Privacy Policy",
-  lastUpdated: "Last updated: June 21, 2026",
+  lastUpdated: "Last updated: September 8, 2026",
   intro: `uoPlan is a free, independent course planner for ${school.name} students. This policy explains what information the service handles and, just as importantly, what it deliberately does not.`,
   sections: [
     {
@@ -54,6 +54,7 @@ const privacyEn: LegalDoc = {
         `University data (public): course, program, schedule, and grade-distribution data sourced from public ${school.name} pages. This is reference data — it is not personal information about you.`,
         "Your planning choices: the term, program, completed courses, and preferences you enter are stored locally on your device. They are encoded into a share link only when you choose to create one, and are not tied to any account.",
         "Transcript import: if you import a transcript PDF, it is parsed entirely on your device to read your completed courses. The file and its contents are never uploaded to us.",
+        "Official schedule import: if you import a saved uoZone schedule page, it is parsed entirely on your device to read your enrolled sections and meeting details. The file and its contents are never uploaded to us.",
         "Notifications (optional): if you turn on schedule reminders, we store only what is needed to deliver them — on the web, your browser's push subscription; in the app, a device notification token. You can turn these off at any time.",
         "Technical data: like most websites, our hosting provider (Cloudflare) processes standard request information such as IP address and browser type to operate and secure the service. Cloudflare Turnstile is used to prevent abuse of the notification feature. We also use anonymous PostHog product analytics, hosted in the EU and ingested through our first-party proxy at https://t.uoplan.party, to understand which features are used and how the planner is used across return visits. Analytics captures only anonymized feature-usage events and standard technical metadata, and stores a random, anonymous identifier in a first-party cookie and your browser's local storage so repeat visits from the same device can be recognized. This identifier is not linked to your name or any account, is never used for advertising or cross-site tracking, and collects no personal data.",
       ],
@@ -104,7 +105,7 @@ const privacyEn: LegalDoc = {
 
 const privacyFr: LegalDoc = {
   title: "Politique de confidentialité",
-  lastUpdated: "Dernière mise à jour : 21 juin 2026",
+  lastUpdated: "Dernière mise à jour : 8 septembre 2026",
   intro: `uoPlan est un planificateur de cours gratuit et indépendant pour les étudiants de ${school.nameWithArticleFr}. Cette politique explique quels renseignements le service traite et, tout aussi important, ce qu'il choisit délibérément de ne pas faire.`,
   sections: [
     {
@@ -123,6 +124,7 @@ const privacyFr: LegalDoc = {
         `Données universitaires (publiques) : données sur les cours, les programmes, les horaires et la répartition des notes provenant des pages publiques de ${school.nameWithArticleFr}. Ce sont des données de référence — ce ne sont pas des renseignements personnels vous concernant.`,
         "Vos choix de planification : le trimestre, le programme, les cours réussis et les préférences que vous saisissez sont stockés localement sur votre appareil. Ils sont encodés dans un lien de partage uniquement lorsque vous choisissez d'en créer un, et ne sont liés à aucun compte.",
         "Importation de relevé : si vous importez un relevé en PDF, il est analysé entièrement sur votre appareil afin de lire vos cours réussis. Le fichier et son contenu ne nous sont jamais transmis.",
+        "Importation de l'horaire officiel : si vous importez une page d'horaire uoZone enregistrée, elle est analysée entièrement sur votre appareil afin de lire vos sections inscrites et les détails des séances. Le fichier et son contenu ne nous sont jamais transmis.",
         "Notifications (facultatives) : si vous activez les rappels d'horaire, nous ne stockons que ce qui est nécessaire à leur envoi — sur le Web, l'abonnement push de votre navigateur; dans l'application, un jeton de notification de l'appareil. Vous pouvez les désactiver à tout moment.",
         "Données techniques : comme la plupart des sites Web, notre hébergeur (Cloudflare) traite des renseignements de requête standard tels que l'adresse IP et le type de navigateur pour exploiter et sécuriser le service. Cloudflare Turnstile sert à prévenir l'utilisation abusive de la fonction de notification. Nous utilisons aussi l'analyse de produit anonyme de PostHog, hébergée dans l'UE et transmise par notre proxy de première partie à https://t.uoplan.party, pour comprendre quelles fonctionnalités sont utilisées et comment le planificateur est utilisé d'une visite à l'autre. L'analyse ne saisit que des événements d'utilisation anonymisés et des métadonnées techniques standard, et stocke un identifiant aléatoire et anonyme dans un témoin de première partie et le stockage local de votre navigateur afin de reconnaître les visites répétées depuis le même appareil. Cet identifiant n'est lié ni à votre nom ni à aucun compte, n'est jamais utilisé à des fins publicitaires ou de pistage intersite, et ne recueille aucun renseignement personnel.",
       ],

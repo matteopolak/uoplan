@@ -130,6 +130,7 @@ describe("school registry", () => {
     expect(SCHOOLS.carleton.features.grades).toBe(false);
     expect(SCHOOLS.carleton.features.feedback).toBe(false);
     expect(SCHOOLS.carleton.features.frenchImmersion).toBe(false);
+    expect(SCHOOLS.carleton.features.officialScheduleImport).toBe(false);
     expect(SCHOOLS.carleton.features.enrolCli).toBe(false);
   });
 

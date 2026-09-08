@@ -90,6 +90,8 @@ export type SchoolFeatures = {
   readonly transcriptImport: boolean;
   /** uEnroll share-link import. uOttawa-only. */
   readonly uEnrollImport: boolean;
+  /** Official saved registrar schedule-page import. uOttawa-only. */
+  readonly officialScheduleImport: boolean;
   /** The `@uoplan/cli` PeopleSoft enrolment helper. uOttawa-only. */
   readonly enrolCli: boolean;
 };
@@ -188,6 +190,7 @@ const UOTTAWA: School = {
     importantDatesFr: true,
     transcriptImport: true,
     uEnrollImport: true,
+    officialScheduleImport: true,
     enrolCli: true,
   },
   courseCatalogueUrl: (courseCode) =>
@@ -231,6 +234,7 @@ const CARLETON: School = {
     importantDatesFr: false,
     transcriptImport: false,
     uEnrollImport: false,
+    officialScheduleImport: false,
     enrolCli: false,
   },
   courseCatalogueUrl: (courseCode) =>

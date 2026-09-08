@@ -128,6 +128,16 @@ export function EventInfoSection({ event }: EventInfoSectionProps) {
             </Text>
           </Group>
         ) : null}
+        {event.location ? (
+          <Group gap={6} wrap="nowrap" justify="space-between" align="flex-start">
+            <Text size="xs" c="dimmed">
+              {tr("calendar.hover.location")}
+            </Text>
+            <Text size="xs" fw={500} ta="right">
+              {event.location}
+            </Text>
+          </Group>
+        ) : null}
       </Stack>
 
       {event.courseSentiment != null || event.professorSentiment != null ? (

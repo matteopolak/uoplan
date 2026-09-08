@@ -72,8 +72,6 @@ export function scheduleToCalendarEvents(args: {
       const professor = instructors.length > 0 ? instructors.join(", ") : "—";
       const sectionCode = (section.sectionCode ?? section.section ?? "").trim();
       const sectionLabel = sectionCode ? `${component} - ${sectionCode}` : component;
-      const location = pickLocation(section.section);
-      const summary = `${courseCode}${location ? ` — ${location}` : ""}`;
       const description = [
         courseTitle ? `Course: ${courseTitle}` : null,
         professor ? `Prof: ${professor}` : null,
@@ -84,6 +82,10 @@ export function scheduleToCalendarEvents(args: {
 
       for (const time of section.times ?? []) {
         if (time.startMinutes >= time.endMinutes) continue;
+
+        const displayLocation = time.location?.trim() || pickLocation(section.section);
+        const calendarLocation = time.address?.trim() || displayLocation;
+        const summary = `${courseCode}${displayLocation ? ` — ${displayLocation}` : ""}`;
 
         const bounds = resolveMeetingBounds(time.meetingDates ?? null, fallbackBounds);
         if (!bounds) continue;
@@ -97,7 +99,7 @@ export function scheduleToCalendarEvents(args: {
               uid,
               summary,
               description: description || undefined,
-              location: location || undefined,
+              location: calendarLocation || undefined,
               time: {
                 kind: "timed",
                 date: firstDate,

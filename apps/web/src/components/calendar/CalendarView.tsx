@@ -226,8 +226,9 @@ export function CalendarView({
   // The full event for the currently-open swap overlay (used by the mobile drawer).
   const activeEvent = useMemo<CalendarEvent | null>(() => {
     if (!swap.modalState) return null;
-    const { enrollmentIndex, componentSection } = swap.modalState;
+    const { eventId, enrollmentIndex, componentSection } = swap.modalState;
     return (
+      allEvents.find((e) => e.id === eventId) ??
       allEvents.find(
         (e) => e.enrollmentIndex === enrollmentIndex && e.componentSection === componentSection,
       ) ??
