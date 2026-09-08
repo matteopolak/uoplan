@@ -11,30 +11,33 @@ function cells(values: string[]): string {
 const SAVED_PAGE = `
   <!doctype html>
   <html><body>
-    <section>
-      <div><div class="PAGROUPDIVIDER">CSI 2132 - Databases I</div></div>
-      <table class="PSLEVEL3GRID"><tr>${cells(["Enrolled"])}</tr></table>
-      <table class="PSLEVEL3GRID"><tr>${cells([
+    <table class="PSGROUPBOXWBO"><tbody>
+      <tr><td class="PAGROUPDIVIDER">CSI 2132 - Databases I</td></tr>
+      <tr><td>
+      <table class="PSLEVEL3GRID"><tbody><tr>${cells(["Enrolled"])}</tr></tbody></table>
+      <table class="PSLEVEL3GRID"><tbody><tr>${cells([
         "1234",
         "A00",
         "Lecture",
         "Mo 10:00AM - 11:20AM",
-        "Desmarais Building 12102 (DMS)",
+        "550 Cumberland (TBT) 333",
         "Ada Lovelace",
         "01/12/2026 - 04/10/2026",
         "1234",
         "",
         "",
         "We 10:00AM - 11:20AM",
-        "Desmarais Building 12102 (DMS)",
+        "550 Cumberland (TBT) 333",
         "Ada Lovelace",
         "01/12/2026 - 04/10/2026",
-      ])}</tr></table>
-    </section>
-    <section>
-      <div><div class="PAGROUPDIVIDER">MAT 1341 - Introduction to Linear Algebra</div></div>
-      <table class="PSLEVEL3GRID"><tr>${cells(["Waiting"])}</tr></table>
-      <table class="PSLEVEL3GRID"><tr>${cells([
+      ])}</tr></tbody></table>
+      </td></tr>
+    </tbody></table>
+    <table class="PSGROUPBOXWBO"><tbody>
+      <tr><td class="PAGROUPDIVIDER">MAT 1341 - Introduction to Linear Algebra</td></tr>
+      <tr><td>
+      <table class="PSLEVEL3GRID"><tbody><tr>${cells(["Waiting"])}</tr></tbody></table>
+      <table class="PSLEVEL3GRID"><tbody><tr>${cells([
         "5678",
         "B00",
         "Lecture",
@@ -42,15 +45,31 @@ const SAVED_PAGE = `
         "Virtual",
         "Grace Hopper",
         "01/12/2026 - 04/10/2026",
-      ])}</tr></table>
-    </section>
+      ])}</tr></tbody></table>
+      </td></tr>
+    </tbody></table>
+    <table class="PSGROUPBOXWBO"><tbody>
+      <tr><td class="PAGROUPDIVIDER">CSI 4900 - Honours Project</td></tr>
+      <tr><td>
+      <table class="PSLEVEL3GRID"><tbody><tr>${cells(["Enrolled"])}</tr></tbody></table>
+      <table class="PSLEVEL3GRID"><tbody><tr>${cells([
+        "9012",
+        "F00",
+        "Research",
+        "N/A",
+        "N/A",
+        "Grace Hopper",
+        "01/12/2026 - 04/10/2026",
+      ])}</tr></tbody></table>
+      </td></tr>
+    </tbody></table>
   </body></html>`;
 
-function section(code: string): ComponentSection {
+function section(code: string, component = "LEC"): ComponentSection {
   return {
-    section: `${code}-LEC`,
+    section: `${code}-${component}`,
     sectionCode: code,
-    component: "LEC",
+    component,
     session: null,
     status: null,
     times: [
@@ -76,6 +95,12 @@ function cache() {
         credits: 3,
         description: "",
       },
+      {
+        code: normalizeCourseCode("CSI 4900"),
+        title: "Honours Project",
+        credits: 3,
+        description: "",
+      },
     ],
   };
   const schedules: SchedulesData = {
@@ -89,6 +114,14 @@ function cache() {
         timeZone: "America/Toronto",
         components: { LEC: [section("A00"), section("B00")] },
       },
+      {
+        subject: "CSI",
+        catalogNumber: "4900",
+        courseCode: normalizeCourseCode("CSI 4900"),
+        title: "Honours Project",
+        timeZone: "America/Toronto",
+        components: { REC: [section("F00", "REC")] },
+      },
     ],
   };
   return buildDataCache(catalogue, schedules);
@@ -97,7 +130,7 @@ function cache() {
 describe("official uoZone schedule import", () => {
   it("parses the saved List View, selects the exact section, and keeps locations per meeting", () => {
     const parsed = parseUoZoneScheduleHtml(SAVED_PAGE);
-    expect(parsed).toHaveLength(2);
+    expect(parsed).toHaveLength(3);
     expect(parsed[0].meetings).toMatchObject([
       {
         sectionCode: "A00",
@@ -105,11 +138,21 @@ describe("official uoZone schedule import", () => {
         day: "Mo",
         startMinutes: 600,
         endMinutes: 680,
-        location: "Desmarais Building 12102 (DMS)",
-        address: "Desmarais Building 12102, Ottawa, ON, Canada",
+        location: "550 Cumberland (TBT) 333",
+        address: "550 Cumberland, Ottawa, ON, Canada",
         meetingDates: ["2026-01-12", "2026-04-10"],
       },
       { sectionCode: "A00", component: "Lecture", day: "We" },
+    ]);
+    expect(parsed[2].meetings).toMatchObject([
+      {
+        sectionCode: "F00",
+        component: "Research",
+        day: null,
+        startMinutes: null,
+        endMinutes: null,
+        location: null,
+      },
     ]);
 
     const resolved = resolveUoZoneSchedule(parsed, cache());
@@ -117,14 +160,16 @@ describe("official uoZone schedule import", () => {
     if (!resolved.ok) return;
 
     expect(resolved.skippedCount).toBe(1);
-    expect(resolved.schedule.enrollments).toHaveLength(1);
+    expect(resolved.schedule.enrollments).toHaveLength(2);
     const lecture = resolved.schedule.enrollments[0].sectionCombo.LEC.section;
     expect(lecture.sectionCode).toBe("A00");
     expect(lecture.times.map((time) => time.day)).toEqual(["Mo", "We"]);
-    expect(lecture.times[0].location).toBe("Desmarais Building 12102 (DMS)");
+    expect(lecture.times[0].location).toBe("550 Cumberland (TBT) 333");
+    expect(resolved.schedule.enrollments[1].sectionCombo.REC.section.sectionCode).toBe("F00");
+    expect(resolved.schedule.enrollments[1].times).toEqual([]);
 
     const calendarEvents = scheduleToEvents(resolved.schedule, null);
-    expect(calendarEvents[0].location).toBe("Desmarais Building 12102 (DMS)");
+    expect(calendarEvents[0].location).toBe("550 Cumberland (TBT) 333");
 
     const ics = buildScheduleIcs({
       schedule: resolved.schedule,
@@ -132,7 +177,7 @@ describe("official uoZone schedule import", () => {
       startDate: "2026-01-12",
       endDate: "2026-04-10",
     });
-    expect(ics).toContain("LOCATION:Desmarais Building 12102\\, Ottawa\\, ON\\, Canada");
+    expect(ics).toContain("LOCATION:550 Cumberland\\, Ottawa\\, ON\\, Canada");
   });
 
   it("rejects a same-course section that is absent from the selected term", () => {
@@ -141,7 +186,7 @@ describe("official uoZone schedule import", () => {
       ...meeting,
       sectionCode: "Z99",
     }));
-    const resolved = resolveUoZoneSchedule(parsed, cache());
+    const resolved = resolveUoZoneSchedule([parsed[0]], cache());
     expect(resolved).toEqual({
       ok: false,
       reason: "no-matches",

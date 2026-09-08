@@ -10,13 +10,13 @@ import { normalizeCourseCode } from "@uoplan/core";
 export interface UoZoneMeeting {
   sectionCode: string;
   component: string;
-  day: DayOfWeek;
-  startMinutes: number;
-  endMinutes: number;
+  day: DayOfWeek | null;
+  startMinutes: number | null;
+  endMinutes: number | null;
   location: string | null;
   address: string | null;
   instructor: string | null;
-  meetingDates: [string, string];
+  meetingDates: [string, string] | null;
 }
 
 export interface UoZoneCourse {
@@ -52,7 +52,7 @@ const COMPONENT_ALIASES: Record<string, string> = {
   LABORATORY: "LAB",
   LECTURE: "LEC",
   PRACTICAL: "PRA",
-  RESEARCH: "RCH",
+  RESEARCH: "REC",
   SEMINAR: "SEM",
   TUTORIAL: "TUT",
 };
@@ -73,6 +73,9 @@ function parseClock(value: string): number {
 }
 
 function parseTimeRange(value: string): Pick<UoZoneMeeting, "day" | "startMinutes" | "endMinutes"> {
+  if (/^(?:N\/A|TBA)$/i.test(value.trim())) {
+    return { day: null, startMinutes: null, endMinutes: null };
+  }
   const match = value.match(
     /^([A-Za-z]{2})\s+(\d{1,2}:\d{2}(?:AM|PM))\s+-\s+(\d{1,2}:\d{2}(?:AM|PM))$/i,
   );
@@ -87,21 +90,23 @@ function parseIsoDate(value: string): string {
   return `${match[3]}-${match[1].padStart(2, "0")}-${match[2].padStart(2, "0")}`;
 }
 
-function parseDateRange(value: string): [string, string] {
+function parseDateRange(value: string): [string, string] | null {
+  if (/^(?:N\/A|TBA)$/i.test(value.trim())) return null;
   const parts = value.split(/\s+-\s+/);
   if (parts.length !== 2) throw new Error("Invalid meeting date range");
   return [parseIsoDate(parts[0]), parseIsoDate(parts[1])];
 }
 
 /**
- * Mirrors uo2ics: PeopleSoft renders the exportable address before a trailing
- * parenthesized short location. The full raw value is retained for uoPlan's UI,
- * while ICS receives the address with uo2ics's Ottawa suffix.
+ * Mirrors uo2ics: PeopleSoft renders the exportable address before the first
+ * ` (` and may continue with a building code and room, for example
+ * `550 Cumberland (TBT) 333`. The full raw value is retained for uoPlan's UI,
+ * while ICS receives the leading address with uo2ics's Ottawa suffix.
  */
 function parseLocation(value: string): { location: string | null; address: string | null } {
   const location = value.trim();
-  if (!location) return { location: null, address: null };
-  const addressPart = (location.match(/^(.*?)\s+\([^()]*\)\s*$/)?.[1] ?? location).trim();
+  if (!location || /^N\/A$/i.test(location)) return { location: null, address: null };
+  const addressPart = location.split(" (", 1)[0].trim();
   const address = /^(?:virtual|online|tba)$/i.test(addressPart)
     ? addressPart
     : `${addressPart}, Ottawa, ON, Canada`;
@@ -123,7 +128,10 @@ export function parseUoZoneScheduleHtml(html: string): UoZoneCourse[] {
   const courses: UoZoneCourse[] = [];
 
   for (const heading of document.querySelectorAll(".PAGROUPDIVIDER")) {
-    const container = heading.parentElement?.parentElement;
+    // Current saved pages wrap the heading in `<table><tbody><tr><td>`. A
+    // browser-created `<tbody>` makes parent-count traversal unreliable, so
+    // anchor to PeopleSoft's per-course group box instead.
+    const container = heading.closest("table.PSGROUPBOXWBO");
     const rows = container ? [...container.querySelectorAll(".PSLEVEL3GRID")] : [];
     if (rows.length < 2) continue;
 
@@ -194,7 +202,10 @@ function findSection(
   return candidates.length === 1 ? candidates[0] : null;
 }
 
-function importedTime(meeting: UoZoneMeeting): MeetingTime {
+function importedTime(meeting: UoZoneMeeting): MeetingTime | null {
+  if (meeting.day === null || meeting.startMinutes === null || meeting.endMinutes === null) {
+    return null;
+  }
   return {
     day: meeting.day,
     startMinutes: meeting.startMinutes,
@@ -252,7 +263,8 @@ export function resolveUoZoneSchedule(
         break;
       }
       const group = existing ?? { source: match.section, times: [], sectionIdentity: identity };
-      group.times.push(importedTime(meeting));
+      const time = importedTime(meeting);
+      if (time) group.times.push(time);
       byComponent.set(match.component, group);
     }
     if (ambiguous || byComponent.size === 0) {
